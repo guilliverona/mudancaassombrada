@@ -12,12 +12,19 @@ public class CaneTapper : MonoBehaviour
     [Header("Passos")]
     [SerializeField] float stepDistance = 1.2f; // um passo a cada 1.2m andados
     [SerializeField] float stepRange = 2.5f;
+    [SerializeField] float crouchStepRange = 1f;  // agachado: o fantasma só ouve colado em você
+    [SerializeField] float runStepRange = 7f;     // correndo: ouve de longe
 
+    PlayerMovement movement;
     float nextTapTime;
     float walked;
     Vector3 lastPosition;
 
-    void Start() => lastPosition = transform.position;
+    void Start()
+    {
+        lastPosition = transform.position;
+        movement = GetComponent<PlayerMovement>();
+    }
 
     void Update()
     {
@@ -39,7 +46,13 @@ public class CaneTapper : MonoBehaviour
         if (walked >= stepDistance)
         {
             walked = 0;
-            EchoSystem.Emit(transform.position + Vector3.down * 0.9f, stepRange, 0.5f, gameObject);
+            // O mesmo passo, três volumes. Como o fantasma ouve "alcance x 1.5",
+            // isto muda direto de quão longe ele te escuta: 1.5m, 3.75m ou 10.5m.
+            // E como o som É a visão da Cida: agachada ela também enxerga menos!
+            float range = stepRange, intensity = 0.5f;
+            if (movement.IsCrouching) { range = crouchStepRange; intensity = 0.25f; }
+            else if (movement.IsRunning) { range = runStepRange; intensity = 0.9f; }
+            EchoSystem.Emit(transform.position + Vector3.down * 0.9f, range, intensity, gameObject);
         }
     }
 }

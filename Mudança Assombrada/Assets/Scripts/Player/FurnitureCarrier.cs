@@ -33,6 +33,7 @@ public class FurnitureCarrier : MonoBehaviour
         if (!hit.collider.TryGetComponent(out Furniture furniture)) return;
 
         held = furniture;
+        held.IsHeld = true;
         held.Body.useGravity = false;
         held.Body.linearDamping = 10f; // amortece para não ficar balançando
         movement.SpeedMultiplier = 1f / held.Weight; // mais pesado = mais lento
@@ -43,6 +44,7 @@ public class FurnitureCarrier : MonoBehaviour
         held.Body.useGravity = true;
         held.Body.linearDamping = 0f;
         movement.SpeedMultiplier = 1f;
+        held.IsHeld = false;
         held = null;
     }
 

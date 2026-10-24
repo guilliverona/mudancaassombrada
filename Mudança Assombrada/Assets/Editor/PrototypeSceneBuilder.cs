@@ -20,9 +20,13 @@ public static class PrototypeSceneBuilder
         // --- Chão e paredes ---
         var floor = GameObject.CreatePrimitive(PrimitiveType.Plane);
         floor.name = "Chão";
-        floor.transform.localScale = new Vector3(2f, 1f, 2f); // Plane tem 10x10, então vira 20x20
+        // Plane tem 10x10, então vira 20x30: a casa (z de -10 a 10) mais a rua com o caminhão.
+        floor.transform.localScale = new Vector3(2f, 1f, 3f);
+        floor.transform.position = new Vector3(0, 0, 5f);
 
-        CreateWall("Parede Norte", new Vector3(0, 1.5f, 10), new Vector3(20, 3, 0.2f));
+        // Parede norte com a saída de 3m para a rua.
+        CreateWall("Parede Norte A", new Vector3(-5.75f, 1.5f, 10), new Vector3(8.5f, 3, 0.2f));
+        CreateWall("Parede Norte B", new Vector3(5.75f, 1.5f, 10), new Vector3(8.5f, 3, 0.2f));
         CreateWall("Parede Sul",   new Vector3(0, 1.5f, -10), new Vector3(20, 3, 0.2f));
         CreateWall("Parede Leste", new Vector3(10, 1.5f, 0), new Vector3(0.2f, 3, 20));
         CreateWall("Parede Oeste", new Vector3(-10, 1.5f, 0), new Vector3(0.2f, 3, 20));
@@ -31,6 +35,16 @@ public static class PrototypeSceneBuilder
         // Com 1.2m sobrava só 0.2m de caminho, e o fantasma não conseguia passar.
         CreateWall("Divisória A", new Vector3(-5.45f, 1.5f, 0), new Vector3(9.1f, 3, 0.2f));
         CreateWall("Divisória B", new Vector3(5.45f, 1.5f, 0), new Vector3(9.1f, 3, 0.2f));
+
+        // --- Caminhão (lá fora, passando pelo lado do fantasma: o perigo é o caminho!) ---
+        CreateWall("Caminhão - Cabine", new Vector3(0, 1.25f, 19f), new Vector3(3f, 2.5f, 2f));
+        CreateWall("Caminhão - Caçamba", new Vector3(0, 0.05f, 15.5f), new Vector3(3f, 0.1f, 4f));
+        var truckZone = new GameObject("Caminhão - Zona de Entrega");
+        truckZone.transform.position = new Vector3(0, 1f, 15.5f);
+        var zoneCollider = truckZone.AddComponent<BoxCollider>();
+        zoneCollider.size = new Vector3(3f, 2f, 4f);
+        zoneCollider.isTrigger = true; // não bloqueia, só detecta
+        var truck = truckZone.AddComponent<TruckZone>();
 
         // --- Player ---
         var player = new GameObject("Player");
@@ -87,7 +101,8 @@ public static class PrototypeSceneBuilder
         ghost.AddComponent<GhostHunter>();
 
         // --- GameManager ---
-        new GameObject("GameManager").AddComponent<GameManager>();
+        var gameManager = new GameObject("GameManager").AddComponent<GameManager>();
+        SetReference(gameManager, "truck", truck);
 
         EditorSceneManager.SaveScene(scene, "Assets/Scenes/Prototipo1.unity");
 

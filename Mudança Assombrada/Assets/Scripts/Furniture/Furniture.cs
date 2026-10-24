@@ -9,6 +9,7 @@ public class Furniture : MonoBehaviour
 
     public float Weight => weight;
     public Rigidbody Body { get; private set; }
+    public bool IsHeld { get; set; } // o FurnitureCarrier liga/desliga ao pegar/soltar
 
     void Awake() => Body = GetComponent<Rigidbody>();
 
