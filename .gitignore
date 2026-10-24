@@ -1,0 +1,25 @@
+# Pastas que a Unity gera sozinha (podem ter vários GB e são recriadas ao abrir o projeto)
+**/[Ll]ibrary/
+**/[Tt]emp/
+**/[Oo]bj/
+**/[Bb]uild/
+**/[Bb]uilds/
+**/[Ll]ogs/
+**/[Uu]ser[Ss]ettings/
+**/[Mm]emoryCaptures/
+
+# Arquivos de projeto gerados para o Visual Studio / VS Code / Rider
+*.csproj
+*.sln
+*.slnx
+*.suo
+*.user
+*.pidb
+*.booproj
+.vs/
+.vscode/
+.idea/
+
+# Lixo do sistema
+.DS_Store
+Thumbs.db

@@ -1,0 +1,9 @@
+# Arquivos binários: o Git nunca deve mexer no conteúdo deles (nem nas quebras de linha)
+*.pdf binary
+*.png binary
+*.jpg binary
+*.psd binary
+*.fbx binary
+*.wav binary
+*.mp3 binary
+*.ogg binary
