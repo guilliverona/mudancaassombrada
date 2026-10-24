@@ -57,6 +57,10 @@ public static class PrototypeSceneBuilder
         var echo = new GameObject("EchoSystem").AddComponent<EchoSystem>();
         SetReference(echo, "echoShader", AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shaders/Echo.shader"));
 
+        // --- Personagens: Tiago vê vibrações; o switcher troca entre Cida (1) e Tiago (2) ---
+        player.AddComponent<VibrationVision>();
+        player.AddComponent<CharacterSwitcher>();
+
         var cam = Camera.main;
         cam.transform.SetParent(player.transform);
         cam.transform.localPosition = new Vector3(0, 0.6f, 0);

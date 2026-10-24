@@ -19,7 +19,7 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         timeLeft = nightDuration;
-        totalFurniture = FindObjectsByType<Furniture>(FindObjectsSortMode.None).Length;
+        totalFurniture = FindObjectsByType<Furniture>().Length;
     }
 
     public static void PlayerCaught(string message)

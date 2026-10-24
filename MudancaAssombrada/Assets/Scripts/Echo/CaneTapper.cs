@@ -15,6 +15,9 @@ public class CaneTapper : MonoBehaviour
     [SerializeField] float crouchStepRange = 1f;  // agachado: o fantasma só ouve colado em você
     [SerializeField] float runStepRange = 7f;     // correndo: ouve de longe
 
+    // Só a Cida tem bengala. Os PASSOS continuam para todos: o fantasma ouve qualquer um.
+    public bool CanTap { get; set; } = true;
+
     PlayerMovement movement;
     float nextTapTime;
     float walked;
@@ -29,7 +32,7 @@ public class CaneTapper : MonoBehaviour
     void Update()
     {
         // Time.time = segundos desde o início do jogo. Técnica clássica de cooldown.
-        if (Keyboard.current.spaceKey.wasPressedThisFrame && Time.time >= nextTapTime)
+        if (CanTap && Keyboard.current.spaceKey.wasPressedThisFrame && Time.time >= nextTapTime)
         {
             nextTapTime = Time.time + tapCooldown;
             // A ponta da bengala bate no chão, um pouco à frente dos pés.

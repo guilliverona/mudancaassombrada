@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 // Gerencia as ondas de som e o "modo cego" da Dona Cida.
 // Qualquer script pode criar uma onda chamando: EchoSystem.Emit(posição, alcance, intensidade);
@@ -10,7 +9,6 @@ public class EchoSystem : MonoBehaviour
     const int MaxPulses = 8; // precisa ser igual ao MAX_PULSES do Echo.shader
 
     [SerializeField] Shader echoShader;
-    [SerializeField] bool startBlind = true;
     [SerializeField] float waveSpeed = 7f;      // metros por segundo
     [SerializeField] float ringWidth = 0.35f;   // espessura do anel
     [SerializeField] Color echoColor = new Color(0.55f, 0.8f, 1f);
@@ -48,11 +46,6 @@ public class EchoSystem : MonoBehaviour
         if (echoShader == null) echoShader = Shader.Find("MudancaAssombrada/Echo");
     }
 
-    void Start()
-    {
-        if (startBlind) SetBlind(true);
-    }
-
     // EVENTO: quem quiser "ouvir" os sons do jogo se inscreve aqui (padrão Observer).
     // O EchoSystem não sabe quem está ouvindo, e nem precisa saber.
     // Parâmetros: posição, alcance, intensidade, quem fez o som.
@@ -71,8 +64,6 @@ public class EchoSystem : MonoBehaviour
 
     void Update()
     {
-        // Tab liga/desliga a visão da Cida (só para testar; depois vira "escolher personagem").
-        if (Keyboard.current.tabKey.wasPressedThisFrame) SetBlind(!blind);
 
         for (int i = 0; i < MaxPulses; i++)
         {
@@ -96,8 +87,12 @@ public class EchoSystem : MonoBehaviour
         Shader.SetGlobalFloat(RingWidthId, ringWidth);
     }
 
+    // Quem decide se a tela fica cega agora é o CharacterSwitcher (Cida = cega).
     public void SetBlind(bool on)
     {
+        // Proteção: ligar duas vezes salvaria os materiais de ECO como se fossem os
+        // originais, e a visão normal nunca mais voltaria.
+        if (on == blind) return;
         blind = on;
         var cam = Camera.main;
 
@@ -107,7 +102,7 @@ public class EchoSystem : MonoBehaviour
             cam.clearFlags = CameraClearFlags.SolidColor; // fundo preto em vez do céu
             cam.backgroundColor = Color.black;
 
-            foreach (var r in FindObjectsByType<Renderer>(FindObjectsSortMode.None))
+            foreach (var r in FindObjectsByType<Renderer>())
             {
                 originalMaterials[r] = r.sharedMaterials;
                 var echoMats = new Material[r.sharedMaterials.Length];
