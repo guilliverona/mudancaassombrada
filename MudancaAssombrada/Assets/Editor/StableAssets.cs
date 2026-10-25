@@ -23,6 +23,17 @@ namespace MudancaAssombrada.Editor
         public static string Snapshot(string assetPath) =>
             File.Exists(assetPath) ? File.ReadAllText(assetPath) : null;
 
+        // Para um trabalho que regrava VÁRIOS arquivos em passos (criar o prefab, depois pôr o
+        // modelo nele...): guarda todos antes, roda o trabalho e confere cada um no fim.
+        public static void Guard(System.Collections.Generic.IEnumerable<string> assetPaths, System.Action work)
+        {
+            var before = new Dictionary<string, string>();
+            foreach (var path in assetPaths) before[path] = Snapshot(path);
+            work();
+            AssetDatabase.SaveAssets(); // garante que tudo foi para o disco antes de comparar
+            foreach (var pair in before) RestoreIfSame(pair.Key, pair.Value);
+        }
+
         // true = só os números mudaram, e o arquivo antigo foi devolvido.
         public static bool RestoreIfSame(string assetPath, string before)
         {
@@ -49,7 +60,9 @@ namespace MudancaAssombrada.Editor
         static readonly Regex Header = new(@"^!u!(\d+) &(-?\d+)(.*)$");
         static readonly Regex LocalRef = new(@"\{fileID: (-?\d+)\}");
         // Números que a Unity/o Netcode calculam A PARTIR dos fileIDs: mudam junto, então ignoramos.
-        static readonly Regex Derived = new(@"(GlobalObjectIdHash|InScenePlacedSourceGlobalObjectIdHash): \d+");
+        // Aparecem de dois jeitos: direto ("GlobalObjectIdHash: 123") ou como ajuste de uma cópia de
+        // prefab na cena ("propertyPath: GlobalObjectIdHash" e, na linha de baixo, "value: 123").
+        static readonly Regex Derived = new(@"((?:GlobalObjectIdHash|InScenePlacedSourceGlobalObjectIdHash)(?::|\n\s+value:)) \d+");
         const int Rounds = 8; // quantos "níveis" de ligação entram na assinatura
 
         static string Canonical(string text)
@@ -66,7 +79,7 @@ namespace MudancaAssombrada.Editor
                 if (!m.Success) return text; // formato inesperado: compara o texto puro
                 string body = newline < 0 ? "" : parts[i].Substring(newline + 1);
                 ids.Add(m.Groups[2].Value);
-                bodies.Add(m.Groups[1].Value + m.Groups[3].Value + "\n" + Derived.Replace(body, "$1: #"));
+                bodies.Add(m.Groups[1].Value + m.Groups[3].Value + "\n" + Derived.Replace(body, "$1 #"));
             }
 
             // Rodada 0: ninguém sabe nada dos vizinhos. A cada rodada, cada um "pergunta" aos vizinhos.

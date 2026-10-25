@@ -71,7 +71,10 @@ namespace MudancaAssombrada.Editor
 
         // ---------- Prefabs ----------
 
-        public static void EnsurePrefabs()
+        // Como no LevelPrefabsBuilder: o Guard devolve os arquivos que saíram iguais (só números novos).
+        public static void EnsurePrefabs() => StableAssets.Guard(LevelPrefabsBuilder.AllPrefabs(), BuildPrefabs);
+
+        static void BuildPrefabs()
         {
             LevelPrefabsBuilder.Build(WallPlainPath, false, () => KitPiece("Parede Lisa", "Environment/ParedeLisa/SM_ENV_ParedeLisa", WallPlainColliders));
             LevelPrefabsBuilder.Build(WallDoorPath, false, () => KitPiece("Parede com Porta", "Environment/ParedePorta/SM_ENV_ParedePorta", WallDoorColliders));

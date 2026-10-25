@@ -52,7 +52,22 @@ namespace MudancaAssombrada.Editor
             EnsurePrefabs(recreateAll: true);
         }
 
-        public static void EnsurePrefabs(bool recreateAll)
+        // Os prefabs são regravados em PASSOS (cria o bloco, depois põe o modelo, depois acrescenta
+        // peças), e cada passo sorteia números internos novos. O Guard confere TODOS no fim: o que
+        // ficou igual por dentro volta ao arquivo antigo e não aparece no Git (ver StableAssets).
+        public static void EnsurePrefabs(bool recreateAll) =>
+            StableAssets.Guard(AllPrefabs(), () => BuildPrefabs(recreateAll));
+
+        // Todos os .prefab de Assets/Prefabs (com "/" no caminho, como a Unity usa).
+        internal static string[] AllPrefabs()
+        {
+            if (!System.IO.Directory.Exists(EditorTools.PrefabsFolder)) return new string[0];
+            var files = System.IO.Directory.GetFiles(EditorTools.PrefabsFolder, "*.prefab", System.IO.SearchOption.AllDirectories);
+            for (int i = 0; i < files.Length; i++) files[i] = files[i].Replace('\\', '/');
+            return files;
+        }
+
+        static void BuildPrefabs(bool recreateAll)
         {
             GameDataBuilder.EnsureData();
             GameDataBuilder.AssignMissingModels();
