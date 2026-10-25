@@ -1,0 +1,136 @@
+# Instruções para o Claude (e para quem chega no projeto)
+
+Este arquivo é lido **automaticamente** pelo Claude Code em toda conversa aberta nesta pasta.
+Ele diz o que é o projeto, onde está cada informação e **como trabalhamos**, para nenhuma
+conversa nova precisar ser "apresentada" ao projeto de novo.
+
+**Regra deste arquivo:** ele é um MAPA, não um manual. Fatos que mudam com o projeto (o que já
+foi feito, medidas, nomes de scripts) moram nos documentos abaixo; aqui fica só o que ajuda a
+achá-los e as regras de trabalho. Ver "Como manter este arquivo" no fim.
+
+---
+
+## O projeto em poucas linhas
+
+- **Mudança Assombrada**: co-op online (até 3 jogadores) de terror e comédia, em Unity 6 + URP,
+  com Netcode for GameObjects. Uma transportadora falida tira móveis de casas mal-assombradas
+  antes do amanhecer. O chefe, Seu Valdemar, só fala por bilhetes e é um fantasma.
+- **Personagens jogáveis:** Dona Cida (cega, enxerga pelo eco), Tiago (surdo, vê vibrações),
+  Marcelo (mudo, forte e silencioso). Cada fase favorece um deles.
+- É uma **campanha com fim**: capítulos em ordem, com save, e um final alternativo.
+- Várias pessoas mexem no projeto ao mesmo tempo: antes de reestruturar um sistema que já
+  existe, combinar com o time.
+
+## Onde está cada coisa
+
+| Quero saber sobre... | Leia |
+|---|---|
+| A história, as fases, os fantasmas (fonte original) | [roteiro.txt](roteiro.txt) |
+| Como o código está organizado e **como adicionar** personagem, fantasma, fase, objetivo, som... | [ARQUITETURA.md](ARQUITETURA.md) |
+| Padrão visual da interface (cores do `Theme`, fontes, HUD) | [DESIGN.md](DESIGN.md) |
+| Modelos 3D: pipeline Blender → Unity, regras de modelagem, nomes, orçamento, o que já tem modelo | [ART_BIBLE.md](ART_BIBLE.md) |
+| O que já foi feito, o que vem a seguir, decisões em aberto | [PLANEJAMENTO.md](PLANEJAMENTO.md) |
+| Os designs completos (fichas com vistas, cabeça e mãos, cenários) | Art Bible completo (link no ART_BIBLE.md) |
+
+**Antes de começar qualquer tarefa:** ler a parte do documento que trata do assunto e a tabela
+"Visão geral" do PLANEJAMENTO.md, e rodar `git status` / `git log --oneline -10` para ver o
+estado real (o time trabalha em paralelo; o repositório muda entre conversas).
+
+## Mapa do repositório
+
+```
+mudancaassombrada/                 ← raiz do Git (os .md ficam aqui)
+├── MudancaAssombrada/             ← o projeto Unity (Assets, Packages, ProjectSettings)
+│   └── Assets/
+│       ├── Scripts/               jogo (namespace MudancaAssombrada)
+│       ├── Editor/                construtores de dados, prefabs, cenas e importação
+│       ├── Art/<Tipo>/<Nome>/     FBX gerados pelo Blender (o que o jogo usa)
+│       ├── Data/                  fichas de personagens e capítulos (.asset)
+│       ├── Resources/             Elenco, Campanha, fontes
+│       └── Prefabs/, Scenes/
+├── tools/blender/                 scripts que GERAM os modelos (build_all.ps1 roda todos)
+├── Art/Source/<Tipo>/<Nome>/      .blend e prévias (fonte, fora do Unity)
+└── roteiro.txt, *.md
+```
+
+## Ferramentas desta máquina
+
+- **Unity** 6000.6.7f1: `C:\Program Files\Unity\Hub\Editor\6000.6.7f1\Editor\Unity.exe`
+- **Blender** 5.2: `C:\Program Files\Blender Foundation\Blender 5.2\blender.exe`
+- Shell: PowerShell 5.1 (Windows). Caminhos com acento: use `git -c core.quotepath=false`.
+
+## Como trabalhamos (regras)
+
+1. **Idioma:** tudo em português do Brasil: conversa, comentários no código, documentos, commits.
+2. **Git:**
+   - Commit e push só quando a pessoa pedir.
+   - Antes de editar, confirmar a branch atual e se ela está atualizada com a `main`.
+     Branch criada de um commit antigo = avisar antes de seguir.
+   - Nunca apagar stash, nem fazer `reset --hard`, `force push` ou rebase de algo já enviado
+     sem pedido explícito.
+   - Ao apresentar mudanças, separar o que é **da tarefa** do que o **Unity regravou sozinho**
+     (cenas, `HUD.prefab`, `Pausa.prefab`, `Player.prefab`, `ProjectSettings/*`, `Packages/*`):
+     esse "ruído" fica fora dos commits.
+3. **Unity aberto x fechado:**
+   - Com o Unity aberto não dá para rodar o modo batch nem fazer rebase/merge com segurança
+     (ele reimporta e regrava arquivos no meio). Pedir para fechar **todas** as janelas
+     (inclusive o Player 2 do Multiplayer Play Mode) e conferir: `MudancaAssombrada/Temp/UnityLockfile`
+     não pode existir.
+   - Mudança em script com o Unity aberto: avisar que ele recompila ao receber foco, e que nada
+     reimporta enquanto o **Play** estiver ligado.
+4. **Verificar antes de dizer que funciona.** Compilar em batch, conferir prévias, medir no Unity.
+   O que não foi testado com Play é dito como "não testado com Play".
+5. **Código:** seguir o estilo que já existe: comentários didáticos em português, dados em
+   ScriptableObjects/prefabs, composição, registros (`All`) em vez de `Find`, controles pelo
+   `GameInput`, interface só pelo `UiBuilder`/`Theme` (nada de `OnGUI`). Os princípios completos
+   estão no ARQUITETURA.md.
+6. **Arte:** modelos são **gerados por script** a partir das medidas do Art Bible, nunca
+   editados à mão no Blender. Mudou uma medida → ajustar o script e gerar de novo.
+
+## Como verificar (receitas)
+
+**Gerar os modelos** (Blender em segundo plano, na raiz do repositório):
+```
+.\tools\blender\build_all.ps1
+```
+Cada script imprime `TRIS` e `SAVED`; as prévias ficam em `Art/Source/<Tipo>/<Nome>/previews/`
+e devem ser abertas e comparadas com o Art Bible.
+
+**Compilar e rodar um construtor no Unity em batch** (Unity fechado):
+```
+& "C:\Program Files\Unity\Hub\Editor\6000.6.7f1\Editor\Unity.exe" -batchmode -nographics -projectPath "C:\Users\david\gamedev\mudancaassombrada\MudancaAssombrada" -executeMethod MudancaAssombrada.Editor.LevelPrefabsBuilder.EnsureMenu -quit -logFile <scratchpad>\unity.log
+```
+- Erros de compilação aparecem como `error CS` no log; `Exiting batchmode successfully` = ok.
+- `-executeMethod` aceita métodos estáticos privados (ex.: os de `[MenuItem]`).
+- Para medir algo (orientação, tamanhos, se um prefab tem o `Modelo`), criar um script
+  temporário `Assets/Editor/Temp*.cs`, rodar em batch e **apagar** depois (com o `.meta`).
+
+**Testar em rede:** Multiplayer Play Mode (Window › Multiplayer › Multiplayer Play Mode, Player 2):
+host numa janela, cliente na outra (IP 127.0.0.1). O jogo começa pela cena **Menu**.
+
+## Armadilhas conhecidas
+
+- **Frente dos modelos:** o −Y do Blender chega como −Z no Unity. O `export_fbx` do
+  `tools/blender/blockout_common.py` gira as raízes 180° só durante a exportação para os
+  modelos olharem para +Z (a frente do Player). Mexer no export = medir de novo no Unity.
+- **Importação pela pasta:** `Assets/Editor/ArtImportSettings.cs` define o rig pela pasta de
+  `Assets/Art` (Humanoid ou sem rig) e só age na **primeira** importação. FBX já importado com
+  configuração errada → corrigir o `.meta` (ou reimportar apagando o `.meta`).
+- **Construtores:** o Player, o HUD e a Pausa são sempre recriados pelo código; os prefabs do
+  mundo só são criados se faltarem, e depois são de quem edita. A troca bloco → modelo
+  (`ApplyArt` no `LevelPrefabsBuilder`) só mexe no visual e não repete se já existe o filho `Modelo`.
+- **Falsas mudanças no Git:** `Assets/Editor/StableAssets.cs` evita que recriar cena/prefab troque
+  todos os `fileID`. Mesmo assim, conferir o diff antes de propor commit.
+- **Lados nos desenhos:** em várias fichas do Art Bible, o texto diz "direito" e o desenho mostra o
+  lado esquerdo (bengala da Cida, lápis e bolsa do Tiago). Os modelos seguem o desenho.
+- **PowerShell:** dentro de aspas duplas, `$nome_texto` vira variável; usar aspas simples ou
+  `${nome}` quando houver `$` no texto. `2>&1` em programas nativos gera falsos erros vermelhos.
+
+## Como manter este arquivo
+
+- Atualizar quando mudar **uma regra de trabalho**, **um caminho/ferramenta** ou quando uma
+  armadilha nova custar tempo (registrar em "Armadilhas conhecidas", em uma ou duas linhas).
+- O que é **estado do projeto** (fase feita, modelo novo, decisão tomada) vai para o
+  PLANEJAMENTO.md / ART_BIBLE.md, não para cá.
+- Manter curto: se uma seção passar de ~15 linhas, ela provavelmente pertence a outro documento.
+- Mudanças neste arquivo vão no mesmo commit da tarefa que as motivou.
