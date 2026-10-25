@@ -145,6 +145,7 @@ public class CharacterSwitcher : NetworkBehaviour
 
     void OnGUI()
     {
+        GameFonts.ApplyToGUI();
         if (!IsOwner) return;
 
         var style = new GUIStyle(GUI.skin.label) { fontSize = 20, alignment = TextAnchor.UpperRight, richText = true };

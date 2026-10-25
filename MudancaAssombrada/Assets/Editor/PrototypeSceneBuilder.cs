@@ -160,12 +160,13 @@ public static class PrototypeSceneBuilder
         var canvas = UiBuilder.CreateCanvas("Canvas Pausa");
 
         var panel = UiBuilder.CreatePanel("Painel Pausa", canvas, 460);
-        UiBuilder.CreateText("Título", panel, "Pausa", 44, FontStyle.Bold);
+        var pauseTitle = UiBuilder.CreateText("Título", panel, "Pausa", Theme.HeaderSize);
+        pauseTitle.font = GameFonts.Title; // cabeçalho: mesma fonte do título do menu
         var resumeButton = UiBuilder.CreateButton("Continuar", panel);
         var optionsButton = UiBuilder.CreateButton("Opções", panel);
         var leaveButton = UiBuilder.CreateButton("Voltar ao menu", panel);
-        var infoText = UiBuilder.CreateText("Info", panel, "", 22);
-        infoText.color = Color.gray;
+        var infoText = UiBuilder.CreateText("Info", panel, "", Theme.NoteSize);
+        infoText.color = Theme.MutedColor;
         UiBuilder.SetHeight(infoText.gameObject, 60);
 
         var options = UiBuilder.CreateOptionsPanel(canvas);

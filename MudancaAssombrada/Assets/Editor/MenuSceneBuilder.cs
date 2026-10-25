@@ -45,51 +45,67 @@ public static class MenuSceneBuilder
         UiBuilder.CreateEventSystem();
         var canvas = UiBuilder.CreateCanvas("Canvas");
 
-        var title = UiBuilder.CreateText("Título", canvas, "MUDANÇA ASSOMBRADA", 84, FontStyle.Bold);
+        // Fundo: o primeiro filho do Canvas é desenhado primeiro, então fica atrás de tudo.
+        var background = new GameObject("Fundo", typeof(RectTransform), typeof(RawImage), typeof(MenuBackground));
+        background.transform.SetParent(canvas, false);
+        var bgRect = background.GetComponent<RectTransform>();
+        bgRect.anchorMin = Vector2.zero; // cantos colados nos da tela: estica para qualquer resolução
+        bgRect.anchorMax = Vector2.one;
+        bgRect.offsetMin = bgRect.offsetMax = Vector2.zero;
+        background.GetComponent<RawImage>().raycastTarget = false; // não "rouba" cliques
+
+        // Título grande e "apagado", em cinza: sem brilho nem efeito, só a fonte.
+        var title = UiBuilder.CreateText("Título", canvas, "MUDANÇA ASSOMBRADA", Theme.TitleSize);
+        title.font = GameFonts.Title; // Bebas Neue: condensada, então cabe grande
+        // Texto do uGUI que não cabe na caixa SOME. Overflow deixa ele passar da borda.
+        title.horizontalOverflow = HorizontalWrapMode.Overflow;
+        title.verticalOverflow = VerticalWrapMode.Overflow;
         var titleRect = title.rectTransform;
         titleRect.anchorMin = titleRect.anchorMax = new Vector2(0.5f, 1f);
         titleRect.pivot = new Vector2(0.5f, 1f);
-        titleRect.anchoredPosition = new Vector2(0, -60);
-        titleRect.sizeDelta = new Vector2(1600, 120);
-        title.color = new Color(0.85f, 0.9f, 1f);
+        titleRect.anchoredPosition = new Vector2(0, -100); // respiro em cima; os painéis começam logo abaixo
+        titleRect.sizeDelta = new Vector2(1600, Theme.TitleSize);
+        title.color = Theme.TitleColor;
 
-        // --- Painel Inicial ---
-        var mainPanel = UiBuilder.CreatePanel("Painel Inicial", canvas, 320);
+        // --- Painel Inicial: botões estreitos e soltos na tela, sem caixa em volta ---
+        var mainPanel = UiBuilder.CreatePanel("Painel Inicial", canvas, 260, 320, background: false);
+        ((RectTransform)mainPanel).anchoredPosition = new Vector2(0, -200); // mais para baixo, como na referência
         var playButton = UiBuilder.CreateButton("Jogar", mainPanel);
         var optionsButton = UiBuilder.CreateButton("Opções", mainPanel);
         var quitButton = UiBuilder.CreateButton("Sair", mainPanel);
 
         // --- Painel Conexão ---
         var connectPanel = UiBuilder.CreatePanel("Painel Conexão", canvas);
-        UiBuilder.CreateText("Seu nome", connectPanel, "Seu nome:", 26);
+        UiBuilder.CreateText("Seu nome", connectPanel, "Seu nome:", Theme.BodySize);
         var nameInput = UiBuilder.CreateInput(connectPanel, "Como os outros vão te ver");
         nameInput.characterLimit = 20; // cabe no FixedString32Bytes da sala de espera
         var hostButton = UiBuilder.CreateButton("Hospedar partida", connectPanel);
-        UiBuilder.CreateText("Separador", connectPanel, "— ou entre na partida de um amigo —", 22).color = Color.gray;
-        UiBuilder.CreateText("IP", connectPanel, "IP do host (no Radmin: o 26.x.x.x dele):", 24);
+        UiBuilder.CreateText("Separador", connectPanel, "— ou entre na partida de um amigo —", Theme.NoteSize).color = Theme.MutedColor;
+        UiBuilder.CreateText("IP", connectPanel, "IP do host:", Theme.BodySize);
         var addressInput = UiBuilder.CreateInput(connectPanel, "127.0.0.1");
         var joinButton = UiBuilder.CreateButton("Entrar na partida", connectPanel);
-        var statusText = UiBuilder.CreateText("Status", connectPanel, "", 22);
-        statusText.color = new Color(1f, 0.55f, 0.45f);
+        var statusText = UiBuilder.CreateText("Status", connectPanel, "", Theme.NoteSize);
+        statusText.color = Theme.DangerColor; // aqui só aparecem erros de conexão
         UiBuilder.SetHeight(statusText.gameObject, 70);
         var connectBackButton = UiBuilder.CreateButton("Voltar", connectPanel);
 
         // --- Painel Sala de Espera ---
         var lobbyPanel = UiBuilder.CreatePanel("Painel Sala de Espera", canvas);
-        var playerListText = UiBuilder.CreateText("Lista de Jogadores", lobbyPanel, "", 26);
+        var playerListText = UiBuilder.CreateText("Lista de Jogadores", lobbyPanel, "", Theme.BodySize);
         playerListText.alignment = TextAnchor.UpperLeft;
         UiBuilder.SetHeight(playerListText.gameObject, 160);
-        UiBuilder.CreateText("Escolha", lobbyPanel, "Escolha seu personagem:", 24);
+        UiBuilder.CreateText("Escolha", lobbyPanel, "Escolha seu personagem:", Theme.BodySize);
         var characterButtons = new Button[CharacterSwitcher.Names.Length];
         for (int i = 0; i < characterButtons.Length; i++)
         {
             characterButtons[i] = UiBuilder.CreateButton(CharacterSwitcher.Names[i], lobbyPanel);
-            characterButtons[i].GetComponentInChildren<Text>().color = CharacterSwitcher.BodyColors[i] * 0.6f + Color.black * 0.4f;
+            // O nome aparece na cor do personagem, misturada com o cinza para não destoar do resto.
+            characterButtons[i].GetComponentInChildren<Text>().color = Theme.Muted(CharacterSwitcher.BodyColors[i]);
         }
         var startButton = UiBuilder.CreateButton("Começar", lobbyPanel);
         var leaveButton = UiBuilder.CreateButton("Sair da sala", lobbyPanel);
-        var lobbyInfoText = UiBuilder.CreateText("Info", lobbyPanel, "", 22);
-        lobbyInfoText.color = Color.gray;
+        var lobbyInfoText = UiBuilder.CreateText("Info", lobbyPanel, "", Theme.NoteSize);
+        lobbyInfoText.color = Theme.MutedColor;
         UiBuilder.SetHeight(lobbyInfoText.gameObject, 70);
 
         // --- Painel Opções (o mesmo usado na pausa) ---

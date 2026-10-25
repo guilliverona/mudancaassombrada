@@ -1,19 +1,19 @@
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.UI;
+using static Theme; // cores e tamanhos do padrão visual: escreve "TextColor" em vez de "Theme.TextColor"
 
 // Peças de interface (uGUI) usadas pelos construtores de cena: Canvas, painéis, botões...
 // Fica separado para o Menu e a pausa da fase terem exatamente o mesmo visual.
 public static class UiBuilder
 {
-    static Font font;
+    static Font font => GameFonts.Body; // sem guardar aqui: o GameFonts já cuida disso
     static DefaultControls.Resources resources;
 
-    // Fonte e imagens padrão da Unity, as mesmas do menu GameObject > UI.
+    // Fonte do jogo (GameFonts) e imagens padrão da Unity, as mesmas do menu GameObject > UI.
     static void LoadDefaults()
     {
-        if (font != null) return;
-        font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        if (resources.standard != null) return;
         resources = new DefaultControls.Resources
         {
             standard = AssetDatabase.GetBuiltinExtraResource<Sprite>("UI/Skin/UISprite.psd"),
@@ -48,17 +48,23 @@ public static class UiBuilder
         return canvasGo.transform;
     }
 
-    // Um painel: caixa escura no meio da tela que empilha os filhos na vertical.
-    public static Transform CreatePanel(string name, Transform parent, float height = 820)
+    // Um painel: empilha os filhos na vertical no meio da tela.
+    // Com fundo, ganha uma caixa escura translúcida (para ler textos por cima da imagem);
+    // sem fundo, os botões ficam "soltos" na tela, como no menu inicial.
+    public static Transform CreatePanel(string name, Transform parent, float height = 820, float width = 760, bool background = true)
     {
         LoadDefaults();
         var go = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(VerticalLayoutGroup));
         go.transform.SetParent(parent, false);
         var rect = go.GetComponent<RectTransform>();
         rect.anchorMin = rect.anchorMax = new Vector2(0.5f, 0.5f);
-        rect.anchoredPosition = new Vector2(0, -60);
-        rect.sizeDelta = new Vector2(760, height);
-        go.GetComponent<Image>().color = new Color(0.1f, 0.1f, 0.15f, 0.9f);
+        // Um pouco abaixo do centro: o painel mais alto (820) vai de y=240 a y=1060 (tela 1080),
+        // deixando o espaço de cima livre para o título do menu.
+        rect.anchoredPosition = new Vector2(0, -110);
+        rect.sizeDelta = new Vector2(width, height);
+        var image = go.GetComponent<Image>();
+        image.color = background ? PanelColor : Color.clear;
+        image.raycastTarget = background;
 
         // VerticalLayoutGroup: organiza os filhos um embaixo do outro, sem precisar posicionar cada um.
         var layout = go.GetComponent<VerticalLayoutGroup>();
@@ -79,10 +85,27 @@ public static class UiBuilder
         go.transform.SetParent(parent, false);
         var text = go.GetComponentInChildren<Text>();
         text.text = label;
-        text.font = font;
-        text.fontSize = 30;
-        SetHeight(go, 64);
-        return go.GetComponent<Button>();
+        // Bebas Neue (a mesma do título): só tem maiúsculas, então "Jogar" vira "JOGAR" sozinho.
+        text.font = GameFonts.Title;
+        text.fontSize = ButtonSize;
+        text.color = TextColor;
+        SetHeight(go, 60);
+
+        // Fundo quase transparente com borda fina. A imagem fica branca e quem dá a cor é o
+        // ColorBlock: cada estado (normal, mouse em cima, apertado...) multiplica o branco pela sua cor.
+        var button = go.GetComponent<Button>();
+        go.GetComponent<Image>().color = Color.white;
+        var colors = button.colors;
+        colors.normalColor = new Color(0.05f, 0.06f, 0.065f, 0.55f);
+        colors.highlightedColor = new Color(0.12f, 0.14f, 0.15f, 0.8f);
+        colors.selectedColor = colors.highlightedColor;
+        colors.pressedColor = new Color(0.2f, 0.23f, 0.24f, 0.9f);
+        colors.disabledColor = new Color(0.05f, 0.06f, 0.065f, 0.3f);
+        colors.fadeDuration = FadeFast;
+        button.colors = colors;
+        go.AddComponent<Outline>().effectColor = BorderColor;
+        go.AddComponent<ButtonHover>(); // clareia o texto com o mouse em cima
+        return button;
     }
 
     public static Text CreateText(string name, Transform parent, string content, int size, FontStyle style = FontStyle.Normal)
@@ -96,7 +119,7 @@ public static class UiBuilder
         text.fontSize = size;
         text.fontStyle = style;
         text.alignment = TextAnchor.MiddleCenter;
-        text.color = Color.white;
+        text.color = TextColor;
         text.supportRichText = true; // permite <color> e <b> no texto (usado na lista de jogadores)
         SetHeight(go, size + 16);
         return text;
@@ -108,8 +131,16 @@ public static class UiBuilder
         var go = DefaultControls.CreateInputField(resources);
         go.transform.SetParent(parent, false);
         var input = go.GetComponent<InputField>();
-        foreach (var t in go.GetComponentsInChildren<Text>()) { t.font = font; t.fontSize = 26; }
-        ((Text)input.placeholder).text = placeholder;
+        foreach (var t in go.GetComponentsInChildren<Text>()) { t.font = font; t.fontSize = BodySize; }
+        go.GetComponent<Image>().color = FieldColor;
+        go.AddComponent<Outline>().effectColor = BorderColor;
+        input.textComponent.color = HighlightColor;
+        input.caretColor = HighlightColor;
+        input.customCaretColor = true;
+        input.selectionColor = WithAlpha(BorderColor, 0.4f);
+        var placeholderText = (Text)input.placeholder;
+        placeholderText.text = placeholder;
+        placeholderText.color = WithAlpha(TextColor, 0.35f);
         SetHeight(go, 56);
         return input;
     }
@@ -122,6 +153,10 @@ public static class UiBuilder
         var slider = go.GetComponent<Slider>();
         slider.minValue = min;
         slider.maxValue = max;
+        // Peças criadas pelo DefaultControls: Background (trilho), Fill (parte cheia) e Handle (bolinha).
+        go.transform.Find("Background").GetComponent<Image>().color = FieldColor;
+        go.transform.Find("Fill Area/Fill").GetComponent<Image>().color = TextColor * 0.6f;
+        go.transform.Find("Handle Slide Area/Handle").GetComponent<Image>().color = HighlightColor;
         SetHeight(go, 36);
         return slider;
     }
@@ -134,8 +169,10 @@ public static class UiBuilder
         var text = go.GetComponentInChildren<Text>();
         text.text = label;
         text.font = font;
-        text.fontSize = 26;
-        text.color = Color.white;
+        text.fontSize = BodySize;
+        text.color = TextColor;
+        go.transform.Find("Background").GetComponent<Image>().color = FieldColor;
+        go.transform.Find("Background/Checkmark").GetComponent<Image>().color = HighlightColor;
         SetHeight(go, 40);
         return go.GetComponent<Toggle>();
     }
@@ -144,9 +181,9 @@ public static class UiBuilder
     public static OptionsPanel CreateOptionsPanel(Transform parent)
     {
         var panel = CreatePanel("Painel Opções", parent, 560);
-        var sensitivityText = CreateText("Sensibilidade (texto)", panel, "", 26);
+        var sensitivityText = CreateText("Sensibilidade (texto)", panel, "", BodySize);
         var sensitivitySlider = CreateSlider(panel, 0.2f, 3f);
-        var volumeText = CreateText("Volume (texto)", panel, "", 26);
+        var volumeText = CreateText("Volume (texto)", panel, "", BodySize);
         var volumeSlider = CreateSlider(panel, 0f, 1f);
         var fullscreenToggle = CreateToggle(panel, "Tela cheia");
         var backButton = CreateButton("Voltar", panel);

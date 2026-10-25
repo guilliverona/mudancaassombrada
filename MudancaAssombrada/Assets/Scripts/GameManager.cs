@@ -113,6 +113,7 @@ public class GameManager : NetworkBehaviour
     // zero configuração. Depois trocamos por uma UI de verdade.
     void OnGUI()
     {
+        GameFonts.ApplyToGUI();
         if (!IsSpawned) return;
 
         // HUD: cronômetro e móveis entregues, no canto superior esquerdo.

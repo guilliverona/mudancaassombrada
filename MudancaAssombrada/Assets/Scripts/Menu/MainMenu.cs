@@ -165,7 +165,7 @@ public class MainMenu : MonoBehaviour
 
         startButton.gameObject.SetActive(net.IsHost); // só o host começa a partida
         lobbyInfoText.text = net.IsHost
-            ? "Passe seu IP do Radmin para os amigos. Quando todos entrarem, clique em Começar."
+            ? "Quando todos entrarem, clique em Começar."
             : "Esperando o host começar a partida...";
     }
 

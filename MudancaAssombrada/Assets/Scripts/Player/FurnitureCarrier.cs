@@ -142,6 +142,7 @@ public class FurnitureCarrier : MonoBehaviour
     // Como este script só fica ligado no MEU boneco, a dica só aparece na minha tela.
     void OnGUI()
     {
+        GameFonts.ApplyToGUI();
         float cx = Screen.width / 2f, cy = Screen.height / 2f;
 
         // Mira: um pontinho no centro, para saber exatamente para onde o raio aponta.

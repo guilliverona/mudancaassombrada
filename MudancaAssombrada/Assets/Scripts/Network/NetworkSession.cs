@@ -130,7 +130,7 @@ public class NetworkSession : MonoBehaviour
         string reason;
         if (!string.IsNullOrEmpty(net.DisconnectReason)) reason = net.DisconnectReason;
         else if (wasConnected) reason = "A conexão com o host caiu (ou ele saiu da partida).";
-        else reason = "Não foi possível falar com o host. Confira o IP e se o Radmin está ligado.";
+        else reason = "Não foi possível falar com o host. Confira o IP.";
         Fail(reason);
     }
 

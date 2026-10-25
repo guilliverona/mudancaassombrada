@@ -155,6 +155,7 @@ public class PlayerMovement : MonoBehaviour
     // Barra de estamina no canto inferior esquerdo (só aparece quando não está cheia).
     void OnGUI()
     {
+        GameFonts.ApplyToGUI();
         if (stamina >= maxStamina) return;
 
         const float width = 200f, height = 12f;
