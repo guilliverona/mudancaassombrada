@@ -5,6 +5,7 @@
 > Toda decoração precisa de um motivo para existir.
 
 Como o código está organizado: [ARQUITETURA.md](ARQUITETURA.md).
+Personagens, fantasmas, cenários e pipeline de modelos 3D: [ART_BIBLE.md](ART_BIBLE.md).
 
 Os valores (cores, tamanhos, durações) ficam no código em
 [`Assets/Scripts/Theme.cs`](MudancaAssombrada/Assets/Scripts/Theme.cs).
@@ -30,8 +31,8 @@ Poucas cores, cada uma com um papel fixo.
 | **Perigo** | `DangerColor` | fantasma, erro, tempo acabando |
 | **Amanhecer** | `DawnColor` | progresso, vitória, caminhão |
 
-**Personagens:** Cida (roxo), Tiago (amarelo), Marcelo (verde), em
-`CharacterSwitcher.BodyColors`. Na interface, só em detalhes (nome, ícone,
+**Personagens:** Cida (roxo), Tiago (amarelo), Marcelo (verde), no campo **Cor** da
+ficha de cada um (`CharacterDefinition.color`, em `Assets/Data/Personagens`). Na interface, só em detalhes (nome, ícone,
 contorno), sempre "domadas" com `Theme.Muted(cor)`. Nunca em áreas grandes.
 
 **Regra de ouro:** cor viva só quando significa algo. Se tudo é cinza,
@@ -97,7 +98,11 @@ Nada de "plim" alegre.
 
 ## 7. Mundo 3D
 
-- Low-poly, cores chapadas, pouca textura (como o boneco de blocos).
+Personagens, fantasmas, cenários e as regras de modelagem estão no [ART_BIBLE.md](ART_BIBLE.md).
+
+- Low-poly, cores chapadas, pouca textura (como o boneco de blocos e os blockouts atuais).
+  **Em aberto:** o Art Bible propõe material estilizado com PBR e rampa de luz; o time
+  decide qual dos dois vale para a arte final (ver [ART_BIBLE.md](ART_BIBLE.md#4-decisões-em-aberto)).
 - Iluminação fria e azulada à noite, ficando âmbar (`DawnColor`) conforme o
   amanhecer chega: a própria luz é o relógio.
 - Neblina escura para esconder o fundo (e economizar modelagem).

@@ -2,6 +2,7 @@
 
 Como o código está organizado e **onde mexer para adicionar cada tipo de coisa**.
 O visual (cores, fontes, tamanhos) está em [DESIGN.md](DESIGN.md).
+Os modelos 3D (personagens, fantasmas, cenários, pipeline Blender → Unity) estão em [ART_BIBLE.md](ART_BIBLE.md).
 
 ---
 
