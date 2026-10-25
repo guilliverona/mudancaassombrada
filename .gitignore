@@ -23,3 +23,6 @@
 # Lixo do sistema
 .DS_Store
 Thumbs.db
+
+# Cópias de segurança automáticas do Blender
+*.blend1
