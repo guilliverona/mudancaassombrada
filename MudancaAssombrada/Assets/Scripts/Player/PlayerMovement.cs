@@ -94,7 +94,8 @@ public class PlayerMovement : MonoBehaviour
     void Look()
     {
         // Mouse.current.delta = quanto o mouse se moveu neste frame.
-        Vector2 delta = Mouse.current.delta.ReadValue() * mouseSensitivity;
+        // A sensibilidade escolhida no menu de Opções multiplica a do Inspector.
+        Vector2 delta = Mouse.current.delta.ReadValue() * mouseSensitivity * GameSettings.MouseSensitivity;
 
         // Girar para os lados: gira o corpo inteiro no eixo Y.
         transform.Rotate(Vector3.up * delta.x);

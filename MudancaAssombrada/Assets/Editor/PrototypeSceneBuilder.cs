@@ -13,7 +13,11 @@ public static class PrototypeSceneBuilder
     {
         // Pergunta se quer salvar a cena atual antes de trocar.
         if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
+        BuildScene();
+    }
 
+    internal static void BuildScene()
+    {
         // Cena nova já com Main Camera e Directional Light.
         var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
@@ -106,34 +110,43 @@ public static class PrototypeSceneBuilder
         var gameManager = gmGo.AddComponent<GameManager>();
         SetReference(gameManager, "truck", truck);
 
-        // --- Rede: o NetworkManager é o "cérebro" da conexão ---
-        var netGo = new GameObject("NetworkManager");
-        var net = netGo.AddComponent<Unity.Netcode.NetworkManager>();
-        // O Transport é o "carteiro": quem de fato manda os pacotes pela rede.
-        var transport = netGo.AddComponent<Unity.Netcode.Transports.UTP.UnityTransport>();
-        if (net.NetworkConfig == null) net.NetworkConfig = new Unity.Netcode.NetworkConfig();
-        net.NetworkConfig.NetworkTransport = transport;
-        net.NetworkConfig.PlayerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath);
-        netGo.AddComponent<ConnectionMenu>();
+        // --- Jogadores: nascem quando a fase termina de carregar ---
+        // O NetworkManager NÃO fica nesta cena: ele vem do menu (e sobrevive à troca de cena).
+        var spawner = new GameObject("PlayerSpawner").AddComponent<PlayerSpawner>();
+        SetReference(spawner, "playerPrefab", AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath));
 
         EditorSceneManager.SaveScene(scene, "Assets/Scenes/Prototipo1.unity");
 
-        // Objetos de rede da cena precisam de um "RG" (GlobalObjectIdHash) para o host e os
-        // clientes saberem que o fantasma de um é o MESMO fantasma do outro. O Netcode calcula
-        // esse número a partir do arquivo da cena, então só funciona DEPOIS do primeiro save.
-        // O método que calcula (OnValidate) é interno do Netcode; chamamos por "reflexão",
-        // um jeito do C# de acessar métodos que normalmente não estariam disponíveis.
+        FixNetworkObjectIds(scene); // gera os "RGs" dos objetos de rede e salva de novo
+
+        UpdateBuildSettings();
+        Debug.Log("Cena Protótipo 1 criada! Para jogar, abra a cena Menu e aperte Play.");
+    }
+
+    // Trocar de cena só funciona com cenas listadas na Build Settings. O Menu é a primeira
+    // (índice 0): é a cena que abre quando alguém roda o jogo exportado.
+    internal static void UpdateBuildSettings()
+    {
+        EditorBuildSettings.scenes = new[]
+        {
+            new EditorBuildSettingsScene(MenuSceneBuilder.ScenePath, true),
+            new EditorBuildSettingsScene("Assets/Scenes/Prototipo1.unity", true),
+        };
+    }
+
+    // Objetos de rede da cena precisam de um "RG" (GlobalObjectIdHash) para o host e os
+    // clientes saberem que o fantasma de um é o MESMO fantasma do outro. O Netcode calcula
+    // esse número a partir do arquivo da cena, então só funciona DEPOIS do primeiro save.
+    // O método que calcula (OnValidate) é interno do Netcode; chamamos por "reflexão",
+    // um jeito do C# de acessar métodos que normalmente não estariam disponíveis.
+    internal static void FixNetworkObjectIds(UnityEngine.SceneManagement.Scene scene)
+    {
         var validate = typeof(Unity.Netcode.NetworkObject).GetMethod("OnValidate",
             System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
         foreach (var netObj in Object.FindObjectsByType<Unity.Netcode.NetworkObject>())
             validate.Invoke(netObj, null);
         EditorSceneManager.MarkSceneDirty(scene);
-        EditorSceneManager.SaveScene(scene); // salva de novo, agora com os números certos
-
-        // Reiniciar a fase usa SceneManager.LoadScene, que só funciona com cenas na Build Settings.
-        EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene("Assets/Scenes/Prototipo1.unity", true) };
-
-        Debug.Log("Cena Protótipo 1 criada! Aperte Play.");
+        EditorSceneManager.SaveScene(scene);
     }
 
     const string PlayerPrefabPath = "Assets/Prefabs/Player.prefab";
@@ -308,7 +321,7 @@ public static class PrototypeSceneBuilder
         renderer.sharedMaterial = mat;
     }
 
-    static void SetReference(Object target, string field, Object value)
+    internal static void SetReference(Object target, string field, Object value)
     {
         var so = new SerializedObject(target);
         so.FindProperty(field).objectReferenceValue = value;

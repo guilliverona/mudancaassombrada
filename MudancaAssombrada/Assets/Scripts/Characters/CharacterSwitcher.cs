@@ -10,13 +10,13 @@ public class CharacterSwitcher : NetworkBehaviour
     public enum Character { Cida, Tiago, Marcelo }
 
     // Cor do boneco de cada personagem, para todos saberem quem é quem.
-    static readonly Color[] BodyColors =
+    public static readonly Color[] BodyColors =
     {
         new Color(0.6f, 0.4f, 0.9f),  // Cida: roxo
         new Color(1f, 0.8f, 0.2f),    // Tiago: amarelo
         new Color(0.3f, 0.75f, 0.35f) // Marcelo: verde
     };
-    static readonly string[] Names = { "Dona Cida (cega)", "Tiago (surdo)", "Marcelo (mudo)" };
+    public static readonly string[] Names = { "Dona Cida (cega)", "Tiago (surdo)", "Marcelo (mudo)" };
     static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 
     // NetworkVariable = uma variável que a rede mantém IGUAL em todos os computadores.
@@ -50,8 +50,12 @@ public class CharacterSwitcher : NetworkBehaviour
         // Avise-me quando o valor mudar (em qualquer computador).
         character.OnValueChanged += OnCharacterChanged;
 
-        // O host escolhe o primeiro personagem livre para quem acabou de entrar.
-        if (IsServer) character.Value = FirstFreeCharacter();
+        // O host usa o personagem que o jogador escolheu na sala de espera.
+        // (Se não houver escolha, por exemplo testando direto na fase, pega o primeiro livre.)
+        if (IsServer)
+            character.Value = LobbyManager.ChosenCharacters.TryGetValue(OwnerClientId, out var chosen)
+                ? chosen
+                : FirstFreeCharacter();
 
         Apply(character.Value);
     }
@@ -133,7 +137,8 @@ public class CharacterSwitcher : NetworkBehaviour
 
         // Tiago é surdo: zera o volume de TODO o jogo. O AudioListener é o "ouvido"
         // da cena (fica na câmera), e AudioListener.volume é o volume geral dele.
-        AudioListener.volume = tiago ? 0f : 1f;
+        // Para os outros, vale o volume escolhido no menu de Opções.
+        AudioListener.volume = tiago ? 0f : GameSettings.Volume;
     }
 
     void OnGUI()
