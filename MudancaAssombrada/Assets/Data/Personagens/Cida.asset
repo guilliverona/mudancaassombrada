@@ -16,6 +16,8 @@ MonoBehaviour:
   condition: cega
   color: {r: 0.6, g: 0.4, b: 0.9, a: 1}
   description: Enxerga pelo eco dos sons. A bengala cria um eco grande.
+  model: {fileID: 919132149155446097, guid: 9d2f111b09833fb42a3ec93b77f9a42f, type: 3}
+  eyeHeight: 1.09
   speed: 1
   strength: 1
   carryNoise: 1

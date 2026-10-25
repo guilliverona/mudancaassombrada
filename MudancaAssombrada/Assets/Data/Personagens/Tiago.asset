@@ -16,6 +16,8 @@ MonoBehaviour:
   condition: surdo
   color: {r: 1, g: 0.8, b: 0.2, a: 1}
   description: "N\xE3o ouve nada, mas v\xEA as vibra\xE7\xF5es no ch\xE3o."
+  model: {fileID: 919132149155446097, guid: e9d998dc417856940bee5a44fb7fc856, type: 3}
+  eyeHeight: 1.52
   speed: 1
   strength: 1
   carryNoise: 1
