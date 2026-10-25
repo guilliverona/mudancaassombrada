@@ -40,6 +40,9 @@ namespace MudancaAssombrada
         CameraClearFlags originalClearFlags;
         bool blind;
 
+        // A tela deste computador está no "modo cego" (só o eco)?
+        public bool IsBlind => blind;
+
         // Shader.PropertyToID transforma o nome em número uma vez só (mais rápido que usar texto todo frame).
         static readonly int PulsesId = Shader.PropertyToID("_EchoPulses");
         static readonly int SettingsId = Shader.PropertyToID("_EchoSettings");

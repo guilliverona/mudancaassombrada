@@ -97,6 +97,15 @@ namespace MudancaAssombrada.Editor
             // Os jogadores nascem onde o PlayerSpawner está.
             EditorTools.Place(LevelPrefabsBuilder.Load(LevelPrefabsBuilder.SpawnerPath), new Vector3(0, 1f, -6f));
 
+            // --- Noite ---
+            // A "Directional Light" que vem com toda cena nova vira a lua (e depois o sol nascendo).
+            // RenderSettings.sun = a luz principal da cena (Window > Rendering > Lighting > Sun Source).
+            var light = Object.FindFirstObjectByType<Light>();
+            light.name = "Lua / Sol";
+            light.shadows = LightShadows.Soft;
+            RenderSettings.sun = light;
+            EditorTools.Place(LevelPrefabsBuilder.Load(LevelPrefabsBuilder.NightPath), Vector3.zero);
+
             // --- Interface ---
             UiBuilder.CreateEventSystem();
             EditorTools.Place(LevelPrefabsBuilder.Load(LevelPrefabsBuilder.HudPath), Vector3.zero);

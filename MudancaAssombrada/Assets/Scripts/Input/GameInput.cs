@@ -13,21 +13,41 @@ namespace MudancaAssombrada
     // Uso: GameInput.Interact.WasPressedThisFrame(), GameInput.Move.ReadValue<Vector2>()...
     public static class GameInput
     {
-        public static readonly InputAction Move;
-        public static readonly InputAction Look;
-        public static readonly InputAction Interact;
-        public static readonly InputAction Crouch;
-        public static readonly InputAction Sprint;
-        public static readonly InputAction Tap;      // bengala da Cida
-        public static readonly InputAction Whistle;  // apito do Marcelo
-        public static readonly InputAction Pause;
-        public static readonly InputAction Restart;
-        public static readonly InputAction[] SelectCharacter; // teclas 1, 2, 3... (troca de personagem para testes)
+        public static InputAction Move { get; private set; }
+        public static InputAction Look { get; private set; }
+        public static InputAction Interact { get; private set; }
+        public static InputAction Crouch { get; private set; }
+        public static InputAction Sprint { get; private set; }
+        public static InputAction Tap { get; private set; }      // bengala da Cida
+        public static InputAction Whistle { get; private set; }  // apito do Marcelo
+        public static InputAction Pause { get; private set; }
+        public static InputAction Restart { get; private set; }
+        public static InputAction[] SelectCharacter { get; private set; } // teclas 1, 2, 3... (troca de personagem para testes)
+
+        static InputActionMap map;
 
         // Construtor "static": roda sozinho uma vez, na primeira vez que alguém usa o GameInput.
-        static GameInput()
+        static GameInput() => Build();
+
+        // CUIDADO: o projeto usa o "Play rápido" do editor (Enter Play Mode Options, sem recarregar
+        // os scripts). Nesse modo o construtor static NÃO roda de novo no próximo Play, e o
+        // Input System desliga todos os controles quando o Play termina. Resultado: no 2º Play,
+        // nada respondia. Por isso recriamos os controles no começo de TODO Play.
+        // BeforeSceneLoad: depois de o Input System iniciar, mas antes de qualquer script da cena rodar.
+        [UnityEngine.RuntimeInitializeOnLoadMethod(UnityEngine.RuntimeInitializeLoadType.BeforeSceneLoad)]
+        static void RebuildOnPlay()
         {
-            var map = new InputActionMap("Jogo");
+            if (map != null)
+            {
+                map.Disable();
+                map.Dispose(); // libera os controles antigos
+            }
+            Build();
+        }
+
+        static void Build()
+        {
+            map = new InputActionMap("Jogo");
 
             Move = map.AddAction("Mover", InputActionType.Value);
             // Composite = várias teclas formando UM valor: W/S/A/D viram um Vector2 (x, y).

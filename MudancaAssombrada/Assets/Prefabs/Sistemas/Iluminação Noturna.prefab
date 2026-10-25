@@ -1,0 +1,59 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &8606502153676863843
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 9214429627832677848}
+  - component: {fileID: 5965388849740524182}
+  m_Layer: 0
+  m_Name: "Ilumina\xE7\xE3o Noturna"
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &9214429627832677848
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8606502153676863843}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &5965388849740524182
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8606502153676863843}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b03cbc7186755984990a94435da61ead, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.NightLighting
+  moonColor: {r: 0.55, g: 0.65, b: 1, a: 1}
+  moonIntensity: 0.25
+  nightAmbient: {r: 0.07, g: 0.09, b: 0.15, a: 1}
+  nightSky: {r: 0.01, g: 0.015, b: 0.04, a: 1}
+  moonAngles: {x: 55, y: -30, z: 0}
+  sunColor: {r: 1, g: 0.72, b: 0.45, a: 1}
+  sunIntensity: 0.9
+  dawnAmbient: {r: 0.35, g: 0.3, b: 0.3, a: 1}
+  dawnSky: {r: 0.85, g: 0.6, b: 0.45, a: 1}
+  sunAngles: {x: 6, y: 90, z: 0}
+  dawnStart: 0.75
+  nightFogDensity: 0.06
+  dawnFogDensity: 0.02

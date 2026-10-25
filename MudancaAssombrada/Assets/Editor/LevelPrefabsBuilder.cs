@@ -36,6 +36,7 @@ namespace MudancaAssombrada.Editor
         public const string SoundRelayPath = "Assets/Prefabs/Sistemas/SoundRelay.prefab";
         public const string GameManagerPath = "Assets/Prefabs/Sistemas/GameManager.prefab";
         public const string SpawnerPath = "Assets/Prefabs/Sistemas/PlayerSpawner.prefab";
+        public const string NightPath = "Assets/Prefabs/Sistemas/Iluminação Noturna.prefab";
         public const string HudPath = "Assets/Prefabs/Interface/HUD.prefab";
         public const string PausePath = "Assets/Prefabs/Interface/Pausa.prefab";
 
@@ -70,6 +71,8 @@ namespace MudancaAssombrada.Editor
             Build(SoundRelayPath, recreateAll, BuildSoundRelay);
             Build(GameManagerPath, recreateAll, BuildGameManager);
             Build(SpawnerPath, recreateAll, BuildSpawner);
+            // Noite que vira amanhecer. As cores ficam no Inspector do prefab.
+            Build(NightPath, recreateAll, () => new GameObject("Iluminação Noturna", typeof(NightLighting)));
             Build(HudPath, recreate: true, HudBuilder.Build);
             Build(PausePath, recreate: true, BuildPauseMenu);
             AssetDatabase.SaveAssets();
@@ -255,6 +258,9 @@ namespace MudancaAssombrada.Editor
             camGo.transform.localPosition = new Vector3(0, 0.6f, 0);
             var cam = camGo.GetComponent<Camera>();
             cam.nearClipPlane = 0.05f;
+            // Nasce com fundo escuro (e não com o céu azul padrão): quem pinta o céu é a NightLighting.
+            cam.clearFlags = CameraClearFlags.SolidColor;
+            cam.backgroundColor = Color.black;
 
             var movement = player.AddComponent<PlayerMovement>(); // adiciona o CharacterController junto
             var carrier = player.AddComponent<FurnitureCarrier>();

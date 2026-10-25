@@ -42,6 +42,8 @@ namespace MudancaAssombrada
         public float NightDuration => Chapter != null ? Chapter.nightDuration : fallbackNightDuration;
         public bool HasClock => NightDuration > 0;
         public float TimeLeft => timeLeft.Value;
+        // 0 = começo da noite, 1 = amanheceu. Sem relógio: sempre 0 (noite o tempo todo).
+        public float NightProgress => HasClock ? 1f - Mathf.Clamp01(timeLeft.Value / NightDuration) : 0f;
         public MatchOutcome Outcome => outcome.Value;
         public int Stars => stars.Value; // 1 a 5, só quando Outcome == Won
         public string ObjectiveText => objectiveText.Value.ToString();
