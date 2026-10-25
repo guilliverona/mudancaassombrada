@@ -1,0 +1,21 @@
+{
+    "name": "MudancaAssombrada",
+    "rootNamespace": "MudancaAssombrada",
+    "references": [
+        "Unity.Netcode.Runtime",
+        "Unity.Networking.Transport",
+        "Unity.Collections",
+        "Unity.InputSystem",
+        "Unity.AI.Navigation",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

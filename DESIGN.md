@@ -4,6 +4,8 @@
 > Na dúvida, escolha a opção mais escura, mais quieta e mais simples.
 > Toda decoração precisa de um motivo para existir.
 
+Como o código está organizado: [ARQUITETURA.md](ARQUITETURA.md).
+
 Os valores (cores, tamanhos, durações) ficam no código em
 [`Assets/Scripts/Theme.cs`](MudancaAssombrada/Assets/Scripts/Theme.cs).
 Este documento explica **as regras**; o `Theme` guarda **os números**.
@@ -57,8 +59,10 @@ Tamanhos (tela 1920×1080). **Nada fora desta lista:**
 
 ## 3. Componentes
 
-Toda interface sai do [`UiBuilder`](MudancaAssombrada/Assets/Editor/UiBuilder.cs).
+Toda interface sai do [`UiBuilder`](MudancaAssombrada/Assets/Editor/UiBuilder.cs)
+(a HUD da partida é montada pelo `HudBuilder` com as mesmas peças).
 **Nunca crie UI "na mão"** fora dele: se faltar uma peça, adicione ela lá.
+Nada de `OnGUI`: ele não segue o `Theme`.
 
 - **Botão:** retângulo quase transparente, borda fina, texto em maiúsculas.
   No hover só **clareia** (fundo e texto). Nada cresce, brilha ou pisca.

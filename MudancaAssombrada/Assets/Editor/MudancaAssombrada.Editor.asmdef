@@ -1,0 +1,24 @@
+{
+    "name": "MudancaAssombrada.Editor",
+    "rootNamespace": "MudancaAssombrada.Editor",
+    "references": [
+        "MudancaAssombrada",
+        "Unity.Netcode.Runtime",
+        "Unity.Networking.Transport",
+        "Unity.Collections",
+        "Unity.InputSystem",
+        "Unity.AI.Navigation",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [
+        "Editor"
+    ],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

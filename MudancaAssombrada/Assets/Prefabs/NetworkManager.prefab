@@ -118,4 +118,4 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 26d573d2f48da924bbc8971b3849a45e, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::NetworkSession
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.NetworkSession

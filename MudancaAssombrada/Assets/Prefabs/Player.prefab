@@ -383,7 +383,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 14713d2edd3681948b9675c7de39bec8, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::DollWalk
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.DollWalk
   leftArm: {fileID: 2695841290734989076}
   rightArm: {fileID: 7333078163695809413}
   leftLeg: {fileID: 7382136145007609163}
@@ -821,7 +821,7 @@ Transform:
   m_GameObject: {fileID: 7645197041336742590}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 1, z: -6}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
@@ -865,7 +865,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 890148d1deff07043bfde50ee5aa2be2, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::PlayerMovement
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.PlayerMovement
   walkSpeed: 4
   gravity: -20
   cameraPivot: {fileID: 8801395347483215849}
@@ -889,7 +889,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ee172b8b8b3d5624d947d50aa0931495, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::FurnitureCarrier
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.FurnitureCarrier
   playerCamera: {fileID: 2576609307100874873}
   reach: 2.5
   holdDistance: 1.8
@@ -906,7 +906,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b8af8ace6ca16eb4bb6b1eddbdadce55, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CaneTapper
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.CaneTapper
   tapRange: 12
   tapCooldown: 0.6
   stepDistance: 1.2
@@ -924,7 +924,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 03e363ed6a75a724e9918bf0ea03dba4, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::VibrationVision
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.VibrationVision
   ringLifetime: 2.5
   weakColor: {r: 1, g: 0.85, b: 0.3, a: 1}
   strongColor: {r: 1, g: 0.2, b: 0.3, a: 1}
@@ -939,7 +939,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 6ba210b8fd129a54fa998c8ba30f940d, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::Whistle
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.Whistle
   range: 15
   cooldown: 4
 --- !u!114 &5501792552295832919
@@ -953,7 +953,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 09bacafb938df6a46ad166af490b41df, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CharacterSwitcher
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.CharacterSwitcher
   ShowTopMostFoldoutHeaderGroup: 1
   body:
   - {fileID: 127555737004837852}
@@ -991,16 +991,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 0
+  GlobalObjectIdHash: 4273873095
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 0
+  m_InScenePlaced: 1
   ActiveSceneSynchronization: 0
-  SceneMigrationSynchronization: 1
+  SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
   DontDestroyWithOwner: 0
   AutoObjectParentSync: 1
@@ -1063,7 +1063,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 936001182b685594f9f8090855d6a943, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::NetworkPlayer
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.NetworkPlayer
   ShowTopMostFoldoutHeaderGroup: 1
   ownerOnly:
   - {fileID: 1451254956593404263}
