@@ -69,12 +69,16 @@ namespace MudancaAssombrada.Editor
         }
 
         // Salva um objeto da cena como prefab (arquivo) e apaga a cópia da cena.
+        // Se o prefab já existia IGUAL (só os números internos mudariam), o arquivo antigo é
+        // mantido: assim recriar a HUD, a pausa ou o Player não "suja" o Git (ver StableAssets).
         public static GameObject SavePrefab(GameObject go, string path)
         {
             EnsureFolder(path.Substring(0, path.LastIndexOf('/')));
-            var prefab = PrefabUtility.SaveAsPrefabAsset(go, path);
+            string before = StableAssets.Snapshot(path);
+            PrefabUtility.SaveAsPrefabAsset(go, path);
             Object.DestroyImmediate(go);
-            return prefab;
+            StableAssets.RestoreIfSame(path, before);
+            return AssetDatabase.LoadAssetAtPath<GameObject>(path);
         }
 
         // Coloca uma cópia de um prefab na cena, LIGADA a ele (mudar o prefab muda a cópia).

@@ -40,6 +40,9 @@ namespace MudancaAssombrada.Editor
 
         public static void BuildScene()
         {
+            // O Menu é recriado do zero: guardamos o arquivo atual para devolver se nada mudou
+            // de verdade (só os números internos). Ver StableAssets.
+            string before = StableAssets.Snapshot(ScenePath);
             var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
             Camera.main.clearFlags = CameraClearFlags.SolidColor;
             Camera.main.backgroundColor = Theme.BackgroundEdge;
@@ -169,6 +172,14 @@ namespace MudancaAssombrada.Editor
             EditorSceneManager.SaveScene(scene, ScenePath);
             EditorTools.FixNetworkObjectIds(scene); // o LobbyManager é um objeto de rede da cena
             EditorTools.UpdateBuildSettings();
+
+            if (StableAssets.RestoreIfSame(ScenePath, before))
+            {
+                // A cena aberta é a recém-criada (com números novos): reabre a do disco, que é a antiga.
+                EditorSceneManager.OpenScene(ScenePath);
+                Debug.Log("Cena Menu conferida: nada mudou, o arquivo ficou como estava.");
+                return;
+            }
             Debug.Log("Cena Menu criada! Aperte Play nela para jogar.");
         }
 
@@ -197,9 +208,7 @@ namespace MudancaAssombrada.Editor
 
             go.AddComponent<NetworkSession>();
 
-            var prefab = PrefabUtility.SaveAsPrefabAsset(go, NetworkManagerPrefabPath);
-            Object.DestroyImmediate(go);
-            return prefab;
+            return EditorTools.SavePrefab(go, NetworkManagerPrefabPath); // não regrava se nada mudou
         }
     }
 }

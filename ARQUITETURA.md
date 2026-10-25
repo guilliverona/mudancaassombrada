@@ -201,6 +201,11 @@ leia na `Hud`. Crie a peça visual no `HudBuilder` (ou direto no prefab HUD).
 | Recriar Todos os Prefabs | volta todos os prefabs ao original | **sim** (pergunta antes) |
 | Apagar Progresso (save) | zera capítulos concluídos, dinheiro e marcadores | **sim** (pergunta antes) |
 
+**Rodar os menus não "suja" o Git.** Recriar o Menu, a HUD, a pausa ou o Player do zero faz a
+Unity sortear números internos novos (fileID), e o arquivo inteiro pareceria mudado. O
+`StableAssets` compara o arquivo novo com o antigo ignorando esses números e, se nada mudou de
+verdade, devolve o arquivo antigo. Prefab novo de construtor: salve com `EditorTools.SavePrefab`.
+
 ## Testes
 
 - Trocar de personagem com 1/2/3 durante a partida só funciona no editor e em builds de
