@@ -33,14 +33,18 @@ RAIZ = os.path.dirname(os.path.dirname(AQUI))
 CATALOGO = os.path.join(AQUI, "catalogo.json")
 SAIDA = os.path.join(RAIZ, "MudancaAssombrada", "Assets", "Audio")
 
-API_URL = "https://api.elevenlabs.io/v1/sound-generation?output_format=mp3_44100_128"
+API_URL = "https://api.elevenlabs.io/v1/sound-generation?output_format="
+FORMATO_MP3 = "mp3_44100_128"
+FORMATO_PCM = "pcm_44100"  # sem compressão: 16 bits, mono (dá para mexer no volume aqui mesmo)
 MODELO = "eleven_text_to_sound_v2"  # o modelo que aceita "loop"
-TAXA = 44100  # amostras por segundo dos sons procedurais
+TAXA = 44100  # amostras por segundo dos sons procedurais e do PCM
+PICO_MAX_DB = -1.0  # a normalização nunca passa disto (sem estourar)
 
 
 def arquivos_do_som(som):
     """Os caminhos que um som do catálogo gera (1 por variação)."""
-    ext = ".wav" if som.get("procedural") else ".mp3"
+    # Procedurais e normalizados saem em WAV (o volume é ajustado aqui, sem perder qualidade).
+    ext = ".wav" if som.get("procedural") or "normalizar" in som else ".mp3"
     pasta = os.path.join(SAIDA, som["pasta"])
     n = som.get("variacoes", 1)
     if n <= 1:
@@ -51,6 +55,7 @@ def arquivos_do_som(som):
 # ---------------------------------------------------------------- ElevenLabs
 
 def gerar_ia(som, caminho, chave):
+    normalizar = "normalizar" in som
     corpo = json.dumps({
         "text": som["texto"],
         "duration_seconds": som["duracao"],
@@ -58,17 +63,46 @@ def gerar_ia(som, caminho, chave):
         "loop": som.get("loop", False),
         "model_id": MODELO,
     }).encode("utf-8")
-    req = urllib.request.Request(API_URL, data=corpo, method="POST", headers={
-        "xi-api-key": chave, "Content-Type": "application/json", "Accept": "audio/mpeg"})
+    formato = FORMATO_PCM if normalizar else FORMATO_MP3
+    req = urllib.request.Request(API_URL + formato, data=corpo, method="POST", headers={
+        "xi-api-key": chave, "Content-Type": "application/json"})
     try:
         with urllib.request.urlopen(req, timeout=120) as resp:
             dados = resp.read()
     except urllib.error.HTTPError as e:
         # Mostra só a mensagem da API (ela nunca devolve a chave).
         raise RuntimeError(f"HTTP {e.code}: {e.read().decode('utf-8', 'replace')[:300]}") from None
+    if normalizar:
+        return salvar_normalizado(dados, caminho, som["normalizar"])
     with open(caminho, "wb") as f:
         f.write(dados)
     return len(dados)
+
+
+def _db(x):
+    return 20 * math.log10(max(x, 1e-9))
+
+
+def salvar_normalizado(pcm, caminho, alvo_rms_db):
+    """NORMALIZAR: sobe (ou desce) o volume do arquivo inteiro até o RMS (volume médio) chegar em
+    'alvo_rms_db' dBFS, sem deixar o pico passar de PICO_MAX_DB. É o que um estúdio faz antes de
+    mixar: todo arquivo da mesma camada chega no mesmo nível, e a mixagem (volume no catálogo)
+    fica previsível. A IA entrega os ambientes muito baixos (~ -60 dB), por isso existe isto."""
+    n = len(pcm) // 2
+    amostras = struct.unpack(f"<{n}h", pcm[:n * 2])
+    rms = math.sqrt(sum(a * a for a in amostras) / max(n, 1)) / 32768
+    pico = max((abs(a) for a in amostras), default=0) / 32768
+    ganho_db = min(alvo_rms_db - _db(rms), PICO_MAX_DB - _db(pico))  # o que vier primeiro: alvo ou pico
+    ganho = 10 ** (ganho_db / 20)
+    saida = struct.pack(f"<{n}h", *(max(-32767, min(32767, int(a * ganho))) for a in amostras))
+    with wave.open(caminho, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(TAXA)
+        w.writeframes(saida)
+    print(f"      normalizado: RMS {_db(rms):.1f} -> {_db(rms) + ganho_db:.1f} dB (ganho {ganho_db:+.1f} dB, "
+          f"pico {_db(pico) + ganho_db:.1f} dB)")
+    return os.path.getsize(caminho)
 
 
 # ---------------------------------------------------------------- procedurais

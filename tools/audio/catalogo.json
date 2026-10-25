@@ -5,8 +5,19 @@
     "Campos: id (nome do arquivo), pasta (Assets/Audio/<pasta>/), texto (descrição para a IA, em inglês),",
     "duracao (segundos, 0.5 a 30), loop (som que emenda sem corte), variacoes (quantas versões gerar,",
     "para passos e batidas não soarem sempre iguais), influencia (0 a 1: quanto a IA segue o texto à risca),",
-    "procedural (gerado por código no próprio script, sem IA e sem gastar créditos).",
-    "Arquivos: <id>.mp3 quando há 1 variação; <id>_01.mp3, <id>_02.mp3... quando há mais."
+    "procedural (gerado por código no próprio script, sem IA e sem gastar créditos),",
+    "normalizar (dBFS RMS: pede o áudio sem compressão, ajusta o volume do arquivo até esse nível e salva em .wav;",
+    "use quando a IA entrega o som baixo demais, como os ambientes).",
+    "Arquivos: <id>.mp3 quando há 1 variação; <id>_01.mp3, <id>_02.mp3... quando há mais.",
+    "",
+    "MIXAGEM (lista 'mixagem', no fim): como cada som entra no jogo. O menu Atualizar Biblioteca de Sons",
+    "copia estes valores para o Sons.asset (o que estiver aqui vence o Inspector). Campos:",
+    "camada: cama (fundo contínuo), ritmo (o relógio), pista (o que informa: passos, respiração, bengala),",
+    "ameaca (o fantasma agindo: abaixa cama e ritmo enquanto toca), musica, interface.",
+    "volume (0 a 1), alcance (metros até sumir), intervaloMin (segundos: o mesmo som não repete antes disso),",
+    "noTempo (true = espera o contratempo do relógio, o meio entre um tique e um taque; só para sons",
+    "que se repetem sozinhos e não precisam ser instantâneos, como respiração e sussurro).",
+    "Volumes calculados pelo RMS medido de cada arquivo (alvo por camada), não no ouvido."
   ],
   "sons": [
     { "id": "passo_madeira", "pasta": "Passos", "variacoes": 4, "duracao": 0.6, "loop": false, "influencia": 0.6,
@@ -53,12 +64,14 @@
     { "id": "espelho_puxando", "pasta": "Fantasmas", "variacoes": 1, "duracao": 5.0, "loop": true, "influencia": 0.4,
       "texto": "Supernatural pulling drone from a mirror, low hum with glassy shimmer, ominous" },
 
-    { "id": "casa_noite", "pasta": "Ambiente", "variacoes": 1, "duracao": 20.0, "loop": true, "influencia": 0.3,
-      "texto": "Quiet old house at night, distant wood creaks, faint wind, very subtle room tone" },
+    { "id": "casa_noite", "pasta": "Ambiente", "variacoes": 1, "duracao": 20.0, "loop": true, "influencia": 0.5, "normalizar": -30,
+      "texto": "Continuous ambience inside an old wooden mansion at night: steady low room tone, soft wind pressing against the walls, the house settling with slow distant wood creaks, no sudden loud sounds, eerie and constant" },
     { "id": "vento_janelas", "pasta": "Ambiente", "variacoes": 1, "duracao": 15.0, "loop": true, "influencia": 0.3,
       "texto": "Wind howling softly through old window frames, rattling glass now and then" },
-    { "id": "relogio_pendulo", "pasta": "Ambiente", "variacoes": 1, "duracao": 8.0, "loop": true, "influencia": 0.6,
-      "texto": "Old grandfather clock ticking slowly in a quiet room" },
+    { "id": "relogio_tique", "pasta": "Casa", "variacoes": 1, "duracao": 0.5, "loop": false, "influencia": 0.8,
+      "texto": "One single soft tick of an old grandfather clock escapement, wooden and dry, close, no reverb" },
+    { "id": "relogio_taque", "pasta": "Casa", "variacoes": 1, "duracao": 0.5, "loop": false, "influencia": 0.8,
+      "texto": "One single soft tock of an old grandfather clock, slightly lower pitch than a tick, wooden, close, no reverb" },
     { "id": "caminhao_motor", "pasta": "Ambiente", "variacoes": 1, "duracao": 8.0, "loop": true, "influencia": 0.5,
       "texto": "Old moving truck diesel engine idling, rattling, slightly broken" },
     { "id": "amanhecer_galo", "pasta": "Ambiente", "variacoes": 1, "duracao": 3.0, "loop": false, "influencia": 0.6,
@@ -75,5 +88,45 @@
     { "id": "ui_hover", "pasta": "Interface", "procedural": true },
     { "id": "ui_erro", "pasta": "Interface", "procedural": true },
     { "id": "eco_pulso", "pasta": "Interface", "procedural": true }
+  ],
+  "mixagem": [
+    { "id": "casa_noite",               "camada": "cama",      "volume": 0.5,  "alcance": 30 },
+    { "id": "vento_janelas",            "camada": "cama",      "volume": 0.35, "alcance": 30 },
+    { "id": "caminhao_motor",           "camada": "cama",      "volume": 0.25, "alcance": 20 },
+    { "id": "amanhecer_galo",           "camada": "cama",      "volume": 0.4,  "alcance": 40 },
+
+    { "id": "relogio_tique",            "camada": "ritmo",     "volume": 0.2,  "alcance": 9 },
+    { "id": "relogio_taque",            "camada": "ritmo",     "volume": 0.2,  "alcance": 9 },
+
+    { "id": "passo_madeira",            "camada": "pista",     "volume": 0.55, "alcance": 12 },
+    { "id": "passo_madeira_rangendo",   "camada": "pista",     "volume": 0.5,  "alcance": 14 },
+    { "id": "passo_carpete",            "camada": "pista",     "volume": 0.6,  "alcance": 9 },
+    { "id": "passo_fantasma",           "camada": "pista",     "volume": 0.6,  "alcance": 14 },
+    { "id": "bengala",                  "camada": "pista",     "volume": 0.8,  "alcance": 18, "intervaloMin": 0.3 },
+    { "id": "apito",                    "camada": "pista",     "volume": 0.5,  "alcance": 25, "intervaloMin": 0.5 },
+    { "id": "respiracao_calma",         "camada": "pista",     "volume": 0.3,  "alcance": 4,  "noTempo": true },
+    { "id": "respiracao_ofegante",      "camada": "pista",     "volume": 0.35, "alcance": 6,  "noTempo": true },
+    { "id": "esforco_marcelo",          "camada": "pista",     "volume": 0.5,  "alcance": 10, "intervaloMin": 2 },
+    { "id": "impacto_leve",             "camada": "pista",     "volume": 0.7,  "alcance": 15, "intervaloMin": 0.15 },
+    { "id": "impacto_pesado",           "camada": "pista",     "volume": 0.8,  "alcance": 22, "intervaloMin": 0.25 },
+    { "id": "livro_caindo",             "camada": "pista",     "volume": 0.7,  "alcance": 15, "intervaloMin": 0.15 },
+    { "id": "arrastar_movel",           "camada": "pista",     "volume": 0.6,  "alcance": 15 },
+    { "id": "imitador_voz",             "camada": "pista",     "volume": 0.7,  "alcance": 12, "intervaloMin": 1.5 },
+    { "id": "bibliotecario_respiracao", "camada": "pista",     "volume": 0.3,  "alcance": 7,  "noTempo": true },
+
+    { "id": "imitador_sussurro",        "camada": "ameaca",    "volume": 0.45, "alcance": 8,  "intervaloMin": 6, "noTempo": true },
+    { "id": "espelho_puxando",          "camada": "ameaca",    "volume": 0.8,  "alcance": 15 },
+    { "id": "captura",                  "camada": "ameaca",    "volume": 1.0,  "alcance": 20, "intervaloMin": 1 },
+    { "id": "espelho_rachando",         "camada": "ameaca",    "volume": 1.0,  "alcance": 25, "intervaloMin": 1 },
+    { "id": "bibliotecario_orelhas",    "camada": "ameaca",    "volume": 1.0,  "alcance": 15, "intervaloMin": 2 },
+    { "id": "perigo_stinger",           "camada": "ameaca",    "volume": 0.6,  "alcance": 30, "intervaloMin": 4 },
+
+    { "id": "caixinha_musica",          "camada": "musica",    "volume": 0.5,  "alcance": 15 },
+    { "id": "piano_conservatorio",      "camada": "musica",    "volume": 0.6,  "alcance": 25 },
+
+    { "id": "ui_clique",                "camada": "interface", "volume": 0.5 },
+    { "id": "ui_hover",                 "camada": "interface", "volume": 0.5,  "intervaloMin": 0.05 },
+    { "id": "ui_erro",                  "camada": "interface", "volume": 0.5 },
+    { "id": "eco_pulso",                "camada": "interface", "volume": 0.4 }
   ]
 }
