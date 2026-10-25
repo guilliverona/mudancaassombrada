@@ -53,6 +53,14 @@ public static class PrototypeSceneBuilder
         var carrier = player.AddComponent<FurnitureCarrier>();
         player.AddComponent<CaneTapper>();
 
+        // Corpo: "boneco de blocos" montado com cubos e esferas (ver CreateDoll).
+        // Aqui só existe um jogador, que é você, então o boneco começa escondido.
+        var body = CreateDoll();
+        body.transform.SetParent(player.transform, false);
+        var bodySo = new SerializedObject(body.GetComponent<DollWalk>());
+        bodySo.FindProperty("hideBody").boolValue = true;
+        bodySo.ApplyModifiedPropertiesWithoutUndo();
+
         // --- Sistema de eco (visão da Dona Cida) ---
         var echo = new GameObject("EchoSystem").AddComponent<EchoSystem>();
         SetReference(echo, "echoShader", AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shaders/Echo.shader"));
@@ -115,6 +123,75 @@ public static class PrototypeSceneBuilder
         EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene("Assets/Scenes/Prototipo1.unity", true) };
 
         Debug.Log("Cena Protótipo 1 criada! Aperte Play.");
+    }
+
+    // Boneco simples de 2m (do mesmo tamanho do CharacterController: pés em y=-1, topo em y=+1).
+    // Braços e pernas ficam dentro de um objeto vazio no ombro/quadril: é esse "pivô"
+    // que gira, então o membro balança pela junta, e não pelo meio.
+    static GameObject CreateDoll()
+    {
+        var doll = new GameObject("Corpo");
+        var skin = DollMaterial("Pele", new Color(0.95f, 0.75f, 0.6f));
+        var shirt = DollMaterial("Camisa", new Color(0.2f, 0.45f, 0.75f));
+        var pants = DollMaterial("Calça", new Color(0.25f, 0.25f, 0.3f));
+        var eyes = DollMaterial("Olhos", Color.black);
+
+        CreatePart(PrimitiveType.Cube, "Tronco", doll.transform, new Vector3(0, 0.15f, 0), new Vector3(0.5f, 0.7f, 0.3f), shirt);
+        var head = CreatePart(PrimitiveType.Sphere, "Cabeça", doll.transform, new Vector3(0, 0.75f, 0), Vector3.one * 0.4f, skin);
+        // Olhos na frente (+Z) para os outros saberem para onde você está olhando.
+        CreatePart(PrimitiveType.Sphere, "Olho E", head, new Vector3(-0.2f, 0.1f, 0.45f), Vector3.one * 0.15f, eyes);
+        CreatePart(PrimitiveType.Sphere, "Olho D", head, new Vector3(0.2f, 0.1f, 0.45f), Vector3.one * 0.15f, eyes);
+
+        var leftArm = CreateLimb("Braço E", doll.transform, new Vector3(-0.33f, 0.45f, 0), 0.65f, 0.15f, shirt);
+        var rightArm = CreateLimb("Braço D", doll.transform, new Vector3(0.33f, 0.45f, 0), 0.65f, 0.15f, shirt);
+        var leftLeg = CreateLimb("Perna E", doll.transform, new Vector3(-0.12f, -0.2f, 0), 0.8f, 0.2f, pants);
+        var rightLeg = CreateLimb("Perna D", doll.transform, new Vector3(0.12f, -0.2f, 0), 0.8f, 0.2f, pants);
+
+        var walk = doll.AddComponent<DollWalk>();
+        SetReference(walk, "leftArm", leftArm);
+        SetReference(walk, "rightArm", rightArm);
+        SetReference(walk, "leftLeg", leftLeg);
+        SetReference(walk, "rightLeg", rightLeg);
+        return doll;
+    }
+
+    // Um prefab só guarda REFERÊNCIAS a materiais, então eles precisam existir como arquivo.
+    // (Na cena funciona sem isso porque a cena guarda o material dentro dela.)
+    static Material DollMaterial(string name, Color color)
+    {
+        const string folder = "Assets/Prefabs/Materiais";
+        if (!AssetDatabase.IsValidFolder("Assets/Prefabs")) AssetDatabase.CreateFolder("Assets", "Prefabs");
+        if (!AssetDatabase.IsValidFolder(folder)) AssetDatabase.CreateFolder("Assets/Prefabs", "Materiais");
+        string path = $"{folder}/Boneco {name}.mat";
+        AssetDatabase.DeleteAsset(path);
+        // Copia o material padrão de um cubo temporário (o mesmo truque dos móveis).
+        var temp = GameObject.CreatePrimitive(PrimitiveType.Cube);
+        var mat = new Material(temp.GetComponent<Renderer>().sharedMaterial) { color = color };
+        Object.DestroyImmediate(temp);
+        AssetDatabase.CreateAsset(mat, path);
+        return mat;
+    }
+
+    static Transform CreateLimb(string name, Transform parent, Vector3 joint, float length, float thickness, Material color)
+    {
+        var pivot = new GameObject(name).transform;
+        pivot.SetParent(parent, false);
+        pivot.localPosition = joint;
+        CreatePart(PrimitiveType.Cube, name + " (malha)", pivot, new Vector3(0, -length / 2, 0), new Vector3(thickness, length, thickness), color);
+        return pivot;
+    }
+
+    static Transform CreatePart(PrimitiveType type, string name, Transform parent, Vector3 position, Vector3 size, Material material)
+    {
+        var part = GameObject.CreatePrimitive(type);
+        part.name = name;
+        // Sem collider: o CharacterController do Player já cuida das colisões.
+        Object.DestroyImmediate(part.GetComponent<Collider>());
+        part.transform.SetParent(parent, false);
+        part.transform.localPosition = position;
+        part.transform.localScale = size;
+        part.GetComponent<Renderer>().sharedMaterial = material;
+        return part.transform;
     }
 
     static void CreateWall(string name, Vector3 position, Vector3 size)
