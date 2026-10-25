@@ -1,11 +1,14 @@
-"""Base compartilhada dos scripts de blockout (Cida, Tiago, Marcelo...).
+"""Base compartilhada dos scripts de blockout (personagens, fantasmas e props).
 
 Convenções da ficha "Pipeline Blender → Unity":
-    1 BU = 1 m · personagem olhando para -Y · pés na origem · nomes Unity Humanoid.
+    1 BU = 1 m · olhando para -Y · pés (ou a base) na origem · nomes Unity Humanoid.
 
-As medidas vêm dos desenhos da ficha (1 unidade = 1/300 m). Cada script pode chamar
-set_scale(k) para que a altura final bata com a altura escrita na ficha; posições,
-raios, ossos e sockets passam todos por esse fator.
+As medidas vêm dos desenhos do Art Bible (personagens: 1 unidade = 1/300 m; fantasmas
+têm escala própria, ver mapper). Cada script pode chamar set_scale(k) para que a altura
+final bata com a altura escrita na ficha; posições, raios, ossos e sockets passam todos
+por esse fator.
+
+Cada tipo de asset vai para uma pasta própria (ver KINDS).
 """
 
 import math
@@ -13,11 +16,20 @@ from pathlib import Path
 
 import bmesh
 import bpy
-from mathutils import Matrix, Vector
+from mathutils import Euler, Matrix, Vector
 
 REPO = Path(__file__).resolve().parents[2]
-BLENDER_SRC = REPO / "Art/Source/Characters"
-UNITY_ART = REPO / "MudancaAssombrada/Assets/Art/Characters"
+SOURCE_ROOT = REPO / "Art/Source"
+UNITY_ROOT = REPO / "MudancaAssombrada/Assets/Art"
+
+# tipo -> prefixo do arquivo. A pasta (Art/Source/<tipo> e Assets/Art/<tipo>) também decide
+# o rig ao importar no Unity (Assets/Editor/ArtImportSettings.cs):
+# Characters e Ghosts = Humanoid; Props = sem rig.
+KINDS = {
+    "Characters": "SK_CHR",
+    "Ghosts": "SK_GHO",
+    "Props": "SM_PRP",
+}
 
 K = 1.0
 
@@ -27,9 +39,9 @@ def set_scale(k):
     K = k
 
 
-def mapper(cx, ground):
+def mapper(cx, ground, px_per_m=300.0):
     """Converte coordenada do desenho (vista de frente da ficha) para (X, Z) em metros."""
-    return lambda x, y: ((x - cx) / 300.0, (ground - y) / 300.0)
+    return lambda x, y: ((x - cx) / px_per_m, (ground - y) / px_per_m)
 
 
 def scaled(v):
@@ -106,8 +118,10 @@ class Part:
             f.smooth = smooth
         return faces
 
-    def ellipsoid(self, center, radii, mat, bone, seg=20, rings=10, smooth=True):
-        m = Matrix.Scale(K, 4) @ Matrix.Translation(center) @ Matrix.Diagonal((*radii, 1.0))
+    def ellipsoid(self, center, radii, mat, bone, seg=20, rings=10, smooth=True, rot=(0, 0, 0)):
+        """rot: rotação em graus (X, Y, Z) em volta do próprio centro (ex.: orelhas inclinadas)."""
+        r = Euler([math.radians(a) for a in rot]).to_matrix().to_4x4()
+        m = Matrix.Scale(K, 4) @ Matrix.Translation(center) @ r @ Matrix.Diagonal((*radii, 1.0))
         r = bmesh.ops.create_uvsphere(self.bm, u_segments=seg, v_segments=rings,
                                       radius=1.0, matrix=m, calc_uvs=True)
         return self._finish(r["verts"], mat, bone, smooth)
@@ -128,6 +142,12 @@ class Part:
              @ Matrix.Rotation(math.radians(rot_y), 4, "Y") @ Matrix.Diagonal((*size, 1.0)))
         r = bmesh.ops.create_cube(self.bm, size=1.0, matrix=m, calc_uvs=True)
         return self._finish(r["verts"], mat, bone, False)
+
+    def wheel(self, center, radius, width, mat, bone="root", seg=16):
+        """Cilindro deitado no eixo X (rodas)."""
+        c = Vector(center)
+        half = Vector((width / 2, 0, 0))
+        return self.tube(c - half, c + half, radius, radius, mat, bone, seg=seg, smooth=False)
 
     def limb(self, pts, radii, mat, bones, seg=12):
         """Cadeia de tubos com esferas nas juntas (braços, pernas)."""
@@ -170,6 +190,12 @@ class Part:
         obj.parent = armature
         mod = obj.modifiers.new("Armature", "ARMATURE")
         mod.object = armature
+        return obj
+
+    def to_static(self, collection):
+        """Malha sem rig (móveis, caminhão), com a origem na base, como foi modelada."""
+        obj = bpy.data.objects.new(self.name, self._mesh())
+        collection.objects.link(obj)
         return obj
 
     def to_prop(self, collection, socket, grip):
@@ -259,13 +285,13 @@ def add_child_empty(name, collection, parent, local_location, shape="SPHERE", si
 
 # ---------------------------------------------------------------- cena, export, prévias
 
-def new_scene(char):
+def new_scene(name, kind="Characters"):
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.context.preferences.filepaths.save_version = 0
     scene = bpy.context.scene
     scene.unit_settings.system = "METRIC"
     scene.unit_settings.scale_length = 1.0
-    root = bpy.data.collections.new(f"CHR_{char}")
+    root = bpy.data.collections.new(f"{KINDS[kind].split('_')[1]}_{name}")
     scene.collection.children.link(root)
     cols = {}
     for key in ("Rig", "Geo", "Sockets", "Props"):
@@ -306,8 +332,14 @@ def export_fbx(path):
     bpy.context.view_layer.update()
 
 
-def render_previews(scene, collection, out_dir, prefix, height):
-    """Frente, perfil (câmera em -X, igual ao desenho da ficha), costas e 3/4."""
+def render_previews(scene, collection, out_dir, prefix, height, frame=None, center_y=0.0):
+    """Frente, perfil (câmera em -X, igual ao desenho da ficha), costas e 3/4.
+
+    frame: tamanho do enquadramento (padrão: a altura). Objetos largos ou compridos,
+    como o caminhão, passam a maior medida para caber inteiros.
+    center_y: onde fica o meio do objeto em Y (o caminhão tem a cabine à frente da origem).
+    """
+    frame = frame or height
     scene.render.engine = "BLENDER_WORKBENCH"
     scene.display.shading.light = "STUDIO"
     scene.display.shading.color_type = "MATERIAL"
@@ -320,18 +352,19 @@ def render_previews(scene, collection, out_dir, prefix, height):
     scene.world = world
     world.color = hex_color("#131118")[:3]
     out_dir.mkdir(parents=True, exist_ok=True)
-    target = Vector((0, 0, height / 2))
+    target = Vector((0, center_y, height / 2))
+    far = max(6.0, frame * 2)
     views = {
-        "frente": ((0, -6, height / 2), True),
-        "perfil": ((-6, 0, height / 2), True),
-        "costas": ((0, 6, height / 2), True),
-        "tres_quartos": ((height * 1.5, -height * 2.3, height * 0.85), False),
+        "frente": ((0, center_y - far, height / 2), True),
+        "perfil": ((-far, center_y, height / 2), True),
+        "costas": ((0, center_y + far, height / 2), True),
+        "tres_quartos": ((frame * 1.5, center_y - frame * 2.3, height / 2 + frame * 0.35), False),
     }
     for name, (loc, ortho) in views.items():
         cam_data = bpy.data.cameras.new(f"CAM_{name}")
         if ortho:
             cam_data.type = "ORTHO"
-            cam_data.ortho_scale = height * 1.15
+            cam_data.ortho_scale = frame * 1.15
         else:
             cam_data.lens = 85
         cam = bpy.data.objects.new(f"CAM_{name}", cam_data)
@@ -348,11 +381,16 @@ def save_blend(path):
     bpy.ops.wm.save_as_mainfile(filepath=str(path), check_existing=False)
 
 
-def finish(scene, cols, char, height):
-    """Exporta o FBX, gera as prévias e salva o .blend nos caminhos padrão do repositório."""
-    fbx = UNITY_ART / char / f"SK_CHR_{char}.fbx"
-    blend = BLENDER_SRC / char / f"SK_CHR_{char}_Blockout.blend"
+def finish(scene, cols, name, height, kind="Characters", frame=None, center_y=0.0):
+    """Exporta o FBX, gera as prévias e salva o .blend nos caminhos padrão do repositório.
+
+    Ex.: kind="Props", name="Caixa" -> Assets/Art/Props/Caixa/SM_PRP_Caixa.fbx
+    """
+    prefix = KINDS[kind]
+    source = SOURCE_ROOT / kind / name
+    fbx = UNITY_ROOT / kind / name / f"{prefix}_{name}.fbx"
+    blend = source / f"{prefix}_{name}_Blockout.blend"
     export_fbx(fbx)
-    render_previews(scene, cols["Preview"], BLENDER_SRC / char / "previews", char.lower(), height)
+    render_previews(scene, cols["Preview"], source / "previews", name.lower(), height, frame, center_y)
     save_blend(blend)
     print("SAVED", blend, fbx)
