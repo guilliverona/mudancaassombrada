@@ -76,6 +76,7 @@ namespace MudancaAssombrada.Editor
             Build(NightPath, recreateAll, () => new GameObject("Iluminação Noturna", typeof(NightLighting)));
             Build(HudPath, recreate: true, HudBuilder.Build);
             Build(PausePath, recreate: true, BuildPauseMenu);
+            ApplyArtToPrefabs();
             AssetDatabase.SaveAssets();
         }
 
@@ -175,6 +176,105 @@ namespace MudancaAssombrada.Editor
             ghost.AddComponent<NetworkTransform>(); // padrão: autoridade do servidor
             ghost.AddComponent<GhostHunter>();
             return ghost;
+        }
+
+        // ---------- Arte (modelos do Blender) ----------
+        // Os prefabs do mundo nascem como blocos. Quando o modelo do Blender existe em Assets/Art
+        // (gerado por tools/blender), o bloco vira só a colisão, invisível, e o modelo entra como
+        // filho "Modelo". Só o VISUAL muda: peso, velocidades, tamanho e o que mais foi ajustado
+        // no Inspector continuam, e as cópias nas cenas não perdem nada.
+        // O "Modelo" fica ligado ao FBX: gerar de novo no Blender atualiza o prefab sozinho.
+        // Para voltar ao bloco, apague o filho "Modelo" e religue o MeshRenderer.
+
+        const string ModelChild = "Modelo";
+        const float GhostHeight = 2.6f; // o Bibliotecário da ficha (ART_BIBLE.md)
+
+        static void ApplyArtToPrefabs()
+        {
+            ApplyArt(WardrobePath, "Props/Armario/SM_PRP_Armario", (root, model) => FurnitureArt(root, model, new Vector3(1f, 1.5f, 0.6f)));
+            ApplyArt(ChairPath, "Props/Cadeira/SM_PRP_Cadeira", (root, model) => FurnitureArt(root, model, new Vector3(0.5f, 0.6f, 0.5f)));
+            ApplyArt(BoxPath, "Props/Caixa/SM_PRP_Caixa", (root, model) => FurnitureArt(root, model, new Vector3(0.5f, 0.5f, 0.5f)));
+            ApplyArt(TruckPath, "Props/Caminhao/SM_PRP_Caminhao", TruckArt);
+            ApplyArt(GhostPath, "Ghosts/Bibliotecario/SK_GHO_Bibliotecario", GhostArt);
+        }
+
+        // Abre o prefab, troca o visual e salva. Prefab que já tem "Modelo" não é tocado de novo.
+        static void ApplyArt(string prefabPath, string art, System.Action<GameObject, GameObject> apply)
+        {
+            var model = AssetDatabase.LoadAssetAtPath<GameObject>($"Assets/Art/{art}.fbx");
+            if (model == null || Load(prefabPath) == null) return;
+
+            var root = PrefabUtility.LoadPrefabContents(prefabPath);
+            try
+            {
+                if (root.transform.Find(ModelChild) != null) return;
+                apply(root, model);
+                PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+                Debug.Log($"Arte aplicada: {prefabPath} agora usa {art}.fbx");
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+        }
+
+        // Móvel: a raiz era um cubo esticado (escala = tamanho). Agora a escala volta a 1, o
+        // tamanho vai para o BoxCollider e o modelo (origem na base) desce até o chão da caixa.
+        // Se alguém mudou o tamanho do móvel, o modelo estica junto.
+        static void FurnitureArt(GameObject root, GameObject model, Vector3 artSize)
+        {
+            Vector3 size = root.transform.localScale;
+            root.transform.localScale = Vector3.one;
+            RemoveMesh(root);
+            var box = root.GetComponent<BoxCollider>();
+            box.center = Vector3.zero;
+            box.size = size;
+
+            var visual = AddModel(root, model, new Vector3(0, -size.y / 2f, 0));
+            visual.transform.localScale = new Vector3(size.x / artSize.x, size.y / artSize.y, size.z / artSize.z);
+        }
+
+        // Caminhão: a cabine e a caçamba continuam como colisão (sem desenho); o modelo tem o
+        // mesmo formato, com a raiz no chão, no meio da caçamba.
+        static void TruckArt(GameObject root, GameObject model)
+        {
+            foreach (Transform part in root.transform)
+                if (part.GetComponent<BoxCollider>() != null && !part.GetComponent<BoxCollider>().isTrigger)
+                    RemoveMesh(part.gameObject);
+            AddModel(root, model, Vector3.zero);
+        }
+
+        // Fantasma: a cápsula esticada vira uma cápsula de colisão do tamanho do modelo, e o
+        // NavMeshAgent passa a "flutuar" metade da altura acima do chão (a raiz fica no meio do corpo).
+        static void GhostArt(GameObject root, GameObject model)
+        {
+            root.transform.localScale = Vector3.one;
+            RemoveMesh(root);
+            var capsule = root.GetComponent<CapsuleCollider>();
+            capsule.center = Vector3.zero;
+            capsule.height = GhostHeight;
+            capsule.radius = 0.3f;
+            var agent = root.GetComponent<NavMeshAgent>();
+            agent.baseOffset = GhostHeight / 2f;
+            agent.height = GhostHeight;
+
+            var visual = AddModel(root, model, new Vector3(0, -GhostHeight / 2f, 0));
+            visual.AddComponent<DollWalk>(); // balança braços e pernas pelos ossos do Humanoid
+        }
+
+        static GameObject AddModel(GameObject root, GameObject model, Vector3 localPosition)
+        {
+            var visual = (GameObject)PrefabUtility.InstantiatePrefab(model, root.transform);
+            visual.name = ModelChild;
+            visual.transform.localPosition = localPosition;
+            return visual;
+        }
+
+        // Tira o desenho do bloco e deixa só a colisão.
+        static void RemoveMesh(GameObject go)
+        {
+            if (go.TryGetComponent(out MeshRenderer renderer)) Object.DestroyImmediate(renderer);
+            if (go.TryGetComponent(out MeshFilter filter)) Object.DestroyImmediate(filter);
         }
 
         // ---------- Sistemas ----------
