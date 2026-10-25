@@ -2,12 +2,18 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 // Fica no Player. Aperte E olhando para um móvel para pegar; E de novo para soltar.
+//
+// EM REDE, pegar tem duas fases:
+//   1. Pedir: "host, posso pegar este móvel?" (RequestPickUp)
+//   2. Esperar a resposta: quando o móvel passa a ser MEU (IsOwner), começo a carregar.
+// Se outro jogador pegou antes, o host recusa e o pedido expira sozinho.
 public class FurnitureCarrier : MonoBehaviour
 {
     [SerializeField] Camera playerCamera;
     [SerializeField] float reach = 2.5f;          // distância máxima para alcançar
     [SerializeField] float holdDistance = 1.8f;   // onde o móvel fica à sua frente
     [SerializeField] float followStrength = 12f;  // quão "firme" você segura
+    [SerializeField] float requestTimeout = 1f;   // segundos esperando a resposta do host
 
     // Força: divide o peso dos móveis. Marcelo = 3, então o armário (peso 3) parece peso 1.
     public float Strength { get; set; } = 1f;
@@ -15,7 +21,9 @@ public class FurnitureCarrier : MonoBehaviour
     public float CarryNoise { get; set; } = 1f;
 
     PlayerMovement movement;
-    Furniture held; // null = mãos vazias
+    Furniture held;      // null = mãos vazias
+    Furniture requested; // pedi para o host e estou esperando
+    float requestTime;
 
     // Peso que o jogador SENTE: nunca menos que 1 (nada fica mais leve que "sem peso").
     float FeltWeight => Mathf.Max(1f, held.Weight / Strength);
@@ -24,10 +32,12 @@ public class FurnitureCarrier : MonoBehaviour
 
     void Update()
     {
+        WaitForPickUp();
+
         if (!Keyboard.current.eKey.wasPressedThisFrame) return;
 
         if (held != null) Drop();
-        else TryPickUp();
+        else if (requested == null) TryPickUp();
     }
 
     void TryPickUp()
@@ -37,11 +47,41 @@ public class FurnitureCarrier : MonoBehaviour
         Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
         if (!Physics.Raycast(ray, out RaycastHit hit, reach)) return;
 
-        // Só pega se o objeto atingido tiver o componente Furniture.
-        if (!hit.collider.TryGetComponent(out Furniture furniture)) return;
+        // Só pega se o objeto atingido tiver o componente Furniture e estiver livre.
+        if (!hit.collider.TryGetComponent(out Furniture furniture) || furniture.IsHeld) return;
 
+        // Móvel que não "nasceu" na rede (ex.: cena antiga sem NetworkObject) não pode receber RPC.
+        if (!furniture.IsSpawned)
+        {
+            Debug.LogWarning($"{furniture.name} não está na rede. Recrie a cena pelo menu Mudança Assombrada.");
+            return;
+        }
+
+        requested = furniture;
+        requestTime = Time.time;
+        furniture.RequestPickUp();
+    }
+
+    void WaitForPickUp()
+    {
+        if (requested == null) return;
+
+        // O host aceitou: o móvel agora é meu. Para o host, isso é instantâneo.
+        if (requested.IsOwner && requested.IsHeld)
+        {
+            BeginHold(requested);
+            requested = null;
+        }
+        // Sem resposta a tempo (outro jogador pegou antes): desisto.
+        else if (Time.time - requestTime > requestTimeout)
+        {
+            requested = null;
+        }
+    }
+
+    void BeginHold(Furniture furniture)
+    {
         held = furniture;
-        held.IsHeld = true;
         held.NoiseMultiplier = CarryNoise;
         held.Body.useGravity = false;
         held.Body.linearDamping = 10f; // amortece para não ficar balançando
@@ -50,11 +90,12 @@ public class FurnitureCarrier : MonoBehaviour
 
     void Drop()
     {
+        // Devolve a física ao normal ANTES de devolver a posse ao host.
         held.Body.useGravity = true;
         held.Body.linearDamping = 0f;
-        movement.SpeedMultiplier = 1f;
-        held.IsHeld = false;
         held.NoiseMultiplier = 1f;
+        movement.SpeedMultiplier = 1f;
+        held.RequestDrop();
         held = null;
     }
 
@@ -63,6 +104,16 @@ public class FurnitureCarrier : MonoBehaviour
     void FixedUpdate()
     {
         if (held == null) return;
+
+        // O host tomou o móvel de volta (ex.: a fase reiniciou): só largo localmente,
+        // sem pedir nada ao host, porque o móvel já não é meu.
+        if (!held.IsOwner)
+        {
+            movement.SpeedMultiplier = 1f;
+            held.NoiseMultiplier = 1f;
+            held = null;
+            return;
+        }
 
         Vector3 target = playerCamera.transform.position + playerCamera.transform.forward * holdDistance;
         Vector3 toTarget = target - held.Body.position;

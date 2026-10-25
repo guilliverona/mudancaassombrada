@@ -1,16 +1,32 @@
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
-// Escolhe qual personagem você está jogando (1 = Dona Cida, 2 = Tiago, 3 = Marcelo).
-// No jogo final cada jogador será um personagem; por enquanto, um só jogador troca entre eles
-// para testar as mecânicas. Fica no Player.
-public class CharacterSwitcher : MonoBehaviour
+// Qual personagem cada jogador está usando (1 = Dona Cida, 2 = Tiago, 3 = Marcelo).
+// Agora é um NetworkBehaviour: a escolha de cada jogador é conhecida por TODOS,
+// e quem decide se pode ou não é o host (não pode haver duas Cidas na mesma partida).
+public class CharacterSwitcher : NetworkBehaviour
 {
     public enum Character { Cida, Tiago, Marcelo }
 
-    [SerializeField] Character startingCharacter = Character.Cida;
+    // Cor do boneco de cada personagem, para todos saberem quem é quem.
+    static readonly Color[] BodyColors =
+    {
+        new Color(0.6f, 0.4f, 0.9f),  // Cida: roxo
+        new Color(1f, 0.8f, 0.2f),    // Tiago: amarelo
+        new Color(0.3f, 0.75f, 0.35f) // Marcelo: verde
+    };
+    static readonly string[] Names = { "Dona Cida (cega)", "Tiago (surdo)", "Marcelo (mudo)" };
+    static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
 
-    public Character Current { get; private set; }
+    // NetworkVariable = uma variável que a rede mantém IGUAL em todos os computadores.
+    // Permissão de escrita "Server": só o host muda; os clientes só leem (e pedem por RPC).
+    readonly NetworkVariable<Character> character = new(
+        Character.Cida, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+    public Character Current => character.Value;
+
+    [SerializeField] Renderer[] body; // as partes do boneco que mudam de cor (a "roupa")
 
     EchoSystem echo;
     VibrationVision vibration;
@@ -29,24 +45,79 @@ public class CharacterSwitcher : MonoBehaviour
         carrier = GetComponent<FurnitureCarrier>();
     }
 
-    void Start() => Become(startingCharacter);
+    public override void OnNetworkSpawn()
+    {
+        // Avise-me quando o valor mudar (em qualquer computador).
+        character.OnValueChanged += OnCharacterChanged;
+
+        // O host escolhe o primeiro personagem livre para quem acabou de entrar.
+        if (IsServer) character.Value = FirstFreeCharacter();
+
+        Apply(character.Value);
+    }
+
+    public override void OnNetworkDespawn() => character.OnValueChanged -= OnCharacterChanged;
+
+    void OnCharacterChanged(Character previous, Character current) => Apply(current);
 
     void Update()
     {
-        if (Keyboard.current.digit1Key.wasPressedThisFrame) Become(Character.Cida);
-        if (Keyboard.current.digit2Key.wasPressedThisFrame) Become(Character.Tiago);
-        if (Keyboard.current.digit3Key.wasPressedThisFrame) Become(Character.Marcelo);
+        if (!IsOwner) return; // só o dono deste boneco pode pedir para trocar
+
+        if (Keyboard.current.digit1Key.wasPressedThisFrame) RequestCharacterRpc(Character.Cida);
+        if (Keyboard.current.digit2Key.wasPressedThisFrame) RequestCharacterRpc(Character.Tiago);
+        if (Keyboard.current.digit3Key.wasPressedThisFrame) RequestCharacterRpc(Character.Marcelo);
+    }
+
+    // RPC = "Remote Procedure Call": chamar um método que roda em OUTRO computador.
+    // SendTo.Server: o cliente chama, mas o código abaixo roda no host.
+    // Regra do Netcode: o nome do método precisa terminar em "Rpc".
+    [Rpc(SendTo.Server)]
+    void RequestCharacterRpc(Character wanted)
+    {
+        if (IsTaken(wanted)) return; // ocupado: o host simplesmente recusa
+        character.Value = wanted;    // a rede espalha o novo valor para todos
+    }
+
+    bool IsTaken(Character c)
+    {
+        foreach (var other in FindObjectsByType<CharacterSwitcher>())
+            if (other != this && other.IsSpawned && other.character.Value == c) return true;
+        return false;
+    }
+
+    Character FirstFreeCharacter()
+    {
+        foreach (Character c in System.Enum.GetValues(typeof(Character)))
+            if (!IsTaken(c)) return c;
+        return Character.Cida; // 4º jogador em diante: repete (por enquanto)
+    }
+
+    void Apply(Character c)
+    {
+        // TODOS os computadores pintam este boneco com a cor do personagem.
+        // MaterialPropertyBlock muda a cor só DESTE objeto, sem criar material novo,
+        // e continua valendo mesmo quando a Cida troca os materiais pelos de eco.
+        var block = new MaterialPropertyBlock();
+        block.SetColor(BaseColorId, BodyColors[(int)c]);
+        foreach (var part in body)
+            part.SetPropertyBlock(block);
+
+        // Se a tela está escura (alguém aqui é a Cida), escurece também este boneco.
+        echo.RefreshNewRenderers();
+
+        // Habilidades e visão: só no computador de quem controla este boneco.
+        if (IsOwner) Become(c);
     }
 
     // Cada personagem é só uma combinação diferente dos mesmos componentes ligados/desligados.
     // Isso se chama COMPOSIÇÃO: em vez de uma classe gigante "Tiago" e outra "Cida",
     // juntamos peças pequenas (visão de eco, visão de vibração, bengala, apito) como Lego.
-    void Become(Character character)
+    void Become(Character c)
     {
-        Current = character;
-        bool cida = character == Character.Cida;
-        bool tiago = character == Character.Tiago;
-        bool marcelo = character == Character.Marcelo;
+        bool cida = c == Character.Cida;
+        bool tiago = c == Character.Tiago;
+        bool marcelo = c == Character.Marcelo;
 
         echo.SetBlind(cida);           // Cida: tela escura, enxerga pelo som
         cane.CanTap = cida;            // só a Cida tem bengala
@@ -67,14 +138,22 @@ public class CharacterSwitcher : MonoBehaviour
 
     void OnGUI()
     {
-        var style = new GUIStyle(GUI.skin.label) { fontSize = 20, alignment = TextAnchor.UpperRight };
+        if (!IsOwner) return;
+
+        var style = new GUIStyle(GUI.skin.label) { fontSize = 20, alignment = TextAnchor.UpperRight, richText = true };
         style.normal.textColor = Color.white;
-        string name = Current switch
+
+        string text = $"Você: <b>{Names[(int)Current]}</b>";
+        if (Current == Character.Marcelo) text += "\nF: apito";
+
+        // Lista os três, marcando os que outros jogadores já pegaram.
+        for (int i = 0; i < Names.Length; i++)
         {
-            Character.Cida => "Dona Cida (cega)",
-            Character.Tiago => "Tiago (surdo)",
-            _ => "Marcelo (mudo) — F: apito",
-        };
-        GUI.Label(new Rect(Screen.width - 420, 20, 400, 60), $"{name}\n[1] Cida   [2] Tiago   [3] Marcelo", style);
+            var c = (Character)i;
+            string color = ColorUtility.ToHtmlStringRGB(BodyColors[i]);
+            string status = c == Current ? " (você)" : IsTaken(c) ? " (ocupado)" : "";
+            text += $"\n<color=#{color}>[{i + 1}] {Names[i]}</color>{status}";
+        }
+        GUI.Label(new Rect(Screen.width - 420, 20, 400, 140), text, style);
     }
 }

@@ -51,7 +51,20 @@ public class EchoSystem : MonoBehaviour
     // Parâmetros: posição, alcance, intensidade, quem fez o som.
     public static event Action<Vector3, float, float, GameObject> SoundEmitted;
 
+    // Quem envia os sons para os outros computadores (o SoundRelay se cadastra aqui ao conectar).
+    // Sem rede (null), o jogo funciona igual a antes: só local.
+    public static Action<Vector3, float, float, GameObject> NetworkBroadcast;
+
+    // Todo script do jogo continua chamando Emit, sem saber que existe rede.
     public static void Emit(Vector3 origin, float maxRadius, float intensity = 1f, GameObject source = null)
+    {
+        EmitLocal(origin, maxRadius, intensity, source);
+        NetworkBroadcast?.Invoke(origin, maxRadius, intensity, source);
+    }
+
+    // Só neste computador. O SoundRelay usa ESTA versão ao receber um som de outro jogador,
+    // senão o som seria reenviado de volta para a rede, para sempre (eco infinito!).
+    public static void EmitLocal(Vector3 origin, float maxRadius, float intensity = 1f, GameObject source = null)
     {
         // "?." = só chama se alguém estiver inscrito (senão seria null).
         // Fica antes do return: fantasmas ouvem mesmo sem o modo de eco na cena.
@@ -102,20 +115,7 @@ public class EchoSystem : MonoBehaviour
             cam.clearFlags = CameraClearFlags.SolidColor; // fundo preto em vez do céu
             cam.backgroundColor = Color.black;
 
-            foreach (var r in FindObjectsByType<Renderer>())
-            {
-                originalMaterials[r] = r.sharedMaterials;
-                var echoMats = new Material[r.sharedMaterials.Length];
-                for (int i = 0; i < echoMats.Length; i++)
-                {
-                    var original = r.sharedMaterials[i];
-                    echoMats[i] = new Material(echoShader);
-                    // Copia a cor original (se tiver) para o objeto manter um "tom".
-                    if (original != null && original.HasProperty(BaseColorId))
-                        echoMats[i].SetColor(BaseColorId, original.GetColor(BaseColorId));
-                }
-                r.sharedMaterials = echoMats;
-            }
+            RefreshNewRenderers();
         }
         else
         {
@@ -123,6 +123,30 @@ public class EchoSystem : MonoBehaviour
             foreach (var pair in originalMaterials)
                 if (pair.Key != null) pair.Key.sharedMaterials = pair.Value;
             originalMaterials.Clear();
+        }
+    }
+
+    // Objetos que aparecem DEPOIS de a tela escurecer (ex.: um jogador que acabou de conectar)
+    // ainda estão com o material normal. Esta função "escurece" só os que faltam.
+    public void RefreshNewRenderers()
+    {
+        if (!blind) return;
+
+        foreach (var r in FindObjectsByType<Renderer>())
+        {
+            if (originalMaterials.ContainsKey(r)) continue; // já está escuro
+
+            originalMaterials[r] = r.sharedMaterials;
+            var echoMats = new Material[r.sharedMaterials.Length];
+            for (int i = 0; i < echoMats.Length; i++)
+            {
+                var original = r.sharedMaterials[i];
+                echoMats[i] = new Material(echoShader);
+                // Copia a cor original (se tiver) para o objeto manter um "tom".
+                if (original != null && original.HasProperty(BaseColorId))
+                    echoMats[i].SetColor(BaseColorId, original.GetColor(BaseColorId));
+            }
+            r.sharedMaterials = echoMats;
         }
     }
 }

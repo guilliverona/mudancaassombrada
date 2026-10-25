@@ -1,3 +1,4 @@
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.AI; // NavMeshAgent: o "GPS" da Unity para personagens
 
@@ -8,8 +9,12 @@ using UnityEngine.AI; // NavMeshAgent: o "GPS" da Unity para personagens
 //   Patrulhando --ouviu algo--> Investigando --ouviu perto--> Caçando
 //        ^                           |                           |
 //        +------chegou e esperou-----+<----silêncio por um tempo--+
+//
+// EM REDE: o fantasma "pensa" só no host (IsServer). Nos clientes ele é um fantoche:
+// a IA fica desligada e o NetworkTransform só copia a posição que o host manda.
+// Assim existe UM fantasma só, igual para todos.
 [RequireComponent(typeof(NavMeshAgent))]
-public class GhostHunter : MonoBehaviour
+public class GhostHunter : NetworkBehaviour
 {
     // enum = uma lista fixa de opções com nome. Bem mais legível que usar 0, 1, 2.
     enum State { Patrolling, Investigating, Hunting }
@@ -38,6 +43,7 @@ public class GhostHunter : MonoBehaviour
     Transform player;
     Vector3 home;
     State state;
+    bool caught;
     float lastHeardTime;
     float waitTimer;
     float walked;
@@ -50,9 +56,15 @@ public class GhostHunter : MonoBehaviour
         lastPosition = transform.position;
     }
 
-    void Start()
+    public override void OnNetworkSpawn()
     {
-        player = FindFirstObjectByType<PlayerMovement>().transform;
+        if (!IsServer)
+        {
+            // Cliente: quem move o fantasma é o NetworkTransform. Se o NavMeshAgent continuasse
+            // ligado, ele "brigaria" com as posições que chegam do host.
+            agent.enabled = false;
+            return;
+        }
         EnterState(State.Patrolling);
     }
 
@@ -63,6 +75,7 @@ public class GhostHunter : MonoBehaviour
 
     void OnSoundHeard(Vector3 position, float range, float intensity, GameObject source)
     {
+        if (!IsServer) return;            // só o host decide o que o fantasma ouve
         if (source == gameObject) return; // ignora os próprios passos
 
         float distance = Vector3.Distance(transform.position, position);
@@ -77,6 +90,9 @@ public class GhostHunter : MonoBehaviour
 
     void Update()
     {
+        // Antes de conectar, IsServer é false em todos: o fantasma fica parado esperando.
+        if (!IsServer || caught) return;
+
         switch (state)
         {
             case State.Patrolling:
@@ -99,8 +115,16 @@ public class GhostHunter : MonoBehaviour
                 break;
         }
 
-        if (Vector3.Distance(transform.position, player.position) < catchDistance)
-            GameManager.PlayerCaught("O Bibliotecário te pegou!");
+        // Com multiplayer os jogadores aparecem DEPOIS do fantasma (quando conectam),
+        // então procuramos o mais próximo a cada frame em vez de guardar um só no Start.
+        player = NearestPlayer();
+        if (player != null && Vector3.Distance(transform.position, player.position) < catchDistance)
+        {
+            // O GameManager (no host) muda o resultado, e a NetworkVariable avisa todo mundo:
+            // a equipe inteira perde junta.
+            caught = true;
+            GameManager.ServerPlayerCaught();
+        }
 
         EmitFootsteps();
     }
@@ -116,6 +140,27 @@ public class GhostHunter : MonoBehaviour
             _ => huntSpeed, // "_" = qualquer outro caso
         };
         if (newState == State.Patrolling) agent.SetDestination(RandomPointNear(home, patrolRadius));
+    }
+
+    // Só no host (chamado pelo GameManager ao reiniciar): volta para casa e recomeça a patrulha.
+    public void ServerReset()
+    {
+        caught = false;
+        agent.Warp(home); // Warp = teleporte do NavMeshAgent (mover o transform direto confunde ele)
+        lastPosition = home;
+        EnterState(State.Patrolling);
+    }
+
+    Transform NearestPlayer()
+    {
+        Transform nearest = null;
+        float best = float.MaxValue;
+        foreach (var p in FindObjectsByType<PlayerMovement>())
+        {
+            float d = Vector3.Distance(transform.position, p.transform.position);
+            if (d < best) { best = d; nearest = p.transform; }
+        }
+        return nearest; // null = ninguém conectado ainda
     }
 
     bool Arrived() => !agent.pathPending && agent.remainingDistance <= agent.stoppingDistance + 0.2f;
