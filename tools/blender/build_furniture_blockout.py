@@ -1,5 +1,5 @@
-"""Blockout da mobília carregável do Art Bible (tabela "Mobília carregável" da prancha PRP)
-e dos props de cenário da Biblioteca (ENV_03).
+"""Blockout da mobília carregável do Art Bible (tabela "Mobília carregável" da prancha PRP),
+dos props de cenário da Biblioteca (ENV_03) e do relógio de pêndulo da Casa do Espelho (ENV_01).
 
 Rodar (fecha sozinho ao terminar; passe nomes depois de -- para gerar só alguns):
     blender --background --factory-startup --python tools/blender/build_furniture_blockout.py
@@ -224,6 +224,46 @@ def build_luminaria(col):
     return p.to_static(col)
 
 
+def build_relogio(col):
+    """Relógio de pêndulo (cenário da Casa do Espelho, F1): 0,55 × 0,32 × 2,1 m. Não está na tabela do
+    Art Bible: é decoração do casarão dos anos 1920 (mogno e dourado, como as molduras) e a origem do
+    tique-taque (AmbientSound), uma âncora de som para a Cida. Fica parado: não é carregável."""
+    p = bc.Part("SM_PRP_RelogioPendulo", MATS)
+    p.box((0, 0, 0.15), (0.55, 0.32, 0.3), "Mogno", "root")                  # base
+    p.box((0, 0, 0.31), (0.5, 0.29, 0.03), "MognoClaro", "root")             # moldura da base
+    p.box((0, 0, 0.92), (0.42, 0.26, 1.2), "Mogno", "root")                  # caixa (tronco)
+    # janela do pêndulo: fundo escuro, moldura dourada, haste e disco de latão
+    front = -0.13
+    p.box((0, front - 0.004, 0.95), (0.24, 0.01, 0.8), "Sombra", "root")
+    for x in (-0.13, 0.13):
+        p.box((x, front - 0.01, 0.95), (0.025, 0.012, 0.84), "Dourado", "root")
+    for z in (0.54, 1.36):
+        p.box((0, front - 0.01, z), (0.285, 0.012, 0.025), "Dourado", "root")
+    p.box((0, front - 0.012, 1.1), (0.012, 0.006, 0.5), "Latao", "root")
+    p.tube((0, front - 0.008, 0.8), (0, front - 0.02, 0.8), 0.075, 0.075, "Latao", "root", seg=16)
+    # capitel com o mostrador
+    p.box((0, 0, 1.77), (0.5, 0.3, 0.46), "Mogno", "root")
+    p.box((0, 0, 1.53), (0.52, 0.31, 0.03), "MognoClaro", "root")
+    face_y, face_z = -0.15, 1.77
+    p.tube((0, face_y, face_z), (0, face_y - 0.007, face_z), 0.19, 0.19, "Dourado", "root", seg=24)
+    p.tube((0, face_y, face_z), (0, face_y - 0.012, face_z), 0.165, 0.165, "Marfim", "root", seg=24)
+    for i in range(12):                                                      # marcas das horas
+        a = math.radians(i * 30)
+        size = (0.012, 0.004, 0.035) if i % 3 == 0 else (0.008, 0.004, 0.02)
+        p.box((math.sin(a) * 0.14, face_y - 0.014, face_z + math.cos(a) * 0.14), size, "Preto", "root", rot_y=i * 30)
+    # ponteiros parados em 10h10 (rot_y gira no plano do mostrador, no sentido horário)
+    for angle, length, width in ((305, 0.09, 0.014), (60, 0.13, 0.009)):
+        a = math.radians(angle)
+        p.box((math.sin(a) * length / 2, face_y - 0.017, face_z + math.cos(a) * length / 2),
+              (width, 0.004, length), "Preto", "root", rot_y=angle)
+    p.ellipsoid((0, face_y - 0.02, face_z), (0.015,) * 3, "Latao", "root", seg=8, rings=5)
+    # coroa com frontão e pináculo dourado
+    p.box((0, 0, 2.03), (0.56, 0.33, 0.06), "MognoClaro", "root")
+    p.box((0, 0, 2.08), (0.3, 0.25, 0.04), "Mogno", "root")
+    p.ellipsoid((0, 0, 2.13), (0.035, 0.035, 0.05), "Dourado", "root", seg=10, rings=6)
+    return p.to_static(col)
+
+
 # (nome, construtor, altura, enquadramento das prévias, meio do objeto em Y)
 PROPS = [
     ("Penteadeira", build_penteadeira, 1.6, 1.8, 0.0),
@@ -235,6 +275,7 @@ PROPS = [
     ("CaixaG", lambda c: build_caixa("CaixaG", 0.6, c), 0.6, 0.8, 0.0),
     ("PilhaLivros", build_pilha_livros, 0.75, 0.9, 0.0),
     ("LuminariaVerde", build_luminaria, 0.45, 0.6, 0.0),
+    ("RelogioPendulo", build_relogio, 2.18, 2.4, 0.0),
 ]
 
 
