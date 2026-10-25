@@ -29,6 +29,10 @@ public class NetworkPlayer : NetworkBehaviour
             // A câmera da cena de espera não é mais necessária: agora vemos pelos nossos olhos.
             var lobbyCamera = GameObject.Find("Câmera de Espera");
             if (lobbyCamera != null) lobbyCamera.SetActive(false);
+
+            // Meu próprio boneco some da minha tela (a câmera fica dentro da cabeça).
+            // Os outros jogadores continuam vendo ele normalmente.
+            GetComponentInChildren<DollWalk>().HideBody();
             return;
         }
 
