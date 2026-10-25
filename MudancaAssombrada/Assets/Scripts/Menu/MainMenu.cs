@@ -62,6 +62,7 @@ namespace MudancaAssombrada
             Cursor.visible = true;
             GameSettings.Muted = false; // se jogou com um personagem surdo, o menu volta a ter som
             GameSettings.Apply();
+            LoadingScreen.HideNow(); // voltou ao menu (até por erro): nada de tela de carregamento presa
         }
 
         void Start()

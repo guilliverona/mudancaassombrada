@@ -164,10 +164,21 @@ namespace MudancaAssombrada
             foreach (var p in players) ChosenCharacters[p.ClientId] = p.Character;
             GameStarted = true; // a partir daqui ninguém novo entra
 
+            // Todos cobrem a tela ANTES de a cena trocar (a mensagem chega antes da troca).
+            ShowLoadingRpc(selectedChapter.Value);
+
             // Troca de cena EM REDE: o host carrega a fase, e o Netcode manda todos os
             // clientes carregarem junto. (Usar o SceneManager normal só trocaria a do host.)
             string scene = Campaign.Instance.Get(selectedChapter.Value).sceneName;
             NetworkManager.SceneManager.LoadScene(scene, LoadSceneMode.Single);
+        }
+
+        // SendTo.Everyone: roda em todos os computadores, inclusive no do host.
+        [Rpc(SendTo.Everyone)]
+        void ShowLoadingRpc(int chapter)
+        {
+            var c = Campaign.Instance.Get(chapter);
+            LoadingScreen.Show(c != null ? c.title : "");
         }
 
         // Começa no capítulo mais adiantado que já dá para jogar (onde a equipe parou).
