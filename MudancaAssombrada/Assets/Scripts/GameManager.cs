@@ -1,3 +1,6 @@
+using System.Collections.Generic;
+using System.Text;
+using Unity.Collections; // FixedString512Bytes
 using Unity.Netcode;
 using UnityEngine;
 
@@ -7,33 +10,47 @@ namespace MudancaAssombrada
     // ": byte" = guarda o enum em 1 byte só (menos dados pela rede do que um int).
     public enum MatchOutcome : byte { Playing, Won, Dawn, Caught }
 
-    // Controla o estado geral da partida: cronômetro até o amanhecer, vitória, derrota e reinício.
+    // Controla a partida de um capítulo: relógio até o amanhecer, etapas dos objetivos,
+    // vitória, derrota e reinício.
     //
-    // EM REDE: só o host conta o tempo e decide quando a partida acaba. Os clientes recebem
-    // os valores por NetworkVariables. Assim todo mundo vê o MESMO cronômetro e o MESMO final.
+    //  - O CAPÍTULO (ChapterDefinition) vem da cena aberta: Campaign.FindByScene.
+    //  - Os OBJETIVOS são componentes Objective espalhados pela cena, agrupados em etapas.
     //
-    // Este script NÃO desenha nada: ele só guarda o estado (TimeLeft, Delivered, Outcome...).
-    // Quem mostra isso na tela é a HUD. Separar "lógica" de "tela" deixa trocar o visual
-    // sem arriscar quebrar as regras do jogo (e vice-versa).
+    // EM REDE: só o host conta o tempo e avalia os objetivos. Os clientes recebem o resultado
+    // por NetworkVariables. Este script NÃO desenha nada: quem mostra é a HUD.
     public class GameManager : NetworkBehaviour
     {
-        [SerializeField] float nightDuration = 180f; // segundos até amanhecer
+        [Tooltip("Usado só se a cena não estiver em nenhum capítulo da Campanha (testes).")]
+        [SerializeField] float fallbackNightDuration = 180f;
 
         public static GameManager Instance { get; private set; }
 
         readonly NetworkVariable<float> timeLeft = new(0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-        readonly NetworkVariable<int> delivered = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         readonly NetworkVariable<MatchOutcome> outcome = new(MatchOutcome.Playing, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         readonly NetworkVariable<int> stars = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        // O texto dos objetivos já pronto, montado pelo host (só ele avalia os objetivos).
+        // FixedString: texto de tamanho fixo, que dá para mandar pela rede.
+        readonly NetworkVariable<FixedString512Bytes> objectiveText = new(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+        // As etapas que existem nesta fase (ex.: 0, 1, 2), em ordem, e em qual estamos. Só no host.
+        readonly List<int> stages = new();
+        int stageIndex;
+        readonly StringBuilder sb = new();
 
         // --- Estado para quem quiser LER (a HUD) ---
+        public ChapterDefinition Chapter { get; private set; } // null = cena fora da Campanha
+        public float NightDuration => Chapter != null ? Chapter.nightDuration : fallbackNightDuration;
+        public bool HasClock => NightDuration > 0;
         public float TimeLeft => timeLeft.Value;
-        public int Delivered => delivered.Value;
-        public int TotalFurniture => Furniture.All.Count;
         public MatchOutcome Outcome => outcome.Value;
         public int Stars => stars.Value; // 1 a 5, só quando Outcome == Won
+        public string ObjectiveText => objectiveText.Value.ToString();
 
-        void Awake() => Instance = this;
+        void Awake()
+        {
+            Instance = this;
+            Chapter = Campaign.Instance != null ? Campaign.Instance.FindByScene(gameObject.scene.name) : null;
+        }
 
         // NetworkBehaviour já tem um OnDestroy próprio: "override" + "base" para não apagar o dele.
         public override void OnDestroy()
@@ -45,7 +62,7 @@ namespace MudancaAssombrada
         public override void OnNetworkSpawn()
         {
             outcome.OnValueChanged += OnOutcomeChanged;
-            if (IsServer) timeLeft.Value = nightDuration;
+            if (IsServer) ServerStartMatch();
             ApplyOutcome(outcome.Value); // quem entra no meio de um game over também congela
         }
 
@@ -57,10 +74,26 @@ namespace MudancaAssombrada
         // Congelar o tempo não trava a rede: o Netcode usa o tempo "real", sem escala.
         static void ApplyOutcome(MatchOutcome o) => Time.timeScale = o == MatchOutcome.Playing ? 1f : 0f;
 
-        // Chamado pelo fantasma, que só pensa no host.
+        // Chamado pelos fantasmas, que só pensam no host.
         public static void ServerPlayerCaught()
         {
             if (Instance != null && Instance.IsServer) Instance.End(MatchOutcome.Caught);
+        }
+
+        void ServerStartMatch()
+        {
+            // Descobre as etapas que existem na cena (sem repetir, em ordem).
+            stages.Clear();
+            foreach (var o in Objective.All)
+                if (!stages.Contains(o.Stage)) stages.Add(o.Stage);
+            stages.Sort();
+            if (stages.Count == 0)
+                Debug.LogWarning("Esta fase não tem nenhum objetivo (componente Objective): ela nunca vai terminar em vitória.");
+
+            timeLeft.Value = NightDuration;
+            stageIndex = 0;
+            stars.Value = 0;
+            outcome.Value = MatchOutcome.Playing;
         }
 
         void Update()
@@ -76,20 +109,61 @@ namespace MudancaAssombrada
 
             if (!IsServer) return; // daqui pra baixo, só o host decide
 
-            timeLeft.Value = Mathf.Max(0f, timeLeft.Value - Time.deltaTime);
-            delivered.Value = TruckZone.TotalDelivered;
+            if (HasClock)
+            {
+                timeLeft.Value = Mathf.Max(0f, timeLeft.Value - Time.deltaTime);
+                if (timeLeft.Value <= 0) { End(MatchOutcome.Dawn); return; }
+            }
 
-            if (timeLeft.Value <= 0) End(MatchOutcome.Dawn);
-            else if (delivered.Value >= TotalFurniture) End(MatchOutcome.Won);
+            UpdateObjectives();
+        }
+
+        void UpdateObjectives()
+        {
+            if (stages.Count == 0) return;
+
+            int stage = stages[stageIndex];
+            bool allDone = true;
+            sb.Clear();
+            if (stages.Count > 1) sb.Append("Etapa ").Append(stageIndex + 1).Append(" de ").Append(stages.Count).Append('\n');
+            foreach (var o in Objective.All)
+            {
+                if (o.Stage != stage) continue;
+                bool done = o.IsComplete;
+                allDone &= done;
+                sb.Append(done ? "✓ " : "• ").Append(o.Progress).Append('\n');
+            }
+            SetObjectiveText(sb.ToString().TrimEnd());
+
+            if (!allDone) return;
+            if (stageIndex + 1 < stages.Count) stageIndex++; // próxima etapa
+            else End(MatchOutcome.Won);
+        }
+
+        void SetObjectiveText(string text)
+        {
+            // O FixedString tem limite de BYTES (512), e letras acentuadas ocupam mais de um.
+            // 150 letras cabem com folga; textos maiores são cortados em vez de dar erro.
+            if (text.Length > 150) text = text.Substring(0, 150);
+            var value = new FixedString512Bytes(text);
+            if (!objectiveText.Value.Equals(value)) objectiveText.Value = value; // só manda se mudou
         }
 
         void End(MatchOutcome o)
         {
             if (outcome.Value != MatchOutcome.Playing) return; // já acabou, ignora
             if (o == MatchOutcome.Won)
-                stars.Value = Mathf.Clamp(Mathf.CeilToInt(timeLeft.Value / nightDuration * 5f), 1, 5);
+            {
+                // Mais tempo sobrando = mais estrelas. Sem relógio: 5 estrelas.
+                stars.Value = HasClock ? Mathf.Clamp(Mathf.CeilToInt(timeLeft.Value / NightDuration * 5f), 1, 5) : 5;
+                ChapterCompletedRpc();
+            }
             outcome.Value = o;
         }
+
+        // SendTo.Everyone: cada jogador grava a conclusão no PRÓPRIO save.
+        [Rpc(SendTo.Everyone)]
+        void ChapterCompletedRpc() => SaveSystem.CompleteChapter(Chapter);
 
         // Reiniciar SEM recarregar a cena: recarregar no meio de uma partida em rede
         // é complicado (todos precisam recarregar juntos e os objetos de rede renascer).
@@ -101,11 +175,11 @@ namespace MudancaAssombrada
 
             foreach (var f in Furniture.All) f.ServerReset();
             foreach (var g in GhostHunter.All) g.ServerReset();
+            foreach (var i in Interactable.All) i.ServerReset();
+            foreach (var o in Objective.All) o.ServerReset();
             foreach (var p in NetworkPlayer.All) p.ResetPositionRpc();
 
-            timeLeft.Value = nightDuration;
-            delivered.Value = 0;
-            outcome.Value = MatchOutcome.Playing; // descongela todo mundo
+            ServerStartMatch(); // descongela todo mundo
         }
     }
 }

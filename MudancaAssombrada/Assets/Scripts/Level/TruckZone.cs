@@ -40,6 +40,15 @@ namespace MudancaAssombrada
             }
         }
 
+        // Este móvel está entregue (solto dentro de algum caminhão)?
+        public static bool IsDelivered(Furniture furniture)
+        {
+            if (furniture.IsHeld) return false;
+            foreach (var truck in all)
+                if (truck.inside.Contains(furniture)) return true;
+            return false;
+        }
+
         // Um collider marcado como "Is Trigger" não bloqueia nada: só avisa quando algo entra ou sai.
         void OnTriggerEnter(Collider other)
         {

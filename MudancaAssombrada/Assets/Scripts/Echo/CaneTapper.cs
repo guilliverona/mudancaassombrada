@@ -40,7 +40,7 @@ namespace MudancaAssombrada
                 nextTapTime = Time.time + tapCooldown;
                 // A ponta da bengala bate no chão, um pouco à frente dos pés.
                 Vector3 tip = transform.position + transform.forward * 0.6f + Vector3.down * 0.9f;
-                EchoSystem.Emit(tip, tapRange, 1f, gameObject);
+                EchoSystem.Emit(new SoundEvent(tip, tapRange, 1f, SoundType.Cane, gameObject));
             }
 
             // Soma quanto andou no chão (ignora o eixo Y).
@@ -58,7 +58,8 @@ namespace MudancaAssombrada
                 float range = stepRange, intensity = 0.5f;
                 if (movement.IsCrouching) { range = crouchStepRange; intensity = 0.25f; }
                 else if (movement.IsRunning) { range = runStepRange; intensity = 0.9f; }
-                EchoSystem.Emit(transform.position + Vector3.down * 0.9f, range * StepVolume, intensity, gameObject);
+                Vector3 feet = transform.position + Vector3.down * 0.9f;
+                EchoSystem.Emit(new SoundEvent(feet, range * StepVolume, intensity, SoundType.Footstep, gameObject));
             }
         }
     }

@@ -34,6 +34,16 @@ namespace MudancaAssombrada
         public int CurrentIndex => characterIndex.Value;
         public CharacterDefinition Current => CharacterRoster.Instance.Get(characterIndex.Value);
 
+        // Trocar de personagem no meio da partida (teclas 1, 2, 3) é só para TESTAR as mecânicas:
+        // no roteiro, cada jogador é um personagem fixo, escolhido na sala de espera.
+        // #if: este código só existe no editor e em builds de desenvolvimento, nunca no jogo final.
+        public static bool DebugSwitchingEnabled =>
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            true;
+#else
+            false;
+#endif
+
         void Awake()
         {
             vibration = GetComponent<VibrationVision>();
@@ -66,7 +76,8 @@ namespace MudancaAssombrada
 
         void Update()
         {
-            if (!IsOwner || PauseMenu.IsOpen) return; // só o dono deste boneco pode pedir para trocar
+            // Só o dono deste boneco pode pedir para trocar, e só em testes.
+            if (!DebugSwitchingEnabled || !IsOwner || PauseMenu.IsOpen) return;
 
             int count = Mathf.Min(CharacterRoster.Instance.Count, GameInput.SelectCharacter.Length);
             for (int i = 0; i < count; i++)

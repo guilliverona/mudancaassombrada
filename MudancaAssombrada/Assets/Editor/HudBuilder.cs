@@ -9,11 +9,11 @@ namespace MudancaAssombrada.Editor
     //
     //   ┌──────────────────────────────────────────────────────┐
     //   │ AMANHECER EM 2:59                    Você: Dona Cida │
-    //   │ Móveis no caminhão: 0/3              [1] Dona Cida   │
-    //   │                                      [2] Tiago ...   │
+    //   │ • Móveis no caminhão: 0/3            [Espaço] Bengala│
+    //   │                                                      │
+    //   │          ┌ bilhete do Seu Valdemar ┐                 │
     //   │                        ·                             │
     //   │                   [E] Pegar Armário                  │
-    //   │                                                      │
     //   │ ▬▬▬▬ (estamina)                                      │
     //   └──────────────────────────────────────────────────────┘
     public static class HudBuilder
@@ -31,9 +31,18 @@ namespace MudancaAssombrada.Editor
             timer.alignment = TextAnchor.UpperLeft;
             UiBuilder.Place(timer, new Vector2(0, 1), new Vector2(0, 1), new Vector2(Margin, -30), new Vector2(700, 60));
 
-            var delivered = UiBuilder.CreateText("Móveis Entregues", canvas, "Móveis no caminhão: 0/0", BodySize);
-            delivered.alignment = TextAnchor.UpperLeft;
-            UiBuilder.Place(delivered, new Vector2(0, 1), new Vector2(0, 1), new Vector2(Margin, -90), new Vector2(700, 40));
+            // Uma linha por objetivo da etapa atual (o GameManager monta o texto).
+            var objectives = UiBuilder.CreateText("Objetivos", canvas, "", BodySize);
+            objectives.alignment = TextAnchor.UpperLeft;
+            UiBuilder.Place(objectives, new Vector2(0, 1), new Vector2(0, 1), new Vector2(Margin, -90), new Vector2(700, 220));
+
+            // --- Centro, em cima: o bilhete do Seu Valdemar (some sozinho depois de alguns segundos) ---
+            var note = UiBuilder.CreateImage("Bilhete", canvas, PanelColor);
+            UiBuilder.Place(note, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0, -160), new Vector2(900, 300));
+            var noteText = UiBuilder.CreateText("Texto do Bilhete", note.transform, "", BodySize);
+            UiBuilder.Stretch(noteText);
+            ((RectTransform)noteText.transform).offsetMin = new Vector2(40, 30);  // margem interna
+            ((RectTransform)noteText.transform).offsetMax = new Vector2(-40, -30);
 
             // --- Canto superior direito: personagens ---
             var character = UiBuilder.CreateText("Personagem", canvas, "", NoteSize);
@@ -76,7 +85,9 @@ namespace MudancaAssombrada.Editor
             // --- Liga tudo no script ---
             var hud = canvas.gameObject.AddComponent<Hud>();
             EditorTools.SetReference(hud, "timerText", timer);
-            EditorTools.SetReference(hud, "deliveredText", delivered);
+            EditorTools.SetReference(hud, "objectivesText", objectives);
+            EditorTools.SetReference(hud, "note", note.gameObject);
+            EditorTools.SetReference(hud, "noteText", noteText);
             EditorTools.SetReference(hud, "endScreen", endScreen.gameObject);
             EditorTools.SetReference(hud, "endText", endText);
             EditorTools.SetReference(hud, "crosshair", crosshair.gameObject);

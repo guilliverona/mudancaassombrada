@@ -96,8 +96,27 @@ namespace MudancaAssombrada.Editor
             var lobbyPanel = UiBuilder.CreatePanel("Painel Sala de Espera", canvas);
             var playerListText = UiBuilder.CreateText("Lista de Jogadores", lobbyPanel, "", Theme.BodySize);
             playerListText.alignment = TextAnchor.UpperLeft;
-            UiBuilder.SetHeight(playerListText.gameObject, 160);
-            UiBuilder.CreateText("Escolha", lobbyPanel, "Escolha seu personagem:", Theme.BodySize);
+            UiBuilder.SetHeight(playerListText.gameObject, 130);
+
+            // Capítulo: [◀] A Casa do Espelho [▶]. Só o host navega; os outros só veem.
+            var chapterRow = new GameObject("Capítulo", typeof(RectTransform), typeof(HorizontalLayoutGroup));
+            chapterRow.transform.SetParent(lobbyPanel, false);
+            var rowLayout = chapterRow.GetComponent<HorizontalLayoutGroup>();
+            rowLayout.spacing = 12;
+            rowLayout.childControlWidth = rowLayout.childControlHeight = true;
+            rowLayout.childForceExpandWidth = false;
+            UiBuilder.SetHeight(chapterRow, 60);
+            var chapterPrev = UiBuilder.CreateButton("<", chapterRow.transform);
+            var chapterText = UiBuilder.CreateText("Nome do Capítulo", chapterRow.transform, "", Theme.ButtonSize);
+            chapterText.font = GameFonts.Title;
+            var chapterNext = UiBuilder.CreateButton(">", chapterRow.transform);
+            // Larguras: setas fixas e estreitas; o nome ocupa o resto (flexibleWidth).
+            chapterPrev.GetComponent<LayoutElement>().preferredWidth = 60;
+            chapterNext.GetComponent<LayoutElement>().preferredWidth = 60;
+            chapterText.GetComponent<LayoutElement>().flexibleWidth = 1;
+            var chapterInfo = UiBuilder.CreateText("Info do Capítulo", lobbyPanel, "", Theme.NoteSize);
+            chapterInfo.color = Theme.MutedColor;
+            UiBuilder.SetHeight(chapterInfo.gameObject, 50);
 
             // Um botão por personagem do Elenco: personagem novo no Elenco = botão novo aqui.
             var roster = CharacterRoster.Instance;
@@ -113,7 +132,7 @@ namespace MudancaAssombrada.Editor
             var leaveButton = UiBuilder.CreateButton("Sair da sala", lobbyPanel);
             var lobbyInfoText = UiBuilder.CreateText("Info", lobbyPanel, "", Theme.NoteSize);
             lobbyInfoText.color = Theme.MutedColor;
-            UiBuilder.SetHeight(lobbyInfoText.gameObject, 70);
+            UiBuilder.SetHeight(lobbyInfoText.gameObject, 50);
 
             // --- Painel Opções (o mesmo usado na pausa) ---
             var options = UiBuilder.CreateOptionsPanel(canvas);
@@ -137,6 +156,10 @@ namespace MudancaAssombrada.Editor
             Set("connectBackButton", connectBackButton);
             Set("statusText", statusText);
             Set("playerListText", playerListText);
+            Set("chapterPrevButton", chapterPrev);
+            Set("chapterNextButton", chapterNext);
+            Set("chapterText", chapterText);
+            Set("chapterInfoText", chapterInfo);
             Set("startButton", startButton);
             Set("leaveButton", leaveButton);
             Set("lobbyInfoText", lobbyInfoText);

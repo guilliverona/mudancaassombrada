@@ -54,6 +54,12 @@ namespace MudancaAssombrada
         // Precisa ser criada no Awake (e não na declaração), regra do Netcode.
         NetworkList<LobbyPlayer> players;
 
+        // O capítulo escolhido pelo host (posição na Campanha). Todos veem, só o host muda.
+        readonly NetworkVariable<int> selectedChapter = new(
+            0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
+        public int SelectedChapter => selectedChapter.Value;
+
         public IReadOnlyList<LobbyPlayer> Players
         {
             get
@@ -73,12 +79,14 @@ namespace MudancaAssombrada
         public override void OnNetworkSpawn()
         {
             players.OnListChanged += OnPlayersChanged;
+            selectedChapter.OnValueChanged += OnChapterChanged;
 
             if (IsServer)
             {
                 NetworkManager.OnClientConnectedCallback += AddPlayer;
                 NetworkManager.OnClientDisconnectCallback += RemovePlayer;
                 AddPlayer(NetworkManager.LocalClientId); // o próprio host
+                selectedChapter.Value = DefaultChapter();
             }
 
             // Cada um conta ao host o nome que digitou no menu.
@@ -89,6 +97,7 @@ namespace MudancaAssombrada
         public override void OnNetworkDespawn()
         {
             players.OnListChanged -= OnPlayersChanged;
+            selectedChapter.OnValueChanged -= OnChapterChanged;
             if (IsServer && NetworkManager != null)
             {
                 NetworkManager.OnClientConnectedCallback -= AddPlayer;
@@ -98,6 +107,7 @@ namespace MudancaAssombrada
         }
 
         void OnPlayersChanged(NetworkListEvent<LobbyPlayer> change) => Changed?.Invoke();
+        void OnChapterChanged(int previous, int current) => Changed?.Invoke();
 
         // ---------- Só no host ----------
 
@@ -135,9 +145,19 @@ namespace MudancaAssombrada
             players[i] = p;
         }
 
+        // O host navega pelos capítulos. Dá para VER qualquer um (até os bloqueados, para a equipe
+        // saber o que vem pela frente), mas só começa os liberados no save DELE e com cena pronta.
+        public void SelectChapter(int index)
+        {
+            if (!IsServer || Campaign.Instance.Get(index) == null) return;
+            selectedChapter.Value = index;
+        }
+
+        public bool CanStart => Campaign.Instance.CanPlay(selectedChapter.Value);
+
         public void StartGame()
         {
-            if (!IsServer) return;
+            if (!IsServer || !CanStart) return;
 
             // Anota as escolhas antes de sair desta cena (este objeto vai ser destruído).
             ChosenCharacters.Clear();
@@ -146,7 +166,18 @@ namespace MudancaAssombrada
 
             // Troca de cena EM REDE: o host carrega a fase, e o Netcode manda todos os
             // clientes carregarem junto. (Usar o SceneManager normal só trocaria a do host.)
-            NetworkManager.SceneManager.LoadScene(NetworkSession.GameScene, LoadSceneMode.Single);
+            string scene = Campaign.Instance.Get(selectedChapter.Value).sceneName;
+            NetworkManager.SceneManager.LoadScene(scene, LoadSceneMode.Single);
+        }
+
+        // Começa no capítulo mais adiantado que já dá para jogar (onde a equipe parou).
+        static int DefaultChapter()
+        {
+            var campaign = Campaign.Instance;
+            int best = 0;
+            for (int i = 0; i < campaign.Count; i++)
+                if (campaign.CanPlay(i)) best = i;
+            return best;
         }
 
         // ---------- Ajudantes ----------

@@ -20,6 +20,7 @@ namespace MudancaAssombrada
     }
 
     // Fica no Player. Aperte Interagir (E) olhando para um móvel para pegar; de novo para soltar.
+    // A mesma tecla USA objetos interativos (Interactable): instrumentos, interruptores...
     //
     // EM REDE, pegar tem duas fases:
     //   1. Pedir: "host, posso pegar este móvel?" (RequestPickUp)
@@ -42,50 +43,76 @@ namespace MudancaAssombrada
         public InteractionPrompt Prompt { get; private set; }
 
         PlayerMovement movement;
+        CharacterSwitcher character;
         Furniture held;      // null = mãos vazias
         Furniture requested; // pedi para o host e estou esperando
         float requestTime;
 
-        // O móvel na mira AGORA (null = nada). Atualizado todo frame, para a dica na tela
-        // aparecer e sumir na hora em que você olha para o móvel ou desvia o olhar.
+        // O que está na mira AGORA (null = nada). Atualizado todo frame, para a dica na tela
+        // aparecer e sumir na hora em que você olha para o objeto ou desvia o olhar.
         Furniture lookTarget;
+        Interactable lookInteractable;
 
         // Peso que o jogador SENTE: nunca menos que 1 (nada fica mais leve que "sem peso").
         float FeltWeight => Mathf.Max(1f, held.Weight / Strength);
 
-        void Awake() => movement = GetComponent<PlayerMovement>();
+        void Awake()
+        {
+            movement = GetComponent<PlayerMovement>();
+            character = GetComponent<CharacterSwitcher>();
+        }
 
         void OnDisable() => Prompt = InteractionPrompt.None;
 
         void Update()
         {
             WaitForPickUp();
-            lookTarget = held == null ? FurnitureInSight() : null;
+            LookAround();
             Prompt = BuildPrompt();
 
             if (PauseMenu.IsOpen || !GameInput.Interact.WasPressedThisFrame()) return;
 
             if (held != null) Drop();
+            else if (lookInteractable != null) TryUse(lookInteractable);
             else if (requested == null) TryPickUp();
         }
 
         InteractionPrompt BuildPrompt()
         {
             if (held != null) return new InteractionPrompt($"Soltar {held.name}", true);
+
+            if (lookInteractable != null)
+            {
+                if (lookInteractable.IsUsed) return InteractionPrompt.None; // já usado: nada a fazer
+                bool canUse = lookInteractable.CanBeUsedBy(character.Current);
+                return new InteractionPrompt(canUse ? lookInteractable.Prompt : "Não consigo", canUse);
+            }
+
             if (lookTarget == null) return InteractionPrompt.None;
             if (lookTarget.IsHeld) return new InteractionPrompt("Ocupado", false);
             return new InteractionPrompt($"Pegar {lookTarget.name}", true);
         }
 
-        Furniture FurnitureInSight()
+        void LookAround()
         {
+            lookTarget = null;
+            lookInteractable = null;
+            if (held != null) return; // de mãos ocupadas, só dá para soltar
+
             // Raycast: um "raio laser" invisível saindo do centro da câmera.
             // Se bater em algo dentro do alcance, 'hit' diz o que foi.
             Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
-            if (!Physics.Raycast(ray, out RaycastHit hit, reach)) return null;
+            if (!Physics.Raycast(ray, out RaycastHit hit, reach)) return;
 
-            // Só interessa se o objeto atingido tiver o componente Furniture.
-            return hit.collider.TryGetComponent(out Furniture furniture) ? furniture : null;
+            // Só interessa se o objeto atingido for um móvel ou algo usável.
+            hit.collider.TryGetComponent(out lookTarget);
+            hit.collider.TryGetComponent(out lookInteractable);
+        }
+
+        void TryUse(Interactable target)
+        {
+            if (target.IsUsed || !target.IsSpawned || !target.CanBeUsedBy(character.Current)) return;
+            target.RequestUse();
         }
 
         void TryPickUp()

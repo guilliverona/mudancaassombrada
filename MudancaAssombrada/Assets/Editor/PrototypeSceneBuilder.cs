@@ -72,6 +72,15 @@ namespace MudancaAssombrada.Editor
             // --- Fantasma ---
             EditorTools.Place(LevelPrefabsBuilder.Load(LevelPrefabsBuilder.GhostPath), new Vector3(0, 1.2f, 6f));
 
+            // --- Objetivos da fase ---
+            // Um objeto por objetivo. Esta fase só tem um: levar TODOS os móveis para o caminhão.
+            // Para outras fases: adicione ReachAreaObjective, InteractObjective... e use o campo
+            // "Stage" para dividir em etapas (ver ARQUITETURA.md).
+            var objectives = new GameObject("Objetivos").transform;
+            var deliver = new GameObject("Entregar todos os móveis");
+            deliver.transform.SetParent(objectives);
+            deliver.AddComponent<DeliverFurnitureObjective>();
+
             // --- Câmera de espera: o que se vê antes de o seu boneco nascer (vista de cima da casa) ---
             // A câmera padrão da cena vira a "de espera". Ela NÃO é a MainCamera: essa é a do jogador.
             var lobbyCam = Camera.main;

@@ -18,26 +18,26 @@ namespace MudancaAssombrada
             if (EchoSystem.NetworkBroadcast == Broadcast) EchoSystem.NetworkBroadcast = null;
         }
 
-        void Broadcast(Vector3 origin, float range, float intensity, GameObject source)
+        void Broadcast(SoundEvent sound)
         {
             // Só quem é DONO da fonte do som manda ele para a rede:
             //  - meus passos, minha bengala, meu apito: o meu boneco é meu  -> envio
             //  - passos do fantasma: o fantasma é do host                    -> o host envia
             // Sons de objetos sem rede ficam só locais.
             // Sem essa regra, cada computador reenviaria o mesmo som e ele chegaria repetido.
-            if (source == null || !source.TryGetComponent(out NetworkObject netObj) || !netObj.IsOwner) return;
+            if (sound.Source == null || !sound.Source.TryGetComponent(out NetworkObject netObj) || !netObj.IsOwner) return;
 
-            SoundRpc(origin, range, intensity, netObj);
+            SoundRpc(sound.Position, sound.Range, sound.Intensity, sound.Type, netObj);
         }
 
         // SendTo.NotMe: roda em todos os OUTROS computadores (eu já tive o som localmente).
         // NetworkObjectReference: não dá para mandar um GameObject pela rede, mas dá para mandar
         // a "identidade de rede" dele, e cada computador encontra a sua própria cópia.
         [Rpc(SendTo.NotMe)]
-        void SoundRpc(Vector3 origin, float range, float intensity, NetworkObjectReference sourceRef)
+        void SoundRpc(Vector3 position, float range, float intensity, SoundType type, NetworkObjectReference sourceRef)
         {
             GameObject source = sourceRef.TryGet(out NetworkObject netObj) ? netObj.gameObject : null;
-            EchoSystem.EmitLocal(origin, range, intensity, source);
+            EchoSystem.EmitLocal(new SoundEvent(position, range, intensity, type, source));
         }
     }
 }

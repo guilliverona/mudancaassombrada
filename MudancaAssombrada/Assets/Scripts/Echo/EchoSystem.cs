@@ -4,8 +4,10 @@ using UnityEngine;
 
 namespace MudancaAssombrada
 {
-    // Gerencia as ondas de som e o "modo cego".
-    // Qualquer script pode criar uma onda chamando: EchoSystem.Emit(posição, alcance, intensidade);
+    // O "rádio" de todos os sons do jogo, e o desenho das ondas no "modo cego".
+    // Qualquer script faz um som chamando:
+    //   EchoSystem.Emit(new SoundEvent(posição, alcance, intensidade, SoundType.Footstep, gameObject));
+    // e qualquer script ouve se inscrevendo em EchoSystem.SoundEmitted.
     public class EchoSystem : MonoBehaviour
     {
         const int MaxPulses = 8; // precisa ser igual ao MAX_PULSES do Echo.shader
@@ -14,6 +16,8 @@ namespace MudancaAssombrada
         [SerializeField] float waveSpeed = 7f;      // metros por segundo
         [SerializeField] float ringWidth = 0.35f;   // espessura do anel
         [SerializeField] Color echoColor = new Color(0.55f, 0.8f, 1f);
+        [Tooltip("Quais tipos de som viram onda na tela de quem enxerga pelo eco.")]
+        [SerializeField] SoundType visibleSounds = SoundType.Everything;
 
         // A instância da fase atual (null no menu, onde não há eco).
         // É um "serviço da cena": existe um só, e os outros scripts falam com ele por aqui.
@@ -56,30 +60,29 @@ namespace MudancaAssombrada
 
         // EVENTO: quem quiser "ouvir" os sons do jogo se inscreve aqui (padrão Observer).
         // O EchoSystem não sabe quem está ouvindo, e nem precisa saber.
-        // Parâmetros: posição, alcance, intensidade, quem fez o som.
-        public static event Action<Vector3, float, float, GameObject> SoundEmitted;
+        public static event Action<SoundEvent> SoundEmitted;
 
         // Quem envia os sons para os outros computadores (o SoundRelay se cadastra aqui ao conectar).
-        // Sem rede (null), o jogo funciona igual a antes: só local.
-        public static Action<Vector3, float, float, GameObject> NetworkBroadcast;
+        // Sem rede (null), o jogo funciona igual: só local.
+        public static Action<SoundEvent> NetworkBroadcast;
 
-        // Todo script do jogo continua chamando Emit, sem saber que existe rede.
-        public static void Emit(Vector3 origin, float maxRadius, float intensity = 1f, GameObject source = null)
+        // Todo script do jogo chama Emit, sem saber que existe rede.
+        public static void Emit(SoundEvent sound)
         {
-            EmitLocal(origin, maxRadius, intensity, source);
-            NetworkBroadcast?.Invoke(origin, maxRadius, intensity, source);
+            EmitLocal(sound);
+            NetworkBroadcast?.Invoke(sound);
         }
 
         // Só neste computador. O SoundRelay usa ESTA versão ao receber um som de outro jogador,
         // senão o som seria reenviado de volta para a rede, para sempre (eco infinito!).
-        public static void EmitLocal(Vector3 origin, float maxRadius, float intensity = 1f, GameObject source = null)
+        public static void EmitLocal(SoundEvent sound)
         {
             // "?." = só chama se alguém estiver inscrito (senão seria null).
             // Fica antes do return: fantasmas ouvem mesmo sem o modo de eco na cena.
-            SoundEmitted?.Invoke(origin, maxRadius, intensity, source);
+            SoundEmitted?.Invoke(sound);
 
-            if (Instance == null) return;
-            Instance.pulses[Instance.nextSlot] = new Pulse { origin = origin, maxRadius = maxRadius, intensity = intensity };
+            if (Instance == null || !sound.Is(Instance.visibleSounds)) return;
+            Instance.pulses[Instance.nextSlot] = new Pulse { origin = sound.Position, maxRadius = sound.Range, intensity = sound.Intensity };
             Instance.nextSlot = (Instance.nextSlot + 1) % MaxPulses; // % = resto da divisão: 7 -> 0
         }
 

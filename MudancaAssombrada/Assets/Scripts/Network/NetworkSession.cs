@@ -16,8 +16,7 @@ namespace MudancaAssombrada
     {
         public const int MaxPlayers = 3;
         public const ushort Port = 7777;
-        public const string MenuScene = "Menu";
-        public const string GameScene = "Prototipo1";
+        public const string MenuScene = "Menu"; // as cenas das fases vêm da Campanha
 
         // Mensagem para o menu mostrar depois de uma desconexão (null = nenhuma).
         public static string LastError { get; set; }

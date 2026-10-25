@@ -36,6 +36,10 @@ namespace MudancaAssombrada
 
         [Header("Sala de espera")]
         [SerializeField] Text playerListText;
+        [SerializeField] Button chapterPrevButton;
+        [SerializeField] Button chapterNextButton;
+        [SerializeField] Text chapterText;     // nome do capítulo escolhido
+        [SerializeField] Text chapterInfoText; // fantasma, destaque, situação (bloqueado, em produção...)
         [SerializeField] Button[] characterButtons; // um por personagem, na ordem do Elenco
         [SerializeField] Button startButton;
         [SerializeField] Button leaveButton;
@@ -76,6 +80,8 @@ namespace MudancaAssombrada
                 int character = i; // cópia local: cada botão guarda a SUA
                 characterButtons[i].onClick.AddListener(() => LobbyManager.Instance.RequestCharacter(character));
             }
+            chapterPrevButton.onClick.AddListener(() => StepChapter(-1));
+            chapterNextButton.onClick.AddListener(() => StepChapter(+1));
             startButton.onClick.AddListener(() => LobbyManager.Instance.StartGame());
             leaveButton.onClick.AddListener(() => { Session.Leave(); Show(connectPanel); });
 
@@ -166,10 +172,48 @@ namespace MudancaAssombrada
                     roster.Get(i).FullName + (isMine ? "  ✓" : taken ? "  (ocupado)" : "");
             }
 
+            RefreshChapter(lobby, net.IsHost);
+
             startButton.gameObject.SetActive(net.IsHost); // só o host começa a partida
+            startButton.interactable = lobby.CanStart;
             lobbyInfoText.text = net.IsHost
                 ? "Quando todos entrarem, clique em Começar."
                 : "Esperando o host começar a partida...";
+        }
+
+        // O capítulo escolhido: só o host navega (◀ ▶); os outros só veem.
+        void RefreshChapter(LobbyManager lobby, bool isHost)
+        {
+            var campaign = Campaign.Instance;
+            int index = lobby.SelectedChapter;
+            var chapter = campaign.Get(index);
+
+            chapterPrevButton.gameObject.SetActive(isHost);
+            chapterNextButton.gameObject.SetActive(isHost);
+            chapterPrevButton.interactable = index > 0;
+            chapterNextButton.interactable = index < campaign.Count - 1;
+
+            if (chapter == null)
+            {
+                chapterText.text = "Nenhum capítulo";
+                chapterInfoText.text = "";
+                return;
+            }
+
+            chapterText.text = chapter.title;
+            string info = chapter.ghostName;
+            if (chapter.featuredCharacter != null)
+                info += (info.Length > 0 ? " · " : "") + "Destaque: " + chapter.featuredCharacter.displayName;
+            // A situação vem do save do HOST (é ele quem decide o que dá para jogar).
+            if (!chapter.IsPlayable) info += "\nEm produção";
+            else if (isHost && !campaign.IsUnlocked(index)) info += "\nBloqueado: termine o capítulo anterior";
+            chapterInfoText.text = info;
+        }
+
+        void StepChapter(int direction)
+        {
+            var lobby = LobbyManager.Instance;
+            lobby.SelectChapter(lobby.SelectedChapter + direction);
         }
 
         void Quit()

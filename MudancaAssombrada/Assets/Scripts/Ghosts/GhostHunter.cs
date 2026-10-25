@@ -33,6 +33,8 @@ namespace MudancaAssombrada
         [SerializeField] float huntSpeed = 4.2f;
 
         [Header("Audição")]
+        [Tooltip("Que tipos de som chamam a atenção dele. A música, por exemplo, ele ignora.")]
+        [SerializeField] SoundType hears = SoundType.Footstep | SoundType.Voice | SoundType.Impact | SoundType.Cane | SoundType.Whistle;
         [SerializeField] float hearingMultiplier = 1.5f; // ouve sons um pouco além do alcance deles
         [SerializeField] float huntDistance = 6f;        // som mais perto que isso = começa a caçar
         [SerializeField] float giveUpTime = 4f;          // segundos de silêncio para desistir da caçada
@@ -89,16 +91,17 @@ namespace MudancaAssombrada
             EchoSystem.SoundEmitted -= OnSoundHeard;
         }
 
-        void OnSoundHeard(Vector3 position, float range, float intensity, GameObject source)
+        void OnSoundHeard(SoundEvent sound)
         {
-            if (!IsServer) return;            // só o host decide o que o fantasma ouve
-            if (source == gameObject) return; // ignora os próprios passos
+            if (!IsServer) return;                  // só o host decide o que o fantasma ouve
+            if (sound.Source == gameObject) return; // ignora os próprios passos
+            if (!sound.Is(hears)) return;           // tipo de som que não interessa a ele
 
-            float distance = Vector3.Distance(transform.position, position);
-            if (distance > range * hearingMultiplier) return; // longe demais, não ouviu
+            float distance = Vector3.Distance(transform.position, sound.Position);
+            if (distance > sound.Range * hearingMultiplier) return; // longe demais, não ouviu
 
             lastHeardTime = Time.time;
-            agent.SetDestination(position); // o NavMesh calcula o caminho desviando das paredes
+            agent.SetDestination(sound.Position); // o NavMesh calcula o caminho desviando das paredes
 
             if (distance < huntDistance) EnterState(State.Hunting);
             else if (state == State.Patrolling) EnterState(State.Investigating);
@@ -199,7 +202,8 @@ namespace MudancaAssombrada
             walked = 0;
             // Passos mais fortes quando está caçando: a Cida percebe que ele está correndo.
             float intensity = state == State.Hunting ? 0.9f : 0.5f;
-            EchoSystem.Emit(transform.position + Vector3.down * 0.9f, 3.5f, intensity, gameObject);
+            Vector3 feet = transform.position + Vector3.down * 0.9f;
+            EchoSystem.Emit(new SoundEvent(feet, 3.5f, intensity, SoundType.Footstep, gameObject));
         }
     }
 }

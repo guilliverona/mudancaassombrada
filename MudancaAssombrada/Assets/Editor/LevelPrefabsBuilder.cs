@@ -15,12 +15,14 @@ namespace MudancaAssombrada.Editor
     //   Assets/Prefabs/Móveis     Armário, Cadeira, Caixa
     //   Assets/Prefabs/Fantasmas  Fantasma Bibliotecário
     //   Assets/Prefabs/Sistemas   EchoSystem, SoundRelay, GameManager, PlayerSpawner
-    //   Assets/Prefabs/Interface  HUD, Pausa
-    //   Assets/Prefabs/Player     (sempre recriado: é montado 100% por código)
+    //   Assets/Prefabs/Interface  HUD, Pausa        (sempre recriados: interface é código)
+    //   Assets/Prefabs/Player                       (sempre recriado: é montado 100% por código)
     //
-    // REGRA: um prefab só é criado se ainda NÃO existe. Depois disso ele é SEU: abra, troque o
-    // modelo, mude números no Inspector. Rodar o menu de novo não apaga o que você fez.
+    // REGRA: um prefab do MUNDO (casa, móveis, fantasmas, sistemas) só é criado se ainda NÃO
+    // existe. Depois disso ele é SEU: abra, troque o modelo, mude números no Inspector.
+    // Rodar o menu de novo não apaga o que você fez.
     // (Para voltar ao original, apague o prefab e rode de novo, ou use "Recriar Todos os Prefabs".)
+    // Já a interface e o Player seguem o código, como a cena do Menu: mude no código, não no prefab.
     public static class LevelPrefabsBuilder
     {
         public const string PlayerPath = "Assets/Prefabs/Player.prefab";
@@ -68,8 +70,8 @@ namespace MudancaAssombrada.Editor
             Build(SoundRelayPath, recreateAll, BuildSoundRelay);
             Build(GameManagerPath, recreateAll, BuildGameManager);
             Build(SpawnerPath, recreateAll, BuildSpawner);
-            Build(HudPath, recreateAll, HudBuilder.Build);
-            Build(PausePath, recreateAll, BuildPauseMenu);
+            Build(HudPath, recreate: true, HudBuilder.Build);
+            Build(PausePath, recreate: true, BuildPauseMenu);
             AssetDatabase.SaveAssets();
         }
 

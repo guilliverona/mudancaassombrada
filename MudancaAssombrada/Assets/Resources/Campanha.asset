@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: dc1ad73066b6cdf4fb95fe71b14498c8, type: 3}
+  m_Name: Campanha
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.Campaign
+  chapters:
+  - {fileID: 11400000, guid: 073c7e08f760f7a4c8f764a41e3da586, type: 2}
+  - {fileID: 11400000, guid: fcc499585f05008438ad3a2812788f0c, type: 2}
+  - {fileID: 11400000, guid: d0e28c528c556ba42bac5ac93426a0b4, type: 2}
+  - {fileID: 11400000, guid: 7bb2b6d9121c1a0428d2667ac9c666b0, type: 2}
+  - {fileID: 11400000, guid: d3c428abb7befc34fb952d5582b2b01c, type: 2}

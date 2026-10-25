@@ -928,6 +928,7 @@ MonoBehaviour:
   ringLifetime: 2.5
   weakColor: {r: 1, g: 0.85, b: 0.3, a: 1}
   strongColor: {r: 1, g: 0.2, b: 0.3, a: 1}
+  visibleSounds: 121
 --- !u!114 &468701515564093837
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -991,7 +992,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 4273873095
+  GlobalObjectIdHash: 800928477
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0

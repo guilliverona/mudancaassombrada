@@ -102,14 +102,38 @@ namespace MudancaAssombrada.Editor
         }
 
         // Trocar de cena só funciona com cenas listadas na Build Settings. O Menu é a primeira
-        // (índice 0): é a cena que abre quando alguém roda o jogo exportado.
+        // (índice 0): é a cena que abre quando alguém roda o jogo exportado. Depois vêm as cenas
+        // de todos os capítulos da Campanha que já têm cena pronta.
         public static void UpdateBuildSettings()
         {
-            EditorBuildSettings.scenes = new[]
+            var scenes = new System.Collections.Generic.List<EditorBuildSettingsScene>
             {
                 new EditorBuildSettingsScene(MenuSceneBuilder.ScenePath, true),
-                new EditorBuildSettingsScene(PrototypeSceneBuilder.ScenePath, true),
             };
+
+            var campaign = Campaign.Instance;
+            for (int i = 0; campaign != null && i < campaign.Count; i++)
+            {
+                var chapter = campaign.Get(i);
+                if (chapter == null || !chapter.IsPlayable) continue;
+                string path = FindScenePath(chapter.sceneName);
+                if (path == null)
+                    Debug.LogWarning($"Capítulo \"{chapter.title}\": a cena \"{chapter.sceneName}\" não existe.");
+                else if (!scenes.Exists(s => s.path == path))
+                    scenes.Add(new EditorBuildSettingsScene(path, true));
+            }
+            EditorBuildSettings.scenes = scenes.ToArray();
+        }
+
+        // Acha o caminho de uma cena pelo nome (ex.: "Prototipo1" -> "Assets/Scenes/Prototipo1.unity").
+        static string FindScenePath(string sceneName)
+        {
+            foreach (string guid in AssetDatabase.FindAssets($"t:Scene {sceneName}"))
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                if (System.IO.Path.GetFileNameWithoutExtension(path) == sceneName) return path;
+            }
+            return null;
         }
     }
 }

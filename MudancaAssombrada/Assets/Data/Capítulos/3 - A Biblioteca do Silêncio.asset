@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6dbc37c9069d64e43ac36e7ba1c5d734, type: 3}
+  m_Name: "3 - A Biblioteca do Sil\xEAncio"
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.ChapterDefinition
+  id: biblioteca
+  title: "A Biblioteca do Sil\xEAncio"
+  ghostName: "O Bibliotec\xE1rio"
+  featuredCharacter: {fileID: 11400000, guid: 195a3f422f1a6514d989dca40baf593b, type: 2}
+  sceneName: 
+  alwaysUnlocked: 0
+  nightDuration: 180
+  payment: 100
+  openingNote: "Uma regra s\xF3: sil\xEAncio absoluto. Falem como o Marcelo."
+  ratingComments: []

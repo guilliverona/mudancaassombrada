@@ -7,7 +7,7 @@ namespace MudancaAssombrada
     // A HUD da partida: TUDO que aparece na tela durante o jogo fica aqui, num lugar só.
     //
     // Ela não sabe as regras do jogo: só LÊ o estado de quem sabe e desenha.
-    //   - GameManager.Instance: cronômetro, móveis entregues, resultado
+    //   - GameManager.Instance: relógio, objetivos, resultado, capítulo
     //   - NetworkPlayer.Local: estamina, dica de interação, personagem
     // Assim, mudar o visual nunca quebra uma regra, e mudar uma regra não exige mexer na tela.
     // As peças (textos, barras) são criadas pelo HudBuilder (editor) e ligadas aqui pelo Inspector.
@@ -15,9 +15,14 @@ namespace MudancaAssombrada
     {
         [Header("Partida")]
         [SerializeField] Text timerText;
-        [SerializeField] Text deliveredText;
+        [SerializeField] Text objectivesText;
         [SerializeField] GameObject endScreen;
         [SerializeField] Text endText;
+
+        [Header("Bilhete do Seu Valdemar (começo da fase)")]
+        [SerializeField] GameObject note;
+        [SerializeField] Text noteText;
+        [SerializeField] float noteDuration = 10f; // segundos na tela
 
         [Header("Jogador")]
         [SerializeField] GameObject crosshair;
@@ -30,11 +35,12 @@ namespace MudancaAssombrada
         [SerializeField] Text hintAction;
 
         [Header("Regras de exibição")]
-        [Tooltip("Abaixo disto (em segundos), o cronômetro fica na cor de perigo.")]
+        [Tooltip("Abaixo disto (em segundos), o relógio fica na cor de perigo.")]
         [SerializeField] float dangerTime = 30f;
 
         // StringBuilder: monta textos grandes sem criar um monte de pedaços de texto no caminho.
         readonly StringBuilder sb = new();
+        float noteHideTime = -1f; // < 0 = o bilhete ainda não apareceu nesta partida
 
         void Update()
         {
@@ -47,46 +53,76 @@ namespace MudancaAssombrada
         void UpdateMatch(GameManager game)
         {
             bool inMatch = game != null && game.IsSpawned;
-            timerText.gameObject.SetActive(inMatch);
-            deliveredText.gameObject.SetActive(inMatch);
+            timerText.gameObject.SetActive(inMatch && game.HasClock);
+            objectivesText.gameObject.SetActive(inMatch);
             endScreen.SetActive(inMatch && game.Outcome != MatchOutcome.Playing);
+            UpdateNote(inMatch ? game : null);
             if (!inMatch) return;
 
-            int minutes = (int)(game.TimeLeft / 60);
-            int seconds = (int)(game.TimeLeft % 60);
-            // {1:00} = sempre 2 dígitos (5 vira 05)
-            SetText(timerText, string.Format("Amanhecer em {0}:{1:00}", minutes, seconds));
-            timerText.color = game.TimeLeft <= dangerTime ? Theme.DangerColor : Theme.TextColor;
+            if (game.HasClock)
+            {
+                int minutes = (int)(game.TimeLeft / 60);
+                int seconds = (int)(game.TimeLeft % 60);
+                // {1:00} = sempre 2 dígitos (5 vira 05)
+                SetText(timerText, string.Format("Amanhecer em {0}:{1:00}", minutes, seconds));
+                timerText.color = game.TimeLeft <= dangerTime ? Theme.DangerColor : Theme.TextColor;
+            }
 
-            SetText(deliveredText, $"Móveis no caminhão: {game.Delivered}/{game.TotalFurniture}");
+            SetText(objectivesText, game.ObjectiveText);
 
             if (endScreen.activeSelf) SetText(endText, EndMessage(game));
         }
 
+        // O bilhete aparece uma vez, quando a partida começa, e some sozinho.
+        void UpdateNote(GameManager game)
+        {
+            var chapter = game != null ? game.Chapter : null;
+            if (chapter == null || string.IsNullOrEmpty(chapter.openingNote))
+            {
+                note.SetActive(false);
+                return;
+            }
+
+            // unscaledTime: o relógio "de verdade", que continua andando mesmo com o jogo congelado.
+            if (noteHideTime < 0)
+            {
+                noteHideTime = Time.unscaledTime + noteDuration;
+                SetText(noteText, $"<size={Theme.HeaderSize}>{chapter.title}</size>\n\n" +
+                                  $"\"{chapter.openingNote}\"\n— Seu Valdemar");
+            }
+            note.SetActive(Time.unscaledTime < noteHideTime && game.Outcome == MatchOutcome.Playing);
+        }
+
         string EndMessage(GameManager game)
         {
-            string restart = $"\n\n<size={Theme.BodySize}>Aperte {GameInput.KeyLabel(GameInput.Restart)} para jogar de novo</size>";
+            string restart = $"\n\n<size={Theme.NoteSize}>Aperte {GameInput.KeyLabel(GameInput.Restart)} para jogar de novo</size>";
             return game.Outcome switch
             {
-                MatchOutcome.Won => Colored("Mudança concluída!", Theme.DawnColor) + "\n\n" + Rating(game.Stars) + restart,
+                MatchOutcome.Won => Colored("Mudança concluída!", Theme.DawnColor) + "\n\n" + RatingCard(game) + restart,
                 MatchOutcome.Dawn => Colored("Amanheceu...", Theme.DawnColor) + "\nO serviço ficou pela metade." + restart,
                 _ => Colored("O fantasma pegou alguém da equipe!", Theme.DangerColor) + restart,
             };
         }
 
-        // A "ficha de avaliação" do Seu Valdemar, como no roteiro. Mais tempo sobrando = mais estrelas.
-        static string Rating(int stars)
+        // A ficha de avaliação do Seu Valdemar, como no roteiro: as estrelas da equipe e
+        // um comentário diferente para CADA personagem que jogou.
+        string RatingCard(GameManager game)
         {
-            string comment = stars switch
+            int stars = game.Stars;
+            sb.Clear();
+            sb.Append(new string('★', stars)).Append(new string('☆', 5 - stars)); // "★★★☆☆"
+            sb.Append($"\n<size={Theme.BodySize}>");
+            foreach (var player in NetworkPlayer.All)
             {
-                5 => "\"Nem parecia uma casa assombrada. Contrato renovado!\"",
-                4 => "\"Ótimo serviço. Só não me arranhem o armário de novo.\"",
-                3 => "\"Deu certo. Mas eu ouvi a gritaria daqui do escritório.\"",
-                2 => "\"Quase amanheceu. O cliente reclamou do barulho.\"",
-                _ => "\"No limite! Vou descontar a hora extra do salário.\"",
-            };
-            // new string('★', 3) = "★★★"
-            return new string('★', stars) + new string('☆', 5 - stars) + "\n" + comment + "\n— Seu Valdemar";
+                var character = player.Character.Current;
+                string comment = game.Chapter != null ? game.Chapter.CommentFor(character) : null;
+                if (string.IsNullOrEmpty(comment)) continue;
+                sb.Append('\n').Append(Colored(character.displayName, Theme.Muted(character.color)))
+                  .Append(": \"").Append(comment).Append('"');
+            }
+            if (game.Chapter != null) sb.Append($"\n\nPagamento: R$ {game.Chapter.payment}");
+            sb.Append("\n— Seu Valdemar</size>");
+            return sb.ToString();
         }
 
         // ---------- Jogador local ----------
@@ -131,7 +167,6 @@ namespace MudancaAssombrada
 
         void UpdateCharacter(CharacterSwitcher switcher)
         {
-            var roster = CharacterRoster.Instance;
             var me = switcher.Current;
 
             sb.Clear();
@@ -140,15 +175,21 @@ namespace MudancaAssombrada
             if (me.canTap) sb.Append("\n[").Append(GameInput.KeyLabel(GameInput.Tap)).Append("] Bengala");
             if (me.whistle) sb.Append("\n[").Append(GameInput.KeyLabel(GameInput.Whistle)).Append("] Apito");
 
-            // A lista de personagens, marcando quem está com quem.
-            sb.Append('\n');
-            for (int i = 0; i < roster.Count && i < GameInput.SelectCharacter.Length; i++)
+            // Trocar de personagem no meio da partida é só para TESTES (no roteiro, cada jogador
+            // é um personagem fixo). Por isso a lista só aparece no editor / build de desenvolvimento.
+            if (CharacterSwitcher.DebugSwitchingEnabled)
             {
-                var c = roster.Get(i);
-                string status = i == switcher.CurrentIndex ? " (você)"
-                              : CharacterSwitcher.IsTaken(i, switcher) ? " (ocupado)" : "";
-                sb.Append("\n<color=#").Append(ColorUtility.ToHtmlStringRGB(Theme.Muted(c.color))).Append('>')
-                  .Append('[').Append(i + 1).Append("] ").Append(c.FullName).Append("</color>").Append(status);
+                var roster = CharacterRoster.Instance;
+                sb.Append("\n\n<size=").Append(Theme.NoteSize).Append(">Teste (trocar):");
+                for (int i = 0; i < roster.Count && i < GameInput.SelectCharacter.Length; i++)
+                {
+                    var c = roster.Get(i);
+                    string status = i == switcher.CurrentIndex ? " (você)"
+                                  : CharacterSwitcher.IsTaken(i, switcher) ? " (ocupado)" : "";
+                    sb.Append("\n<color=#").Append(ColorUtility.ToHtmlStringRGB(Theme.Muted(c.color))).Append('>')
+                      .Append('[').Append(i + 1).Append("] ").Append(c.displayName).Append("</color>").Append(status);
+                }
+                sb.Append("</size>");
             }
             SetText(characterText, sb.ToString());
         }

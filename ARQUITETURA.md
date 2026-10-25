@@ -10,8 +10,10 @@ O visual (cores, fontes, tamanhos) está em [DESIGN.md](DESIGN.md).
 ```
 Assets/
 ├── Scripts/                  ← o JOGO (assembly "MudancaAssombrada")
+│   ├── Campaign/             capítulos da história, a Campanha e o save
 │   ├── Characters/           personagens: fichas, elenco, habilidades (apito, vibração)
-│   ├── Echo/                 sons e o eco (EchoSystem, bengala/passos)
+│   ├── Echo/                 sons (SoundEvent, com TIPO) e o eco (EchoSystem, bengala/passos)
+│   ├── Objectives/           objetivos das fases (entregar, chegar, usar) e objetos usáveis
 │   ├── Furniture/            móveis carregáveis
 │   ├── Ghosts/               fantasmas (IA por som)
 │   ├── Input/                GameInput: todos os controles, com nome
@@ -29,13 +31,34 @@ Assets/
 │   ├── PrototypeSceneBuilder rascunho inicial da fase
 │   └── MenuSceneBuilder      cena do menu (100% gerada)
 ├── Data/Personagens/         fichas dos personagens (.asset, editáveis)
-├── Resources/                Elenco.asset e fontes (carregados por nome)
+├── Data/Capítulos/           fichas dos capítulos (.asset, editáveis)
+├── Resources/                Elenco.asset, Campanha.asset e fontes (carregados por nome)
 └── Prefabs/                  Casa, Móveis, Fantasmas, Sistemas, Interface, Player
 ```
 
 Todo o código fica no namespace `MudancaAssombrada` (e `MudancaAssombrada.Editor`).
 As duas **Assembly Definitions** (`.asmdef`) separam jogo de editor: o jogo nunca
 depende do editor, e mudar um script só recompila a parte dele.
+
+## O jogo é uma HISTÓRIA
+
+Mudança Assombrada é uma campanha com fim (ver [roteiro.txt](roteiro.txt)), não fases
+infinitas. A estrutura segue isso:
+
+- **Campanha** (`Resources/Campanha.asset`): a lista ORDENADA de capítulos.
+  Um capítulo só libera quando o anterior foi concluído.
+- **Capítulo** (`ChapterDefinition`): a casa, o fantasma, o personagem em destaque,
+  a cena, o tempo até amanhecer (0 = sem relógio, como na fase final), o pagamento,
+  o bilhete de abertura do Seu Valdemar e a ficha de avaliação **por personagem**.
+- **Objetivos** ficam na cena de cada fase (componentes `Objective`), divididos em **etapas**.
+  Fase normal: tudo na etapa 0. Fase final: etapas 0, 1, 2, como no roteiro.
+- **Save** (`SaveSystem`, arquivo `save.json`): capítulos concluídos, dinheiro e
+  **marcadores da história** (para pistas e o final alternativo). Cada jogador tem o seu;
+  numa partida vale o save do host para liberar capítulos.
+- **Sons têm tipo** (`SoundType`: passo, respiração, voz, impacto, bengala, apito, música).
+  Cada fantasma escolhe o que ouve, o eco e a vibração escolhem o que mostram.
+  É isso que permite o Imitador (sem passos nem respiração), a Maestrina (música) e o
+  Bibliotecário (voz).
 
 ## Princípios
 
@@ -88,12 +111,37 @@ Duplique `Assets/Prefabs/Fantasmas/Fantasma Bibliotecário` e ajuste velocidades
 audição e alcance no Inspector. Comportamento diferente = um script novo baseado no
 `GhostHunter` (ele se registra em `GhostHunter.All` para o reinício funcionar).
 
-### Uma fase
+### Uma fase (capítulo)
 1. Duplique `Assets/Scenes/Prototipo1` (ou crie uma cena nova com os prefabs de
    `Sistemas` e `Interface`, mais um `PlayerSpawner`).
 2. Monte a casa com prefabs, selecione o objeto **NavMesh** → **Bake**.
-3. Adicione a cena na Build Settings e troque `NetworkSession.GameScene`
-   (seleção de fase ainda não existe: é o próximo passo natural).
+3. Coloque os **objetivos** (veja abaixo).
+4. Na ficha do capítulo (`Data/Capítulos`), preencha **Scene Name** com o nome da cena.
+   As 4 fases do roteiro já têm ficha, só falta a cena ("Em produção" no menu).
+5. Rode **Criar Cena Menu** (atualiza a Build Settings). O capítulo aparece na sala de espera.
+
+### Um objetivo
+Crie um objeto vazio na cena e adicione um destes componentes:
+- **Deliver Furniture Objective**: levar móveis ao caminhão (lista vazia = todos).
+- **Reach Area Objective**: chegar a um lugar (ajuste a caixa do BoxCollider).
+- **Interact Objective**: usar objetos (arraste os `Interactable` para a lista).
+
+O campo **Stage** divide em etapas: a etapa 1 só começa quando todos os da etapa 0 terminam.
+Tipo novo de objetivo = uma classe que herda de `Objective` (2 propriedades: `IsComplete` e `Progress`).
+
+### Algo usável (instrumento, interruptor, porta...)
+Adicione **Interactable** + **NetworkObject** a um objeto com Collider. Escreva o verbo
+(ex.: "Desligar"), limite a certos personagens se quiser (ex.: só o Tiago) e ligue efeitos
+em **On Used** sem código.
+
+### Um tipo de som
+Um valor novo no `SoundType` (o próximo bit livre, ex.: `1 << 7`). Quem faz o som usa
+`EchoSystem.Emit(new SoundEvent(..., SoundType.Novo, gameObject))`; fantasmas, eco e
+vibração decidem no Inspector se reagem a ele.
+
+### Um marcador da história (pista, escolha)
+`SaveSystem.Data.SetFlag("achou-cartaz-teatro"); SaveSystem.Save();` e depois
+`SaveSystem.Data.HasFlag(...)` onde for preciso (ex.: o final alternativo).
 
 ### Algo na HUD
 Exponha o estado no script que é dono dele (propriedade pública, só leitura) e
@@ -107,5 +155,13 @@ leia na `Hud`. Crie a peça visual no `HudBuilder` (ou direto no prefab HUD).
 | Criar Cena Menu | recria o menu | não (o menu é só código) |
 | Criar Cena Protótipo 1 | recria a fase a partir dos prefabs | **sim** (pergunta antes) |
 | Criar Dados que Faltam | cria fichas/Elenco se não existirem | não |
-| Criar Prefabs que Faltam | cria prefabs que não existem; recria o Player | não |
+| Criar Prefabs que Faltam | cria prefabs do mundo que não existem; recria Player, HUD e Pausa | não |
 | Recriar Todos os Prefabs | volta todos os prefabs ao original | **sim** (pergunta antes) |
+| Apagar Progresso (save) | zera capítulos concluídos, dinheiro e marcadores | **sim** (pergunta antes) |
+
+## Testes
+
+- Trocar de personagem com 1/2/3 durante a partida só funciona no editor e em builds de
+  desenvolvimento (`CharacterSwitcher.DebugSwitchingEnabled`). No jogo final, cada jogador
+  é o personagem que escolheu na sala de espera, como no roteiro.
+- O capítulo **Protótipo** é sempre liberado e fica fora da fila da história.

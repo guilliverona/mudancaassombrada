@@ -100,7 +100,7 @@ namespace MudancaAssombrada
 
             Vector3 point = collision.GetContact(0).point;
             float range = Mathf.Clamp(impact * 1.5f, 3f, 10f) * NoiseMultiplier;
-            EchoSystem.Emit(point, range, Mathf.Clamp01(impact / 5f), gameObject);
+            EchoSystem.Emit(new SoundEvent(point, range, Mathf.Clamp01(impact / 5f), SoundType.Impact, gameObject));
         }
     }
 }

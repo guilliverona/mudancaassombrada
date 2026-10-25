@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6dbc37c9069d64e43ac36e7ba1c5d734, type: 3}
+  m_Name: "2 - O Conservat\xF3rio"
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.ChapterDefinition
+  id: conservatorio
+  title: "O Conservat\xF3rio"
+  ghostName: A Maestrina
+  featuredCharacter: {fileID: 11400000, guid: 49bb43518040df840994844787a29a06, type: 2}
+  sceneName: 
+  alwaysUnlocked: 0
+  nightDuration: 180
+  payment: 100
+  openingNote: "Escola de m\xFAsica abandonada. N\xE3o fiquem parados ouvindo a apresenta\xE7\xE3o. O Tiago sabe o que fazer."
+  ratingComments: []

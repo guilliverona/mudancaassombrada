@@ -19,7 +19,7 @@ namespace MudancaAssombrada
             nextWhistleTime = Time.time + cooldown;
             // Um som como outro qualquer: o fantasma vem, a Cida vê, o Tiago vê o anel.
             // Nenhum desses scripts precisou mudar para o apito existir!
-            EchoSystem.Emit(transform.position, range, 1f, gameObject);
+            EchoSystem.Emit(new SoundEvent(transform.position, range, 1f, SoundType.Whistle, gameObject));
         }
     }
 }
