@@ -66,7 +66,7 @@ public class CharacterSwitcher : NetworkBehaviour
 
     void Update()
     {
-        if (!IsOwner) return; // só o dono deste boneco pode pedir para trocar
+        if (!IsOwner || PauseMenu.IsOpen) return; // só o dono deste boneco pode pedir para trocar
 
         if (Keyboard.current.digit1Key.wasPressedThisFrame) RequestCharacterRpc(Character.Cida);
         if (Keyboard.current.digit2Key.wasPressedThisFrame) RequestCharacterRpc(Character.Tiago);
@@ -138,7 +138,9 @@ public class CharacterSwitcher : NetworkBehaviour
         // Tiago é surdo: zera o volume de TODO o jogo. O AudioListener é o "ouvido"
         // da cena (fica na câmera), e AudioListener.volume é o volume geral dele.
         // Para os outros, vale o volume escolhido no menu de Opções.
-        AudioListener.volume = tiago ? 0f : GameSettings.Volume;
+        // (Fica guardado em GameSettings.Muted para mexer no volume pela pausa não "curar" o Tiago.)
+        GameSettings.Muted = tiago;
+        GameSettings.Apply();
     }
 
     void OnGUI()

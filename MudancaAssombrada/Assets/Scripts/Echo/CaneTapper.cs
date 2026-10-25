@@ -34,7 +34,7 @@ public class CaneTapper : MonoBehaviour
     void Update()
     {
         // Time.time = segundos desde o início do jogo. Técnica clássica de cooldown.
-        if (CanTap && Keyboard.current.spaceKey.wasPressedThisFrame && Time.time >= nextTapTime)
+        if (CanTap && !PauseMenu.IsOpen && Keyboard.current.spaceKey.wasPressedThisFrame && Time.time >= nextTapTime)
         {
             nextTapTime = Time.time + tapCooldown;
             // A ponta da bengala bate no chão, um pouco à frente dos pés.

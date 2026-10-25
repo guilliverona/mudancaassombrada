@@ -93,6 +93,8 @@ public class PlayerMovement : MonoBehaviour
 
     void Look()
     {
+        if (PauseMenu.IsOpen) return; // com o menu aberto, o mouse é para clicar, não para mirar
+
         // Mouse.current.delta = quanto o mouse se moveu neste frame.
         // A sensibilidade escolhida no menu de Opções multiplica a do Inspector.
         Vector2 delta = Mouse.current.delta.ReadValue() * mouseSensitivity * GameSettings.MouseSensitivity;
@@ -114,6 +116,8 @@ public class PlayerMovement : MonoBehaviour
         if (kb.dKey.isPressed) input.x += 1;
         if (kb.aKey.isPressed) input.x -= 1;
         input = Vector2.ClampMagnitude(input, 1f); // diagonal não fica mais rápida
+        // Pausado: fica parado, mas a gravidade continua (senão flutuaria se pausasse no ar).
+        if (PauseMenu.IsOpen) input = Vector2.zero;
 
         // Converte a direção do teclado para a direção para onde o jogador está virado.
         Vector3 move = transform.right * input.x + transform.forward * input.y;

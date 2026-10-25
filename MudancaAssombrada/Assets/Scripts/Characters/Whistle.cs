@@ -13,7 +13,7 @@ public class Whistle : MonoBehaviour
 
     void Update()
     {
-        if (!Keyboard.current.fKey.wasPressedThisFrame || Time.time < nextWhistleTime) return;
+        if (PauseMenu.IsOpen || !Keyboard.current.fKey.wasPressedThisFrame || Time.time < nextWhistleTime) return;
 
         nextWhistleTime = Time.time + cooldown;
         // Um som como outro qualquer: o fantasma vem, a Cida vê, o Tiago vê o anel.

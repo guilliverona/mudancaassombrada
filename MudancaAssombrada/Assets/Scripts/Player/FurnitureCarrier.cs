@@ -39,7 +39,7 @@ public class FurnitureCarrier : MonoBehaviour
         WaitForPickUp();
         lookTarget = held == null ? FurnitureInSight() : null;
 
-        if (!Keyboard.current.eKey.wasPressedThisFrame) return;
+        if (PauseMenu.IsOpen || !Keyboard.current.eKey.wasPressedThisFrame) return;
 
         if (held != null) Drop();
         else if (requested == null) TryPickUp();

@@ -49,10 +49,13 @@ public static class GameSettings
     // Grava no disco agora (senão a Unity só grava ao fechar o jogo, e um travamento perderia tudo).
     public static void Save() => PlayerPrefs.Save();
 
+    // Mudo enquanto o jogador local é o Tiago (ele é surdo). Não é salvo: vale só nesta partida.
+    public static bool Muted { get; set; }
+
     // Aplica o que dá para aplicar na hora.
     public static void Apply()
     {
         Screen.fullScreen = Fullscreen;
-        AudioListener.volume = Volume;
+        AudioListener.volume = Muted ? 0f : Volume;
     }
 }

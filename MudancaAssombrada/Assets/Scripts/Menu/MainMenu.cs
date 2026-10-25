@@ -17,7 +17,7 @@ public class MainMenu : MonoBehaviour
     [SerializeField] GameObject mainPanel;
     [SerializeField] GameObject connectPanel;
     [SerializeField] GameObject lobbyPanel;
-    [SerializeField] GameObject optionsPanel;
+    [SerializeField] OptionsPanel options; // o mesmo painel de Opções usado na pausa
 
     [Header("Inicial")]
     [SerializeField] Button playButton;
@@ -39,13 +39,7 @@ public class MainMenu : MonoBehaviour
     [SerializeField] Button leaveButton;
     [SerializeField] Text lobbyInfoText;
 
-    [Header("Opções")]
-    [SerializeField] Slider sensitivitySlider;
-    [SerializeField] Slider volumeSlider;
-    [SerializeField] Toggle fullscreenToggle;
-    [SerializeField] Text sensitivityValueText;
-    [SerializeField] Text volumeValueText;
-    [SerializeField] Button optionsBackButton;
+    GameObject optionsPanel => options.gameObject;
 
     NetworkSession Session => NetworkManager.Singleton.GetComponent<NetworkSession>();
 
@@ -60,6 +54,7 @@ public class MainMenu : MonoBehaviour
         Time.timeScale = 1f;
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
+        GameSettings.Muted = false; // se jogou de Tiago, o menu volta a ter som
         GameSettings.Apply();
     }
 
@@ -82,15 +77,7 @@ public class MainMenu : MonoBehaviour
         startButton.onClick.AddListener(() => LobbyManager.Instance.StartGame());
         leaveButton.onClick.AddListener(() => { Session.Leave(); Show(connectPanel); });
 
-        // Opções: começa com os valores salvos e salva a cada mudança.
-        sensitivitySlider.SetValueWithoutNotify(GameSettings.MouseSensitivity);
-        volumeSlider.SetValueWithoutNotify(GameSettings.Volume);
-        fullscreenToggle.SetIsOnWithoutNotify(GameSettings.Fullscreen);
-        sensitivitySlider.onValueChanged.AddListener(v => { GameSettings.MouseSensitivity = v; RefreshOptionLabels(); });
-        volumeSlider.onValueChanged.AddListener(v => { GameSettings.Volume = v; GameSettings.Apply(); RefreshOptionLabels(); });
-        fullscreenToggle.onValueChanged.AddListener(v => { GameSettings.Fullscreen = v; GameSettings.Apply(); });
-        optionsBackButton.onClick.AddListener(() => { GameSettings.Save(); Show(mainPanel); });
-        RefreshOptionLabels();
+        options.Closed += () => Show(mainPanel);
 
         nameInput.text = GameSettings.PlayerName;
         addressInput.text = GameSettings.HostAddress;
@@ -180,12 +167,6 @@ public class MainMenu : MonoBehaviour
         lobbyInfoText.text = net.IsHost
             ? "Passe seu IP do Radmin para os amigos. Quando todos entrarem, clique em Começar."
             : "Esperando o host começar a partida...";
-    }
-
-    void RefreshOptionLabels()
-    {
-        sensitivityValueText.text = $"Sensibilidade do mouse: {GameSettings.MouseSensitivity:0.0}x";
-        volumeValueText.text = $"Volume: {GameSettings.Volume * 100:0}%";
     }
 
     void Quit()

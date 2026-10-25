@@ -115,6 +115,8 @@ public static class PrototypeSceneBuilder
         var spawner = new GameObject("PlayerSpawner").AddComponent<PlayerSpawner>();
         SetReference(spawner, "playerPrefab", AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath));
 
+        CreatePauseMenu();
+
         EditorSceneManager.SaveScene(scene, "Assets/Scenes/Prototipo1.unity");
 
         FixNetworkObjectIds(scene); // gera os "RGs" dos objetos de rede e salva de novo
@@ -150,6 +152,32 @@ public static class PrototypeSceneBuilder
     }
 
     const string PlayerPrefabPath = "Assets/Prefabs/Player.prefab";
+
+    // Menu de pausa (Esc): mesmas peças de interface do Menu principal (UiBuilder).
+    static void CreatePauseMenu()
+    {
+        UiBuilder.CreateEventSystem();
+        var canvas = UiBuilder.CreateCanvas("Canvas Pausa");
+
+        var panel = UiBuilder.CreatePanel("Painel Pausa", canvas, 460);
+        UiBuilder.CreateText("Título", panel, "Pausa", 44, FontStyle.Bold);
+        var resumeButton = UiBuilder.CreateButton("Continuar", panel);
+        var optionsButton = UiBuilder.CreateButton("Opções", panel);
+        var leaveButton = UiBuilder.CreateButton("Voltar ao menu", panel);
+        var infoText = UiBuilder.CreateText("Info", panel, "", 22);
+        infoText.color = Color.gray;
+        UiBuilder.SetHeight(infoText.gameObject, 60);
+
+        var options = UiBuilder.CreateOptionsPanel(canvas);
+
+        var pause = canvas.gameObject.AddComponent<PauseMenu>();
+        SetReference(pause, "pausePanel", panel.gameObject);
+        SetReference(pause, "options", options);
+        SetReference(pause, "resumeButton", resumeButton);
+        SetReference(pause, "optionsButton", optionsButton);
+        SetReference(pause, "leaveButton", leaveButton);
+        SetReference(pause, "infoText", infoText);
+    }
 
     static void CreatePlayerPrefab()
     {
