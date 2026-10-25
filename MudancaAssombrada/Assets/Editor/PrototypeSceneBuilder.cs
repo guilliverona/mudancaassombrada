@@ -283,7 +283,13 @@ public static class PrototypeSceneBuilder
         obj.name = name;
         obj.transform.position = position;
         obj.transform.localScale = size;
+        // Em rede: o móvel existe na rede, e quem é DONO dele simula a física e manda a posição.
+        obj.AddComponent<Unity.Netcode.NetworkObject>();
         var furniture = obj.AddComponent<Furniture>(); // adiciona o Rigidbody junto
+        var netTransform = obj.AddComponent<Unity.Netcode.Components.NetworkTransform>();
+        netTransform.AuthorityMode = Unity.Netcode.Components.NetworkTransform.AuthorityModes.Owner;
+        // NetworkRigidbody: liga a física só no dono; nos outros, o Rigidbody fica "kinematic".
+        obj.AddComponent<Unity.Netcode.Components.NetworkRigidbody>();
 
         // Móveis se movem, então não entram no "bake". Em vez disso, o NavMeshObstacle
         // abre um buraco no mapa em tempo real, onde quer que o móvel esteja.
