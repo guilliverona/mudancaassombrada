@@ -90,7 +90,15 @@ public static class PrototypeSceneBuilder
         var agent = ghost.AddComponent<UnityEngine.AI.NavMeshAgent>();
         agent.baseOffset = 1.2f; // distância do centro da cápsula até os pés
         agent.radius = 0.3f;
+        // Em rede: o fantasma existe na rede, e o host (dono) manda a posição para todos.
+        ghost.AddComponent<Unity.Netcode.NetworkObject>();
+        ghost.AddComponent<Unity.Netcode.Components.NetworkTransform>(); // padrão: autoridade do servidor
         ghost.AddComponent<GhostHunter>();
+
+        // --- Rede dos sons: leva os sons de um computador para os outros ---
+        var relay = new GameObject("SoundRelay");
+        relay.AddComponent<Unity.Netcode.NetworkObject>();
+        relay.AddComponent<SoundRelay>();
 
         // --- GameManager ---
         var gameManager = new GameObject("GameManager").AddComponent<GameManager>();
@@ -107,6 +115,18 @@ public static class PrototypeSceneBuilder
         netGo.AddComponent<ConnectionMenu>();
 
         EditorSceneManager.SaveScene(scene, "Assets/Scenes/Prototipo1.unity");
+
+        // Objetos de rede da cena precisam de um "RG" (GlobalObjectIdHash) para o host e os
+        // clientes saberem que o fantasma de um é o MESMO fantasma do outro. O Netcode calcula
+        // esse número a partir do arquivo da cena, então só funciona DEPOIS do primeiro save.
+        // O método que calcula (OnValidate) é interno do Netcode; chamamos por "reflexão",
+        // um jeito do C# de acessar métodos que normalmente não estariam disponíveis.
+        var validate = typeof(Unity.Netcode.NetworkObject).GetMethod("OnValidate",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+        foreach (var netObj in Object.FindObjectsByType<Unity.Netcode.NetworkObject>())
+            validate.Invoke(netObj, null);
+        EditorSceneManager.MarkSceneDirty(scene);
+        EditorSceneManager.SaveScene(scene); // salva de novo, agora com os números certos
 
         // Reiniciar a fase usa SceneManager.LoadScene, que só funciona com cenas na Build Settings.
         EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene("Assets/Scenes/Prototipo1.unity", true) };
