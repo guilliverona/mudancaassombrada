@@ -148,6 +148,7 @@ public static class PrototypeSceneBuilder
         // que é exatamente o que o Inspector faz quando você arrasta algo para um campo.
         SetReference(movement, "cameraPivot", camGo.transform);
         SetReference(carrier, "playerCamera", cam);
+        SetReference(switcher, "body", body.GetComponent<Renderer>());
 
         // --- Componentes de rede ---
         player.AddComponent<Unity.Netcode.NetworkObject>(); // "este objeto existe na rede"
@@ -158,7 +159,8 @@ public static class PrototypeSceneBuilder
         var netPlayer = player.AddComponent<NetworkPlayer>();
         var so = new SerializedObject(netPlayer);
         var list = so.FindProperty("ownerOnly");
-        Behaviour[] ownerOnly = { movement, carrier, cane, vibration, whistle, switcher };
+        // O CharacterSwitcher NÃO entra: ele precisa rodar em todos para pintar a cor de cada boneco.
+        Behaviour[] ownerOnly = { movement, carrier, cane, vibration, whistle };
         list.arraySize = ownerOnly.Length;
         for (int i = 0; i < ownerOnly.Length; i++)
             list.GetArrayElementAtIndex(i).objectReferenceValue = ownerOnly[i];

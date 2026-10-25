@@ -350,7 +350,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 09bacafb938df6a46ad166af490b41df, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CharacterSwitcher
-  startingCharacter: 0
+  ShowTopMostFoldoutHeaderGroup: 1
+  body: {fileID: 6868540525364507983}
 --- !u!114 &4339543430742910769
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -463,4 +464,3 @@ MonoBehaviour:
   - {fileID: 1565150017572927767}
   - {fileID: 7360231509683667312}
   - {fileID: 468701515564093837}
-  - {fileID: 5501792552295832919}
