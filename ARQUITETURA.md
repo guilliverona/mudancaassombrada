@@ -19,6 +19,8 @@ Assets/
 │   ├── Furniture/            móveis carregáveis
 │   ├── Ghosts/               fantasmas (IA por som)
 │   ├── Input/                GameInput: todos os controles, com nome
+│   ├── Interaction/          a mira (PlayerInteractor) e o contrato dos alvos (IInteractionTarget)
+│   ├── Senses/               acontecimentos (GameCue) e o que cada jogador percebe (CueListener)
 │   ├── Level/                peças da fase (caminhão, câmera de espera)
 │   ├── Menu/                 menu principal, pausa, opções, configurações, fontes
 │   ├── Network/              conexão, sala de espera, jogadores na rede
@@ -142,6 +144,25 @@ Tipo novo de objetivo = uma classe que herda de `Objective` (2 propriedades: `Is
 Adicione **Interactable** + **NetworkObject** a um objeto com Collider. Escreva o verbo
 (ex.: "Desligar"), limite a certos personagens se quiser (ex.: só o Tiago) e ligue efeitos
 em **On Used** sem código.
+
+### Algo para fazer com a tecla Interagir (E)
+Crie um componente que assina `IInteractionTarget` (dois métodos: `PromptFor`, que devolve a dica,
+e `Interact`) e coloque num objeto com Collider. O `PlayerInteractor` mira, mostra a dica e chama.
+Exemplos: `Furniture` (pegar), `Interactable` (usar), `Pointable` (apontar o falso).
+O jogador não muda; um objeto pode ter vários alvos (vale o primeiro com dica).
+
+### Um acontecimento que os jogadores percebem (aviso)
+`GameCues.Emit(new GameCue(posição, alcance, Senses.Sight | Senses.Hearing, "texto", gameObject))`.
+O `CueListener` do jogador local filtra pelos sentidos da ficha (cego não vê, surdo não ouve,
+o Tiago sente vibração) e a HUD mostra "[viu] / [ouviu] / [sentiu]". Textos diferentes por
+sentido = um `Emit` para cada. Na rede, vai pelo `SoundRelay` (só o dono da fonte envia).
+
+### Um efeito de fantasma NO jogador (puxar, hipnotizar, derrubar)
+O fantasma (no host) só chama `player.Condition.ServerSet(PlayerState.X, NetworkObject)`; para
+desfazer, `ServerClear(PlayerState.X)`. O `PlayerCondition` aplica as consequências no boneco do dono
+(travar, ser arrastado, largar o móvel) e avisa a equipe. Efeito novo = um valor no `PlayerState`
+e o efeito dele em `PlayerCondition.ApplyEffects`. Pego = `Ghost.ServerCatch(player)` (fica caído;
+a partida só acaba quando todos caem).
 
 ### Um tipo de som
 Um valor novo no `SoundType` (o próximo bit livre, ex.: `1 << 7`). Quem faz o som usa

@@ -16,7 +16,7 @@ namespace MudancaAssombrada
     // Nos outros computadores o Rigidbody fica "kinematic" (sem física própria) e só copia
     // a posição que chega pela rede. Quem faz essa troca é o componente NetworkRigidbody.
     [RequireComponent(typeof(Rigidbody))]
-    public class Furniture : NetworkBehaviour
+    public class Furniture : NetworkBehaviour, IInteractionTarget
     {
         static readonly List<Furniture> all = new();
 
@@ -64,6 +64,16 @@ namespace MudancaAssombrada
             // móvel atravessar a casa voando até o lugar inicial (a interpolação "suaviza" o salto).
             GetComponent<NetworkTransform>().Teleport(startPosition, startRotation, transform.localScale);
         }
+
+        // Mirando o móvel: "Pegar Armário" (ou "Ocupado", apagado, se alguém já está carregando).
+        public InteractionPrompt PromptFor(PlayerInteractor player)
+        {
+            if (player.Carrier == null) return InteractionPrompt.None;
+            if (IsHeld || player.Carrier.IsWaiting) return new InteractionPrompt("Ocupado", false);
+            return new InteractionPrompt($"Pegar {name}", true);
+        }
+
+        public void Interact(PlayerInteractor player) => player.Carrier.TryPickUp(this);
 
         public void RequestPickUp() => PickUpRpc();
         public void RequestDrop() => DropRpc();

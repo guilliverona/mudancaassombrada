@@ -44,7 +44,10 @@ namespace MudancaAssombrada
         public float CharacterSpeed { get; set; } = 1f;
 
         // Quem está ARRASTANDO este jogador (o Imitador puxando para o espelho). null = ninguém.
+        // Quem liga e desliga é o PlayerCondition (a condição do jogador), não o fantasma direto.
         public Transform PulledBy { get; set; }
+        // Travado (caído ou hipnotizado): não anda nem corre, mas ainda olha em volta.
+        public bool Frozen { get; set; }
         [Header("Sendo puxado")]
         [SerializeField] float pullSpeed = 3f;      // mais rápido que andar agachado: não dá para fugir sozinho
         [SerializeField] float pullDistance = 1.2f; // fica "segurando a outra ponta", a esta distância
@@ -145,7 +148,7 @@ namespace MudancaAssombrada
         {
             Vector2 input = Vector2.ClampMagnitude(GameInput.Move.ReadValue<Vector2>(), 1f); // diagonal não fica mais rápida
             // Pausado: fica parado, mas a gravidade continua (senão flutuaria se pausasse no ar).
-            if (PauseMenu.IsOpen) input = Vector2.zero;
+            if (PauseMenu.IsOpen || Frozen) input = Vector2.zero;
 
             // Converte a direção do controle para a direção para onde o jogador está virado.
             Vector3 move = transform.right * input.x + transform.forward * input.y;

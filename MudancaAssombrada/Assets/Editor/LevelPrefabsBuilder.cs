@@ -187,6 +187,7 @@ namespace MudancaAssombrada.Editor
         {
             if (!ghost.TryGetComponent(out Ghost _)) ghost.AddComponent<Ghost>();
             if (!ghost.TryGetComponent(out GhostVisual _)) ghost.AddComponent<GhostVisual>();
+            if (!ghost.TryGetComponent(out Pointable _)) ghost.AddComponent<Pointable>(); // dá para apontar ("é falso!")
             if (breathes && !ghost.TryGetComponent(out Breathing breathing))
             {
                 breathing = ghost.AddComponent<Breathing>();
@@ -196,14 +197,15 @@ namespace MudancaAssombrada.Editor
 
         // Prefabs de fantasma feitos ANTES da base comum só tinham o GhostHunter.
         // Aqui só ACRESCENTAMOS o que falta: números ajustados no Inspector continuam.
-        static void UpgradeGhost(string prefabPath)
+        internal static void UpgradeGhost(string prefabPath, bool breathes = true)
         {
             if (Load(prefabPath) == null) return;
             var root = PrefabUtility.LoadPrefabContents(prefabPath);
             try
             {
-                if (root.TryGetComponent(out Ghost _) && root.TryGetComponent(out GhostVisual _) && root.TryGetComponent(out Breathing _)) return;
-                AddGhostParts(root);
+                if (root.TryGetComponent(out Ghost _) && root.TryGetComponent(out GhostVisual _) && root.TryGetComponent(out Pointable _) &&
+                    (!breathes || root.TryGetComponent(out Breathing _))) return;
+                AddGhostParts(root, breathes);
                 PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
                 Debug.Log($"Fantasma atualizado para a base comum: {prefabPath}");
             }
@@ -406,6 +408,10 @@ namespace MudancaAssombrada.Editor
 
             var movement = player.AddComponent<PlayerMovement>(); // adiciona o CharacterController junto
             var carrier = player.AddComponent<FurnitureCarrier>();
+            var interactor = player.AddComponent<PlayerInteractor>(); // a mira e a tecla Interagir
+            var cues = player.AddComponent<CueListener>();             // o que EU percebi (para a HUD)
+            player.AddComponent<PlayerCondition>();                    // normal / puxado / caído (e o "Ajudar")
+            player.AddComponent<Pointable>();                          // dá para apontar para mim (Imitador)
             var cane = player.AddComponent<CaneTapper>();
             var vibration = player.AddComponent<VibrationVision>();
             var whistle = player.AddComponent<Whistle>();
@@ -415,6 +421,7 @@ namespace MudancaAssombrada.Editor
 
             EditorTools.SetReference(movement, "cameraPivot", camGo.transform);
             EditorTools.SetReference(carrier, "playerCamera", cam);
+            EditorTools.SetReference(interactor, "playerCamera", cam);
             // A "roupa" (tronco e braços) ganha a cor do personagem.
             EditorTools.SetReferences(switcher, "body", new Object[]
             {
@@ -433,7 +440,7 @@ namespace MudancaAssombrada.Editor
 
             var netPlayer = player.AddComponent<NetworkPlayer>();
             // O CharacterSwitcher NÃO entra: ele precisa rodar em todos para pintar a cor de cada boneco.
-            EditorTools.SetReferences(netPlayer, "ownerOnly", new Object[] { movement, carrier, cane, vibration, whistle });
+            EditorTools.SetReferences(netPlayer, "ownerOnly", new Object[] { movement, carrier, interactor, cues, cane, vibration, whistle });
 
             EditorTools.SavePrefab(player, PlayerPath);
         }

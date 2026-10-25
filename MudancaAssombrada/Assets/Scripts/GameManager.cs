@@ -76,10 +76,13 @@ namespace MudancaAssombrada
         // Congelar o tempo não trava a rede: o Netcode usa o tempo "real", sem escala.
         static void ApplyOutcome(MatchOutcome o) => Time.timeScale = o == MatchOutcome.Playing ? 1f : 0f;
 
-        // Chamado pelos fantasmas, que só pensam no host.
-        public static void ServerPlayerCaught()
+        // A equipe inteira está caída? (Ninguém sobrou para ajudar: os fantasmas venceram.)
+        static bool EveryoneDown()
         {
-            if (Instance != null && Instance.IsServer) Instance.End(MatchOutcome.Caught);
+            if (NetworkPlayer.All.Count == 0) return false;
+            foreach (var p in NetworkPlayer.All)
+                if (p.Condition == null || !p.Condition.IsDown) return false;
+            return true;
         }
 
         void ServerStartMatch()
@@ -116,6 +119,9 @@ namespace MudancaAssombrada
                 timeLeft.Value = Mathf.Max(0f, timeLeft.Value - Time.deltaTime);
                 if (timeLeft.Value <= 0) { End(MatchOutcome.Dawn); return; }
             }
+
+            // Pego = caído até um colega ajudar (PlayerCondition). Só perde se não sobrar ninguém de pé.
+            if (EveryoneDown()) { End(MatchOutcome.Caught); return; }
 
             UpdateObjectives();
         }
@@ -179,7 +185,11 @@ namespace MudancaAssombrada
             foreach (var g in Ghost.All) g.ServerReset();
             foreach (var i in Interactable.All) i.ServerReset();
             foreach (var o in Objective.All) o.ServerReset();
-            foreach (var p in NetworkPlayer.All) p.ResetPositionRpc();
+            foreach (var p in NetworkPlayer.All)
+            {
+                if (p.Condition != null) p.Condition.ServerReset(); // todo mundo de pé de novo
+                p.ResetPositionRpc();
+            }
 
             ServerStartMatch(); // descongela todo mundo
         }

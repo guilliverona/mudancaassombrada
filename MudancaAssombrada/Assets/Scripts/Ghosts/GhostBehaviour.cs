@@ -17,7 +17,7 @@ namespace MudancaAssombrada
         // A partida começou (o fantasma nasceu na rede).
         public virtual void ServerStart() { }
 
-        // Uma vez por frame, enquanto ele não pegou ninguém.
+        // Uma vez por frame.
         public abstract void ServerTick();
 
         // A fase reiniciou: o Ghost já voltou para casa, o comportamento recomeça do zero.
@@ -25,5 +25,8 @@ namespace MudancaAssombrada
 
         // Um jogador apontou para o fantasma disfarçado: foi desmascarado.
         public virtual void ServerUnmasked() { }
+
+        // O fantasma acabou de derrubar este jogador (ele ficou caído). Ex.: voltar a patrulhar.
+        public virtual void ServerCaught(NetworkPlayer player) { }
     }
 }

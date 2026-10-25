@@ -2,25 +2,9 @@ using UnityEngine;
 
 namespace MudancaAssombrada
 {
-    // O que a dica de interação deve mostrar agora (a HUD lê isto e desenha).
-    // "readonly struct" = um pacotinho de dados que não muda depois de criado.
-    public readonly struct InteractionPrompt
-    {
-        public readonly string Action;   // ex.: "Pegar Armário". null = nenhuma dica
-        public readonly bool Available;  // false = aparece apagada (ex.: "Ocupado")
-
-        public InteractionPrompt(string action, bool available)
-        {
-            Action = action;
-            Available = available;
-        }
-
-        public bool Visible => Action != null;
-        public static InteractionPrompt None => default;
-    }
-
-    // Fica no Player. Aperte Interagir (E) olhando para um móvel para pegar; de novo para soltar.
-    // A mesma tecla USA objetos interativos (Interactable): instrumentos, interruptores...
+    // Fica no Player. CARREGAR um móvel: segurar, o peso deixar lento, soltar.
+    // Quem mira e aperta a tecla é o PlayerInteractor; o móvel (Furniture) pede para ser pego
+    // chamando TryPickUp. Assim este script só sabe de peso e física.
     //
     // EM REDE, pegar tem duas fases:
     //   1. Pedir: "host, posso pegar este móvel?" (RequestPickUp)
@@ -29,7 +13,7 @@ namespace MudancaAssombrada
     public class FurnitureCarrier : MonoBehaviour
     {
         [SerializeField] Camera playerCamera;
-        [SerializeField] float reach = 2.5f;          // distância máxima para alcançar
+        [SerializeField] float reach = 2.5f;          // longe assim do alvo, o móvel escapa da mão
         [SerializeField] float holdDistance = 1.8f;   // onde o móvel fica à sua frente
         [SerializeField] float followStrength = 12f;  // quão "firme" você segura
         [SerializeField] float requestTimeout = 1f;   // segundos esperando a resposta do host
@@ -39,110 +23,27 @@ namespace MudancaAssombrada
         // Barulho dos móveis batendo enquanto ESTE jogador carrega.
         public float CarryNoise { get; set; } = 1f;
 
-        // A dica que a HUD deve mostrar neste frame.
-        public InteractionPrompt Prompt { get; private set; }
+        public bool IsHolding => held != null;
+        // Já pedi um móvel e estou esperando o host? (não dá para pedir dois)
+        public bool IsWaiting => requested != null;
+        public InteractionPrompt DropPrompt => held != null ? new InteractionPrompt($"Soltar {held.name}", true) : InteractionPrompt.None;
 
         PlayerMovement movement;
-        CharacterSwitcher character;
         Furniture held;      // null = mãos vazias
         Furniture requested; // pedi para o host e estou esperando
         float requestTime;
 
-        // O que está na mira AGORA (null = nada). Atualizado todo frame, para a dica na tela
-        // aparecer e sumir na hora em que você olha para o objeto ou desvia o olhar.
-        Furniture lookTarget;
-        Interactable lookInteractable;
-        // Alguém que PARECE um jogador (outro jogador ou a cópia do Imitador): dá para apontar.
-        Ghost lookGhost;
-        bool lookPerson;
-
         // Peso que o jogador SENTE: nunca menos que 1 (nada fica mais leve que "sem peso").
         float FeltWeight => Mathf.Max(1f, held.Weight / Strength);
 
-        void Awake()
+        void Awake() => movement = GetComponent<PlayerMovement>();
+
+        void Update() => WaitForPickUp();
+
+        public void TryPickUp(Furniture furniture)
         {
-            movement = GetComponent<PlayerMovement>();
-            character = GetComponent<CharacterSwitcher>();
-        }
-
-        void OnDisable() => Prompt = InteractionPrompt.None;
-
-        void Update()
-        {
-            WaitForPickUp();
-            LookAround();
-            Prompt = BuildPrompt();
-
-            if (PauseMenu.IsOpen || !GameInput.Interact.WasPressedThisFrame()) return;
-
-            if (held != null) Drop();
-            else if (lookInteractable != null) TryUse(lookInteractable);
-            else if (lookPerson) Point();
-            else if (requested == null) TryPickUp();
-        }
-
-        InteractionPrompt BuildPrompt()
-        {
-            if (held != null) return new InteractionPrompt($"Soltar {held.name}", true);
-
-            if (lookInteractable != null)
-            {
-                if (lookInteractable.IsUsed) return InteractionPrompt.None; // já usado: nada a fazer
-                bool canUse = lookInteractable.CanBeUsedBy(character.Current);
-                return new InteractionPrompt(canUse ? lookInteractable.Prompt : "Não consigo", canUse);
-            }
-
-            // A MESMA dica para o jogador de verdade e para a cópia: a tela não entrega quem é o falso.
-            if (lookPerson) return new InteractionPrompt("Apontar: é falso!", true);
-
-            if (lookTarget == null) return InteractionPrompt.None;
-            if (lookTarget.IsHeld) return new InteractionPrompt("Ocupado", false);
-            return new InteractionPrompt($"Pegar {lookTarget.name}", true);
-        }
-
-        void LookAround()
-        {
-            lookTarget = null;
-            lookInteractable = null;
-            lookGhost = null;
-            lookPerson = false;
-            if (held != null) return; // de mãos ocupadas, só dá para soltar
-
-            // Raycast: um "raio laser" invisível saindo do centro da câmera.
-            // Se bater em algo dentro do alcance, 'hit' diz o que foi.
-            Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
-            if (!Physics.Raycast(ray, out RaycastHit hit, reach)) return;
-
-            // Só interessa se o objeto atingido for um móvel ou algo usável.
-            hit.collider.TryGetComponent(out lookTarget);
-            hit.collider.TryGetComponent(out lookInteractable);
-
-            // Apontar só existe enquanto há um fantasma disfarçado na casa (Casa do Espelho).
-            if (Ghost.AnyDisguised)
-            {
-                if (hit.collider.TryGetComponent(out lookGhost) && !lookGhost.IsDisguised) lookGhost = null;
-                lookPerson = lookGhost != null || hit.collider.TryGetComponent(out NetworkPlayer _);
-            }
-        }
-
-        // "Esse aí é falso!" Se era mesmo o Imitador, o host desmascara. Se era um amigo, nada acontece
-        // (mas a equipe perdeu um tempinho, e o falso continua por aí).
-        void Point()
-        {
-            if (lookGhost != null && lookGhost.IsSpawned) lookGhost.RequestUnmask();
-        }
-
-        void TryUse(Interactable target)
-        {
-            if (target.IsUsed || !target.IsSpawned || !target.CanBeUsedBy(character.Current)) return;
-            target.RequestUse();
-        }
-
-        void TryPickUp()
-        {
-            // Só pega se tiver um móvel na mira e ele estiver livre.
-            Furniture furniture = lookTarget;
-            if (furniture == null || furniture.IsHeld) return;
+            // Só pega se estiver de mãos livres e o móvel estiver livre.
+            if (held != null || requested != null || furniture == null || furniture.IsHeld) return;
 
             // Móvel que não "nasceu" na rede (ex.: cena antiga sem NetworkObject) não pode receber RPC.
             if (!furniture.IsSpawned)
@@ -182,8 +83,9 @@ namespace MudancaAssombrada
             movement.SpeedMultiplier = 1f / FeltWeight; // mais pesado = mais lento
         }
 
-        void Drop()
+        public void Drop()
         {
+            if (held == null) return;
             // Devolve a física ao normal ANTES de devolver a posse ao host.
             held.Body.useGravity = true;
             held.Body.linearDamping = 0f;

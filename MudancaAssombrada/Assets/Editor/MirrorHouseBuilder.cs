@@ -83,6 +83,7 @@ namespace MudancaAssombrada.Editor
             LevelPrefabsBuilder.Build(VanityPath, false, BuildVanity);
             LevelPrefabsBuilder.Build(PosterPath, false, BuildPoster);
             LevelPrefabsBuilder.Build(ImitatorPath, false, BuildImitator);
+            LevelPrefabsBuilder.UpgradeGhost(ImitatorPath, breathes: false); // Imitador antigo ganha o que faltar
             AssetDatabase.SaveAssets();
         }
 

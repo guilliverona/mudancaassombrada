@@ -54,6 +54,13 @@ namespace MudancaAssombrada
         [Tooltip("Apito: um som alto para atrair o fantasma.")]
         public bool whistle;
 
+        // Por onde este personagem percebe os acontecimentos do jogo (GameCue).
+        // Vem das caixinhas acima: ninguém precisa marcar duas vezes.
+        public Senses Senses =>
+            (blind ? Senses.None : Senses.Sight) |
+            (deaf ? Senses.None : Senses.Hearing) |
+            (vibrationVision ? Senses.Vibration : Senses.None);
+
         // "Dona Cida (cega)" ou só "Dona Cida".
         public string FullName => string.IsNullOrEmpty(condition) ? displayName : $"{displayName} ({condition})";
     }

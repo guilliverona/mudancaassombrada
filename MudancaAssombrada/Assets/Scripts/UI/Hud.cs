@@ -33,6 +33,8 @@ namespace MudancaAssombrada
         [SerializeField] GameObject hint;
         [SerializeField] Text hintKey;
         [SerializeField] Text hintAction;
+        [Tooltip("Os acontecimentos que VOCÊ percebeu (CueListener), com o sentido por onde chegaram.")]
+        [SerializeField] Text cuesText;
 
         [Header("Regras de exibição")]
         [Tooltip("Abaixo disto (em segundos), o relógio fica na cor de perigo.")]
@@ -100,7 +102,7 @@ namespace MudancaAssombrada
             {
                 MatchOutcome.Won => Colored("Mudança concluída!", Theme.DawnColor) + "\n\n" + RatingCard(game) + restart,
                 MatchOutcome.Dawn => Colored("Amanheceu...", Theme.DawnColor) + "\nO serviço ficou pela metade." + restart,
-                _ => Colored("O fantasma pegou alguém da equipe!", Theme.DangerColor) + restart,
+                _ => Colored("O fantasma pegou a equipe inteira!", Theme.DangerColor) + restart,
             };
         }
 
@@ -136,12 +138,17 @@ namespace MudancaAssombrada
             {
                 staminaBar.SetActive(false);
                 hint.SetActive(false);
+                if (cuesText != null) cuesText.gameObject.SetActive(false);
                 return;
             }
 
             UpdateStamina(player.Movement);
-            UpdateHint(player.Carrier.Prompt);
+            // Caído, a dica do centro vira o aviso (apagado: não há o que apertar).
+            bool down = player.Condition != null && player.Condition.IsDown;
+            UpdateHint(down ? new InteractionPrompt("Você caiu! Espere um colega te ajudar.", false)
+                     : player.Interactor != null ? player.Interactor.Prompt : InteractionPrompt.None);
             UpdateCharacter(player.Character);
+            UpdateCues(player.Cues);
         }
 
         void UpdateStamina(PlayerMovement movement)
@@ -192,6 +199,31 @@ namespace MudancaAssombrada
                 sb.Append("</size>");
             }
             SetText(characterText, sb.ToString());
+        }
+
+        // Uma linha por acontecimento percebido, marcada pelo sentido: [viu], [ouviu], [sentiu].
+        // O Tiago não recebe as falas; a Cida não recebe o que só se vê.
+        void UpdateCues(CueListener listener)
+        {
+            if (cuesText == null) return; // HUD antiga, sem a peça: recrie os prefabs
+            var lines = listener != null ? listener.Lines : null;
+            bool any = lines != null && lines.Count > 0 && !PauseMenu.IsOpen;
+            cuesText.gameObject.SetActive(any);
+            if (!any) return;
+
+            sb.Clear();
+            foreach (var line in lines)
+            {
+                string tag = line.Sense switch
+                {
+                    Senses.Sight => "viu",
+                    Senses.Hearing => "ouviu",
+                    _ => "sentiu",
+                };
+                if (sb.Length > 0) sb.Append('\n');
+                sb.Append(Colored($"[{tag}]", Theme.MutedColor)).Append(' ').Append(line.Text);
+            }
+            SetText(cuesText, sb.ToString());
         }
 
         // ---------- Ajudantes ----------

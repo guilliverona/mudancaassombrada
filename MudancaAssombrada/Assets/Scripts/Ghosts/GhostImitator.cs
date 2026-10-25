@@ -47,6 +47,8 @@ namespace MudancaAssombrada
         public override void ServerUnmasked()
         {
             // "É falso!": larga a vítima, volta ao próprio corpo e foge para OUTRO espelho.
+            Cue(Senses.Sight, $"O \"{CopiedName()}\" era falso! Fugiu para um espelho.");
+            Cue(Senses.Hearing, "Um barulho de vidro trincando... o falso fugiu!");
             Release();
             Ghost.ServerSetDisguise(-1);
             Ghost.ServerSetState(GhostState.Fleeing);
@@ -72,12 +74,15 @@ namespace MudancaAssombrada
                     break;
 
                 case GhostState.Pulling:
-                    if (victim == null || !victim.IsSpawned) { Lurk(); break; }
-                    // Chegou no espelho com a vítima: ela foi para "dentro do reflexo".
+                    if (victim == null || !victim.IsSpawned || victim.Condition.IsDown) { Lurk(); break; }
+                    // Chegou no espelho com a vítima: ela foi para "dentro do reflexo" e fica caída
+                    // até alguém ajudar. Ele volta a se esconder.
                     if (Ghost.Arrived())
                     {
+                        var caught = victim;
                         Release();
-                        Ghost.ServerCatch();
+                        Ghost.ServerCatch(caught);
+                        Lurk();
                     }
                     break;
 
@@ -121,20 +126,37 @@ namespace MudancaAssombrada
         {
             // Pede ajuda com a voz (a Cida "ouve" a voz no eco, mas sem passos nem respiração junto).
             EchoSystem.Emit(new SoundEvent(transform.position, voiceRange, 0.6f, SoundType.Voice, gameObject));
+            // O pedido chega como FALA para quem ouve (o Tiago, surdo, não fica sabendo).
+            Cue(Senses.Hearing, $"{CopiedName()}: \"Me ajuda a segurar a outra ponta?\"", voiceRange);
 
             targetMirror = Mirror.Nearest(transform.position);
-            if (targetMirror == null) { Ghost.ServerCatch(); return; } // cena sem espelho: pega direto
+            if (targetMirror == null) { Ghost.ServerCatch(victim); Lurk(); return; } // cena sem espelho: derruba direto
             Ghost.ServerSetState(GhostState.Pulling);
             Ghost.Agent.speed = pullSpeed;
             Ghost.Agent.SetDestination(targetMirror.ExitPoint);
-            victim.SetPulledRpc(Ghost.NetworkObject, true);
+            victim.Condition.ServerSet(PlayerState.Pulled, Ghost.NetworkObject); // a condição cuida do arrasto
+
+            string name = victim.Character.Current.displayName;
+            Cue(Senses.Sight, $"{name} está sendo arrastado para o espelho!");
+            Cue(Senses.Hearing, $"{name} grita por socorro!");
+            Cue(Senses.Vibration, "Algo pesado está sendo arrastado pelo chão.");
+        }
+
+        // Um aviso para a equipe (GameCue), saindo do fantasma. O host é o dono dele.
+        void Cue(Senses senses, string text, float range = 15f) =>
+            GameCues.Emit(new GameCue(transform.position, range, senses, text, gameObject));
+
+        // O nome de quem ele está copiando agora ("Tiago").
+        string CopiedName()
+        {
+            var roster = CharacterRoster.Instance;
+            return roster != null && roster.IsValid(Ghost.Disguise) ? roster.Get(Ghost.Disguise).displayName : "alguém";
         }
 
         // Solta a vítima (se estava puxando alguém).
         void Release()
         {
-            if (victim != null && victim.IsSpawned && Ghost.State == GhostState.Pulling)
-                victim.SetPulledRpc(Ghost.NetworkObject, false);
+            if (victim != null && victim.IsSpawned) victim.Condition.ServerClear(PlayerState.Pulled);
             victim = null;
         }
 
@@ -145,6 +167,7 @@ namespace MudancaAssombrada
             float bestDistance = -1f;
             foreach (var p in NetworkPlayer.All)
             {
+                if (p.Condition.IsDown) continue; // caído não é copiado
                 float sum = 0;
                 foreach (var other in NetworkPlayer.All)
                     if (other != p) sum += Vector3.Distance(p.transform.position, other.transform.position);
@@ -159,7 +182,7 @@ namespace MudancaAssombrada
             float bestDistance = float.MaxValue;
             foreach (var p in NetworkPlayer.All)
             {
-                if (p == except) continue;
+                if (p == except || p.Condition.IsDown) continue; // caído não é atacado
                 float d = Vector3.Distance(transform.position, p.transform.position);
                 if (d < bestDistance) { bestDistance = d; best = p; }
             }

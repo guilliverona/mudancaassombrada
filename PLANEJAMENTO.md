@@ -80,6 +80,27 @@ peças novas em **Criar Prefabs que Faltam** (sem perder os números).
 **Pronta quando:** o Bibliotecário funciona igual a hoje, mas por cima da base nova; os clientes
 veem o estado dele; o eco mostra respiração; a Cida passa por baixo de uma mesa de 1,6 m.
 
+## Fase 3b — Fundação das mecânicas (em andamento)
+
+**Entrega:** nada novo para o jogador além de legendas; peças para as próximas mecânicas
+entrarem sem mexer no jogador.
+
+1. ✅ **Interação por componentes:** `PlayerInteractor` mira; cada alvo (`IInteractionTarget`)
+   diz o que fazer. `FurnitureCarrier` ficou só com peso e física.
+2. ✅ **Estado do jogador na rede:** `PlayerCondition` (normal, puxado, hipnotizado, caído), uma porta
+   de entrada só (`ServerSet`). **Decidido:** ser pego = caído até um colega "Ajudar" (E); a equipe só
+   perde quando todos caem. O Imitador puxa e derruba por aqui; a hipnose (Fase 4) já tem o estado.
+   Falta: pose de caído no boneco (animação).
+3. ✅ **Acontecimentos pelos sentidos:** `GameCue` + `CueListener` + legendas na HUD.
+   O Imitador já avisa (pedido de ajuda, vítima sendo puxada, desmascarado) e apontar avisa a equipe.
+4. ⬜ **Sentidos do fantasma separados + árbitro** de comportamentos (quem controla o agente).
+5. ⬜ **Kit de autoria do mapa:** prefab único "Sistemas da Fase" e marcadores (nascer, esconderijo
+   de fantasma, cômodos); o construtor só cria a cena vazia.
+6. ⬜ **Ferramentas de teste** no editor (estado do fantasma, atalhos de depuração).
+
+**Pronta quando:** pegar móvel, usar objeto e apontar funcionam como antes; o Tiago não recebe as
+falas do Imitador, a Cida não recebe o que só se vê, e os dois veem as legendas certas em rede.
+
 ## Fase 3 — Capítulo 1: A Casa do Espelho + o Imitador ✅
 
 **Entrega:** o primeiro capítulo da história jogável.

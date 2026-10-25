@@ -75,6 +75,11 @@ namespace MudancaAssombrada.Editor
             var staminaFill = UiBuilder.CreateImage("Estamina (cheia)", staminaBar.transform, TextColor);
             UiBuilder.Stretch(staminaFill); // a Hud muda onde ela termina (anchorMax.x) conforme a estamina
 
+            // --- Canto inferior esquerdo, acima da estamina: o que você percebeu (viu/ouviu/sentiu) ---
+            var cues = UiBuilder.CreateText("Avisos", canvas, "", NoteSize);
+            cues.alignment = TextAnchor.LowerLeft;
+            UiBuilder.Place(cues, Vector2.zero, Vector2.zero, new Vector2(Margin, Margin + 24), new Vector2(760, 180));
+
             // --- Tela de fim de partida (cobre tudo) ---
             var endScreen = UiBuilder.CreateImage("Fim de Partida", canvas, new Color(0, 0, 0, 0.75f));
             UiBuilder.Stretch(endScreen);
@@ -98,6 +103,7 @@ namespace MudancaAssombrada.Editor
             EditorTools.SetReference(hud, "hint", hint);
             EditorTools.SetReference(hud, "hintKey", keyText);
             EditorTools.SetReference(hud, "hintAction", action);
+            EditorTools.SetReference(hud, "cuesText", cues);
 
             // A HUD não tem botões: não precisa "ouvir" cliques (e assim não atrapalha a pausa).
             Object.DestroyImmediate(canvas.GetComponent<GraphicRaycaster>());

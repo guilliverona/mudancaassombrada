@@ -61,7 +61,6 @@ namespace MudancaAssombrada
 
         public NavMeshAgent Agent { get; private set; }
         public Vector3 Home { get; private set; }
-        public bool Caught { get; private set; }
         public GhostState State => state.Value;
 
         // Avisa quando o estado muda (em TODOS os computadores): (anterior, novo).
@@ -143,14 +142,14 @@ namespace MudancaAssombrada
         [Rpc(SendTo.Server)]
         void UnmaskRpc()
         {
-            if (!IsDisguised || Caught) return;
+            if (!IsDisguised) return;
             foreach (var b in behaviours) b.ServerUnmasked();
         }
 
         void Update()
         {
             // Antes de conectar, IsServer é false em todos: o fantasma fica parado esperando.
-            if (!IsServer || Caught) return;
+            if (!IsServer) return;
 
             foreach (var b in behaviours)
                 if (b.enabled) b.ServerTick();
@@ -159,24 +158,23 @@ namespace MudancaAssombrada
             // então procuramos o mais próximo a cada frame em vez de guardar um só no Start.
             var player = NearestPlayer();
             if (CatchesOnTouch && player != null && Vector3.Distance(transform.position, player.transform.position) < catchDistance)
-                ServerCatch();
+                ServerCatch(player);
 
             EmitFootsteps();
         }
 
-        // O GameManager (no host) muda o resultado, e a NetworkVariable dele avisa todo mundo:
-        // a equipe inteira perde junta.
-        public void ServerCatch()
+        // PEGOU alguém: o jogador fica CAÍDO até um colega ajudar (PlayerCondition).
+        // A equipe só perde se todos caírem (quem confere é o GameManager).
+        public void ServerCatch(NetworkPlayer player)
         {
-            if (Caught) return;
-            Caught = true;
-            GameManager.ServerPlayerCaught();
+            if (player == null || player.Condition == null || player.Condition.IsDown) return;
+            player.Condition.ServerSet(PlayerState.Down, NetworkObject);
+            foreach (var b in behaviours) b.ServerCaught(player);
         }
 
         // Só no host (chamado pelo GameManager ao reiniciar): volta para casa e recomeça.
         public void ServerReset()
         {
-            Caught = false;
             CatchesOnTouch = true;
             ServerSetDisguise(-1);
             Agent.Warp(Home); // Warp = teleporte do NavMeshAgent (mover o transform direto confunde ele)
@@ -190,10 +188,11 @@ namespace MudancaAssombrada
             float best = float.MaxValue;
             foreach (var p in NetworkPlayer.All)
             {
+                if (p.Condition != null && p.Condition.IsDown) continue; // caído não é alvo
                 float d = Vector3.Distance(transform.position, p.transform.position);
                 if (d < best) { best = d; nearest = p; }
             }
-            return nearest; // null = ninguém conectado ainda
+            return nearest; // null = ninguém conectado (ou todos caídos)
         }
 
         public bool Arrived() => !Agent.pathPending && Agent.remainingDistance <= Agent.stoppingDistance + 0.2f;

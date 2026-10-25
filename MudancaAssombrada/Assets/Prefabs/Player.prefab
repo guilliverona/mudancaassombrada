@@ -828,6 +828,9 @@ GameObject:
   - component: {fileID: 2611412965745436666}
   - component: {fileID: 1451254956593404263}
   - component: {fileID: 7989720525728775853}
+  - component: {fileID: 3022898349990388413}
+  - component: {fileID: 6247077974802937140}
+  - component: {fileID: 7384375665614101427}
   - component: {fileID: 1565150017572927767}
   - component: {fileID: 7360231509683667312}
   - component: {fileID: 468701515564093837}
@@ -930,6 +933,47 @@ MonoBehaviour:
   holdDistance: 1.8
   followStrength: 12
   requestTimeout: 1
+--- !u!114 &3022898349990388413
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7645197041336742590}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 30d42a6d8480b4a4e9e63ac221e5ef19, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.PlayerInteractor
+  playerCamera: {fileID: 2576609307100874873}
+  reach: 2.5
+--- !u!114 &6247077974802937140
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7645197041336742590}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce2ccbe4ee3d1c94e83c5b58c5acbea6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.CueListener
+  maxLines: 4
+  lineDuration: 6
+--- !u!114 &7384375665614101427
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7645197041336742590}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5936d3623def504093b47957802f1e1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.Pointable
+  cueRange: 12
 --- !u!114 &1565150017572927767
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1046,7 +1090,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2480069944
+  GlobalObjectIdHash: 1143130524
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -1123,6 +1167,8 @@ MonoBehaviour:
   ownerOnly:
   - {fileID: 1451254956593404263}
   - {fileID: 7989720525728775853}
+  - {fileID: 3022898349990388413}
+  - {fileID: 6247077974802937140}
   - {fileID: 1565150017572927767}
   - {fileID: 7360231509683667312}
   - {fileID: 468701515564093837}

@@ -17,6 +17,7 @@ GameObject:
   - component: {fileID: 5721580535926556312}
   - component: {fileID: 3312506841681324386}
   - component: {fileID: 8718764170064370064}
+  - component: {fileID: 7010748190215698494}
   m_Layer: 0
   m_Name: Fantasma Imitador
   m_TagString: Untagged
@@ -231,6 +232,19 @@ MonoBehaviour:
   fleeSpeed: 5
   askDistance: 2
   voiceRange: 6
+--- !u!114 &7010748190215698494
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6172741386073746404}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5936d3623def504093b47957802f1e1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.Pointable
+  cueRange: 12
 --- !u!1001 &7034756412412253087
 PrefabInstance:
   m_ObjectHideFlags: 0

@@ -41,9 +41,12 @@ namespace MudancaAssombrada
 
         public override void ServerStart() => EnterState(GhostState.Patrolling);
 
+        // Derrubou alguém: larga o corpo e volta a patrulhar (os outros ainda podem salvar o caído).
+        public override void ServerCaught(NetworkPlayer player) => EnterState(GhostState.Patrolling);
+
         void OnSoundHeard(SoundEvent sound)
         {
-            if (!Ghost.IsServer || Ghost.Caught) return; // só o host decide o que o fantasma ouve
+            if (!Ghost.IsServer) return;                 // só o host decide o que o fantasma ouve
             if (sound.Source == gameObject) return;      // ignora os próprios passos
             if (!sound.Is(hears)) return;                // tipo de som que não interessa a ele
 

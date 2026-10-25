@@ -43,6 +43,9 @@ namespace MudancaAssombrada
         public PlayerMovement Movement { get; private set; }
         public FurnitureCarrier Carrier { get; private set; }
         public CharacterSwitcher Character { get; private set; }
+        public PlayerInteractor Interactor { get; private set; }
+        public CueListener Cues { get; private set; }
+        public PlayerCondition Condition { get; private set; }
 
         Vector3 spawnPosition;
 
@@ -51,6 +54,9 @@ namespace MudancaAssombrada
             Movement = GetComponent<PlayerMovement>();
             Carrier = GetComponent<FurnitureCarrier>();
             Character = GetComponent<CharacterSwitcher>();
+            Interactor = GetComponent<PlayerInteractor>();
+            Cues = GetComponent<CueListener>();
+            Condition = GetComponent<PlayerCondition>();
         }
 
         // Chamado quando o objeto "nasce" na rede (como um Start, mas já sabendo quem é o dono).
@@ -98,21 +104,11 @@ namespace MudancaAssombrada
             if (Local == this) Local = null;
         }
 
-        // Um fantasma (o Imitador, no host) começou ou parou de PUXAR este jogador.
-        // Como a posição do boneco é do dono, quem se move é o computador do dono.
-        [Rpc(SendTo.Owner)]
-        public void SetPulledRpc(NetworkObjectReference ghostRef, bool pulled)
-        {
-            if (!pulled) { Movement.PulledBy = null; return; }
-            Movement.PulledBy = ghostRef.TryGet(out NetworkObject ghost) ? ghost.transform : null;
-        }
-
         // O host pede, mas quem move é o DONO do boneco (a posição dos jogadores é
         // autoridade de cada um). SendTo.Owner: roda só no computador do dono deste boneco.
         [Rpc(SendTo.Owner)]
         public void ResetPositionRpc()
         {
-            Movement.PulledBy = null; // a fase reiniciou: ninguém está mais sendo puxado
             var controller = GetComponent<CharacterController>();
             controller.enabled = false;
             // Teleport em vez de mudar a posição: os outros veem o boneco "pular", não deslizar.

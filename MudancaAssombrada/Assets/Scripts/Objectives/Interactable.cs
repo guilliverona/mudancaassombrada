@@ -13,7 +13,7 @@ namespace MudancaAssombrada
     //
     // "Ao Usar" (UnityEvent) aparece no Inspector: dá para ligar efeitos SEM código,
     // arrastando objetos (ex.: desligar a luz de um instrumento, tocar um som).
-    public class Interactable : NetworkBehaviour
+    public class Interactable : NetworkBehaviour, IInteractionTarget
     {
         static readonly List<Interactable> all = new();
         public static IReadOnlyList<Interactable> All => all;
@@ -50,6 +50,16 @@ namespace MudancaAssombrada
                 if (c == character) return true;
             return false;
         }
+
+        // Já usado: nada a fazer. Personagem errado: "Não consigo", apagado.
+        public InteractionPrompt PromptFor(PlayerInteractor player)
+        {
+            if (IsUsed || !IsSpawned) return InteractionPrompt.None;
+            bool canUse = CanBeUsedBy(player.Character);
+            return new InteractionPrompt(canUse ? Prompt : "Não consigo", canUse);
+        }
+
+        public void Interact(PlayerInteractor player) => RequestUse();
 
         public void RequestUse() => UseRpc();
 
