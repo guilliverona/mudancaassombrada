@@ -26,3 +26,6 @@ Thumbs.db
 
 # Cópias de segurança automáticas do Blender
 *.blend1
+
+# Cache do Python (gerado ao rodar os scripts de tools/)
+__pycache__/
