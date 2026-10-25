@@ -75,6 +75,7 @@ namespace MudancaAssombrada.Editor
             Build(HudPath, recreate: true, HudBuilder.Build);
             Build(PausePath, recreate: true, BuildPauseMenu);
             ApplyArtToPrefabs();
+            SoundLibraryBuilder.EnsureLibrary(); // a biblioteca de sons e a "voz" dos fantasmas
             LevelSceneTools.EnsureSystemsPrefab(); // o prefab único que toda fase usa (kit de autoria)
             AssetDatabase.SaveAssets();
         }

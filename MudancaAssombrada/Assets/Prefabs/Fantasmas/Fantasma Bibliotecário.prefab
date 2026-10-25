@@ -20,6 +20,7 @@ GameObject:
   - component: {fileID: 5873419566687055423}
   - component: {fileID: 5596759699228746403}
   - component: {fileID: 7768179928271216375}
+  - component: {fileID: 5485797784802024914}
   m_Layer: 0
   m_Name: "Fantasma Bibliotec\xE1rio"
   m_TagString: Untagged
@@ -281,6 +282,27 @@ MonoBehaviour:
   patrolPriority: 1
   investigatePriority: 5
   huntPriority: 10
+--- !u!114 &5485797784802024914
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5969367421630075796}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9fcebe6ed0cbbfe4d9607bdefd3bb81b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.SoundVoice
+  choices:
+  - type: 1
+    sound: passo_fantasma
+    loudSound: 
+    loudFrom: 0
+  - type: 2
+    sound: bibliotecario_respiracao
+    loudSound: 
+    loudFrom: 0
 --- !u!1001 &676949891783435670
 PrefabInstance:
   m_ObjectHideFlags: 0

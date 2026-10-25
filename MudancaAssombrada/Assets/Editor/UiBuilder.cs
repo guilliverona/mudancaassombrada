@@ -109,6 +109,7 @@ namespace MudancaAssombrada.Editor
             button.colors = colors;
             go.AddComponent<Outline>().effectColor = BorderColor;
             go.AddComponent<ButtonHover>(); // clareia o texto com o mouse em cima
+            go.AddComponent<UiSound>();     // clique abafado e o "tic" do mouse em cima
             return button;
         }
 
