@@ -49,6 +49,7 @@ mudancaassombrada/                 ← raiz do Git (os .md ficam aqui)
 │       ├── Resources/             Elenco, Campanha, fontes
 │       └── Prefabs/, Scenes/
 ├── tools/blender/                 scripts que GERAM os modelos (build_all.ps1 roda todos)
+├── tools/audio/                   catálogo de sons + gerar_sons.py (ElevenLabs, chave em ELEVENLABS_API_KEY)
 ├── Art/Source/<Tipo>/<Nome>/      .blend e prévias (fonte, fora do Unity)
 └── roteiro.txt, *.md
 ```

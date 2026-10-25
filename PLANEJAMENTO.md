@@ -23,6 +23,7 @@ Como os designs do Art Bible viram jogo, em fases. Cada fase diz **o que entra**
 | 5 | Capítulo 3 — Biblioteca do Silêncio | cena + arte + mecânica | depende de decisão |
 | 6 | Seu Valdemar, relíquias e o final (Inquilino + Sobrado) | cena + arte + mecânica | a fazer |
 | — | Animações e comunicação da equipe | arte + código | em paralelo |
+| — | Sons: catálogo + geração (ElevenLabs) + `GameAudio` tocando os `SoundEvent` | ferramenta + código | **sistema pronto** (sons da IA a gerar; não testado com Play) |
 
 Ordem pensada para que cada fase use o que a anterior deixou pronto: a Fase 2 prepara
 o terreno para os três fantasmas, e o Inquilino (Fase 6) junta os três.

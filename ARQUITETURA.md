@@ -14,6 +14,7 @@ Assets/
 ├── Scripts/                  ← o JOGO (assembly "MudancaAssombrada")
 │   ├── Campaign/             capítulos da história, a Campanha e o save
 │   ├── Characters/           personagens: fichas, elenco, habilidades (apito, vibração)
+│   ├── Audio/                o que se OUVE: biblioteca de sons, quem toca (GameAudio), loops, botões
 │   ├── Echo/                 sons (SoundEvent, com TIPO) e o eco (EchoSystem, bengala/passos)
 │   ├── Objectives/           objetivos das fases (entregar, chegar, usar) e objetos usáveis
 │   ├── Furniture/            móveis carregáveis
@@ -31,12 +32,15 @@ Assets/
 ├── Editor/                   ← FERRAMENTAS do editor (assembly "MudancaAssombrada.Editor")
 │   ├── GameDataBuilder       cria as fichas de personagem (se faltarem)
 │   ├── LevelPrefabsBuilder   cria os prefabs (se faltarem)
+│   ├── SoundLibraryBuilder   monta a biblioteca de sons a partir do catálogo (tools/audio)
+│   ├── ArtImportSettings / AudioImportSettings  importação de modelos e sons pela pasta
 │   ├── HudBuilder / UiBuilder  monta interface com o padrão visual
 │   ├── MirrorHouseBuilder    rascunho da Casa do Espelho (capítulo 1)
 │   └── MenuSceneBuilder      cena do menu (100% gerada)
 ├── Data/Personagens/         fichas dos personagens (.asset, editáveis)
 ├── Data/Capítulos/           fichas dos capítulos (.asset, editáveis)
-├── Resources/                Elenco.asset, Campanha.asset e fontes (carregados por nome)
+├── Audio/<Pasta>/            sons gerados por tools/audio/gerar_sons.py (Passos, Moveis, Fantasmas...)
+├── Resources/                Elenco.asset, Campanha.asset, Sons.asset e fontes (carregados por nome)
 └── Prefabs/                  Casa, Móveis, Fantasmas, Sistemas, Interface, Player
 ```
 
@@ -177,7 +181,19 @@ a partida só acaba quando todos caem).
 ### Um tipo de som
 Um valor novo no `SoundType` (o próximo bit livre, ex.: `1 << 7`). Quem faz o som usa
 `EchoSystem.Emit(new SoundEvent(..., SoundType.Novo, gameObject))`; fantasmas, eco e
-vibração decidem no Inspector se reagem a ele.
+vibração decidem no Inspector se reagem a ele. Para ele também se OUVIR, dê um som padrão ao
+tipo em `Sons.asset` (lista "Defaults").
+
+### Um som (arquivo de áudio)
+O `SoundEvent` é a REGRA (quem ouviu, até onde); o arquivo é só o que sai na caixa de som.
+1. Descreva o som em `tools/audio/catalogo.json` (id, pasta, texto em inglês para a IA, duração).
+2. `python tools/audio/gerar_sons.py --so <id>` (chave do ElevenLabs na variável
+   `ELEVENLABS_API_KEY`; o script pula o que já existe). Sai em `Assets/Audio/<pasta>/`, e a
+   importação é configurada pela pasta (`AudioImportSettings`).
+3. **Mudança Assombrada › Atualizar Biblioteca de Sons** liga os arquivos ao `Sons.asset`.
+4. Para tocar: nada a fazer se é um `SoundEvent` (o `GameAudio` toca todos sozinho, pelo tipo).
+   Um objeto com som próprio (passos arrastados do fantasma) ganha um `SoundVoice`. Loop de
+   cena (clima, relógio, música): componente `AmbientSound`. Som avulso: `GameAudio.Play(id, posição)`.
 
 ### Um marcador da história (pista, escolha)
 `SaveSystem.Data.SetFlag("achou-cartaz-teatro"); SaveSystem.Save();` e depois
@@ -199,6 +215,7 @@ leia na `Hud`. Crie a peça visual no `HudBuilder` (ou direto no prefab HUD).
 | Criar Dados que Faltam | cria fichas/Elenco se não existirem | não |
 | Criar Prefabs que Faltam | cria prefabs do mundo que não existem; recria Player, HUD e Pausa | não |
 | Recriar Todos os Prefabs | volta todos os prefabs ao original | **sim** (pergunta antes) |
+| Atualizar Biblioteca de Sons | liga os arquivos de `Assets/Audio` ao `Sons.asset` e dá voz aos fantasmas que não têm (também roda em "Criar Prefabs que Faltam") | não (volume e alcance ajustados ficam) |
 | Apagar Progresso (save) | zera capítulos concluídos, dinheiro e marcadores | **sim** (pergunta antes) |
 
 **Rodar os menus não "suja" o Git.** Recriar o Menu, a HUD, a pausa ou o Player do zero faz a
