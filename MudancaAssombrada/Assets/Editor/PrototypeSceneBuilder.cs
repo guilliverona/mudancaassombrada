@@ -59,6 +59,7 @@ public static class PrototypeSceneBuilder
 
         // --- Personagens: Tiago vê vibrações; o switcher troca entre Cida (1) e Tiago (2) ---
         player.AddComponent<VibrationVision>();
+        player.AddComponent<Whistle>();
         player.AddComponent<CharacterSwitcher>();
 
         var cam = Camera.main;

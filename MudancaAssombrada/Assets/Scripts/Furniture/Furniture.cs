@@ -10,6 +10,7 @@ public class Furniture : MonoBehaviour
     public float Weight => weight;
     public Rigidbody Body { get; private set; }
     public bool IsHeld { get; set; } // o FurnitureCarrier liga/desliga ao pegar/soltar
+    public float NoiseMultiplier { get; set; } = 1f; // < 1 = batidas mais silenciosas
 
     void Awake() => Body = GetComponent<Rigidbody>();
 
@@ -21,6 +22,7 @@ public class Furniture : MonoBehaviour
         if (impact < 1.5f) return; // encostar devagar não faz barulho
 
         Vector3 point = collision.GetContact(0).point;
-        EchoSystem.Emit(point, Mathf.Clamp(impact * 1.5f, 3f, 10f), Mathf.Clamp01(impact / 5f), gameObject);
+        float range = Mathf.Clamp(impact * 1.5f, 3f, 10f) * NoiseMultiplier;
+        EchoSystem.Emit(point, range, Mathf.Clamp01(impact / 5f), gameObject);
     }
 }

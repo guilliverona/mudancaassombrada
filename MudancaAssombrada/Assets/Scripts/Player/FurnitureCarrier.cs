@@ -9,8 +9,16 @@ public class FurnitureCarrier : MonoBehaviour
     [SerializeField] float holdDistance = 1.8f;   // onde o móvel fica à sua frente
     [SerializeField] float followStrength = 12f;  // quão "firme" você segura
 
+    // Força: divide o peso dos móveis. Marcelo = 3, então o armário (peso 3) parece peso 1.
+    public float Strength { get; set; } = 1f;
+    // Barulho dos móveis batendo enquanto ESTE jogador carrega (Marcelo carrega com cuidado).
+    public float CarryNoise { get; set; } = 1f;
+
     PlayerMovement movement;
     Furniture held; // null = mãos vazias
+
+    // Peso que o jogador SENTE: nunca menos que 1 (nada fica mais leve que "sem peso").
+    float FeltWeight => Mathf.Max(1f, held.Weight / Strength);
 
     void Awake() => movement = GetComponent<PlayerMovement>();
 
@@ -34,9 +42,10 @@ public class FurnitureCarrier : MonoBehaviour
 
         held = furniture;
         held.IsHeld = true;
+        held.NoiseMultiplier = CarryNoise;
         held.Body.useGravity = false;
         held.Body.linearDamping = 10f; // amortece para não ficar balançando
-        movement.SpeedMultiplier = 1f / held.Weight; // mais pesado = mais lento
+        movement.SpeedMultiplier = 1f / FeltWeight; // mais pesado = mais lento
     }
 
     void Drop()
@@ -45,6 +54,7 @@ public class FurnitureCarrier : MonoBehaviour
         held.Body.linearDamping = 0f;
         movement.SpeedMultiplier = 1f;
         held.IsHeld = false;
+        held.NoiseMultiplier = 1f;
         held = null;
     }
 
@@ -59,7 +69,7 @@ public class FurnitureCarrier : MonoBehaviour
 
         // Em vez de "teletransportar" o móvel, damos velocidade na direção do alvo.
         // Assim ele ainda colide com paredes e portas, igual a carregar de verdade.
-        held.Body.linearVelocity = toTarget * followStrength / held.Weight;
+        held.Body.linearVelocity = toTarget * followStrength / FeltWeight;
 
         // Se prender em algo e ficar longe demais, você solta.
         if (toTarget.magnitude > reach * 1.5f) Drop();

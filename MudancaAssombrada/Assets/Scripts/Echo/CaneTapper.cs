@@ -17,6 +17,8 @@ public class CaneTapper : MonoBehaviour
 
     // Só a Cida tem bengala. Os PASSOS continuam para todos: o fantasma ouve qualquer um.
     public bool CanTap { get; set; } = true;
+    // Multiplica o alcance dos passos (Marcelo é silencioso = 0.5).
+    public float StepVolume { get; set; } = 1f;
 
     PlayerMovement movement;
     float nextTapTime;
@@ -55,7 +57,7 @@ public class CaneTapper : MonoBehaviour
             float range = stepRange, intensity = 0.5f;
             if (movement.IsCrouching) { range = crouchStepRange; intensity = 0.25f; }
             else if (movement.IsRunning) { range = runStepRange; intensity = 0.9f; }
-            EchoSystem.Emit(transform.position + Vector3.down * 0.9f, range, intensity, gameObject);
+            EchoSystem.Emit(transform.position + Vector3.down * 0.9f, range * StepVolume, intensity, gameObject);
         }
     }
 }

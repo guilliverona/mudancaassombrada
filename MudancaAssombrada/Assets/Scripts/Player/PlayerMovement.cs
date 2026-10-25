@@ -38,6 +38,10 @@ public class PlayerMovement : MonoBehaviour
     // Multiplicador que outros scripts podem mudar (ex.: carregando peso = mais lento).
     public float SpeedMultiplier { get; set; } = 1f;
 
+    // Velocidade do PERSONAGEM (ex.: Marcelo é grandalhão e mais lento).
+    // Fica separado do SpeedMultiplier porque o carregador sobrescreve aquele ao pegar/soltar.
+    public float CharacterSpeed { get; set; } = 1f;
+
     // "private set": outros scripts podem LER (o CaneTapper lê), mas só este script muda.
     public bool IsCrouching { get; private set; }
     public bool IsRunning { get; private set; }
@@ -120,7 +124,7 @@ public class PlayerMovement : MonoBehaviour
         UpdateStamina(input.sqrMagnitude > 0);
 
         float modifier = IsCrouching ? crouchSpeedMultiplier : IsRunning ? runSpeedMultiplier : 1f;
-        Vector3 velocity = move * walkSpeed * SpeedMultiplier * modifier + Vector3.up * verticalVelocity;
+        Vector3 velocity = move * walkSpeed * CharacterSpeed * SpeedMultiplier * modifier + Vector3.up * verticalVelocity;
 
         // Time.deltaTime = segundos desde o último frame. Multiplicar por ele deixa
         // o movimento igual em PCs rápidos ou lentos.
