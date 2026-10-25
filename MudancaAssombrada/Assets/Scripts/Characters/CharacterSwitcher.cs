@@ -26,7 +26,7 @@ public class CharacterSwitcher : NetworkBehaviour
 
     public Character Current => character.Value;
 
-    [SerializeField] Renderer body;
+    [SerializeField] Renderer[] body; // as partes do boneco que mudam de cor (a "roupa")
 
     EchoSystem echo;
     VibrationVision vibration;
@@ -100,7 +100,8 @@ public class CharacterSwitcher : NetworkBehaviour
         // e continua valendo mesmo quando a Cida troca os materiais pelos de eco.
         var block = new MaterialPropertyBlock();
         block.SetColor(BaseColorId, BodyColors[(int)c]);
-        body.SetPropertyBlock(block);
+        foreach (var part in body)
+            part.SetPropertyBlock(block);
 
         // Se a tela está escura (alguém aqui é a Cida), escurece também este boneco.
         echo.RefreshNewRenderers();
