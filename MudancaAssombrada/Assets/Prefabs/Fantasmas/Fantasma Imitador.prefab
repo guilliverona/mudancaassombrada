@@ -18,6 +18,7 @@ GameObject:
   - component: {fileID: 3312506841681324386}
   - component: {fileID: 8718764170064370064}
   - component: {fileID: 7010748190215698494}
+  - component: {fileID: 8437028114553080730}
   m_Layer: 0
   m_Name: Fantasma Imitador
   m_TagString: Untagged
@@ -245,6 +246,36 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.Pointable
   cueRange: 12
+--- !u!114 &8437028114553080730
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6172741386073746404}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: db613a92de9cfa74db593919b3cec50b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.GhostSounds
+  transitions:
+  - anyFrom: 0
+    from: 4
+    to: 0
+    sound: captura
+  - anyFrom: 1
+    from: 0
+    to: 5
+    sound: espelho_rachando
+  loops:
+  - state: 0
+    sound: imitador_sussurro
+    repeatEvery: 9
+    volume: 0.6
+  - state: 4
+    sound: espelho_puxando
+    repeatEvery: 0
+    volume: 1
 --- !u!1001 &7034756412412253087
 PrefabInstance:
   m_ObjectHideFlags: 0

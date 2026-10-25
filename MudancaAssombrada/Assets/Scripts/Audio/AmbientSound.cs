@@ -9,7 +9,7 @@ namespace MudancaAssombrada
     // deve ouvir (a música da Maestrina), quem toca também emite o evento pelo EchoSystem.
     public class AmbientSound : MonoBehaviour
     {
-        [Tooltip("Nome do som na biblioteca (Assets/Resources/Sons), ex.: casa_noite, relogio_pendulo.")]
+        [Tooltip("Nome do som na biblioteca (Assets/Resources/Sons), ex.: casa_noite, vento_janelas.")]
         [SerializeField] string sound = "casa_noite";
         [Tooltip("Ligado: o som vem deste ponto do mundo (o relógio). Desligado: toca igual em todo lugar (o clima, a música de fundo).")]
         [SerializeField] bool spatial;
@@ -17,6 +17,8 @@ namespace MudancaAssombrada
         [SerializeField] bool playOnStart = true;
 
         AudioSource source;
+        float baseVolume;
+        bool ducks; // cama e ritmo abaixam quando o fantasma age (GameAudio.BedGain)
 
         void Start()
         {
@@ -25,14 +27,21 @@ namespace MudancaAssombrada
             if (entry == null) return; // som ainda sem arquivo: fica em silêncio
 
             source = gameObject.AddComponent<AudioSource>();
-            source.clip = entry.clips[Random.Range(0, entry.clips.Length)];
+            source.clip = entry.RandomClip();
             source.loop = true;
-            source.volume = entry.volume * volume;
+            baseVolume = entry.volume * volume;
+            ducks = entry.layer == SoundLayer.Bed || entry.layer == SoundLayer.Rhythm;
+            source.volume = baseVolume;
             source.spatialBlend = spatial ? 1f : 0f;
             source.rolloffMode = AudioRolloffMode.Linear;
             source.maxDistance = entry.maxDistance;
             source.dopplerLevel = 0f;
             if (playOnStart) source.Play();
+        }
+
+        void Update()
+        {
+            if (ducks && source != null) source.volume = baseVolume * GameAudio.BedGain;
         }
 
         // Ligar e desligar por código (ex.: a caixinha de música que o Tiago desliga).

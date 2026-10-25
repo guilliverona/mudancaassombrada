@@ -4,6 +4,16 @@ using UnityEngine;
 
 namespace MudancaAssombrada
 {
+    // As CAMADAS da mixagem, do fundo para a frente. Cada som pertence a uma, e é a camada que
+    // decide quem abaixa para quem (ver GameAudio):
+    //   Bed       cama: o fundo contínuo (o clima da casa, o motor do caminhão)
+    //   Rhythm    ritmo: o relógio, o "metrônomo" da casa
+    //   Cue       pista: o que dá informação (passos, respiração, bengala, batidas)
+    //   Threat    ameaça: o fantasma agindo. Enquanto toca, cama e ritmo abaixam
+    //   Music     música (a Maestrina)
+    //   Interface botões e avisos da tela
+    public enum SoundLayer { Bed, Rhythm, Cue, Threat, Music, Interface }
+
     // A BIBLIOTECA de sons: liga cada nome do catálogo (tools/audio/catalogo.json) aos arquivos
     // de Assets/Audio, com volume e alcance. Também diz qual som cada SoundType faz "por padrão".
     //
@@ -31,6 +41,15 @@ namespace MudancaAssombrada
             [Tooltip("A partir de quantos metros não se ouve mais. É só o ÁUDIO: quem decide se o fantasma " +
                      "ouviu é o alcance do SoundEvent (a regra do jogo).")]
             public float maxDistance = 20f;
+            public SoundLayer layer = SoundLayer.Cue;
+            [Tooltip("Segundos: o mesmo som não toca de novo antes disso (evita a 'metralhadora' de batidas).")]
+            public float minGap;
+            [Tooltip("Espera o contratempo do relógio (HouseClock) para tocar. Só para sons que se repetem " +
+                     "sozinhos e podem atrasar meio segundo (respiração, sussurro).")]
+            public bool onBeat;
+
+            // Sorteia uma das variações.
+            public AudioClip RandomClip() => clips[UnityEngine.Random.Range(0, clips.Length)];
         }
 
         [Tooltip("O som de cada tipo quando a fonte não tem um SoundVoice dizendo outro.")]

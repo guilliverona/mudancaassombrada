@@ -48,17 +48,23 @@ MonoBehaviour:
     - {fileID: 8300000, guid: c9e8e9c9fd8d7874fbbffcf66de25b79, type: 3}
     - {fileID: 8300000, guid: e396d58e3278f8442a5f7572c6b33b76, type: 3}
     - {fileID: 8300000, guid: 6af37eccb29c3bc47a29bfe6b55347a8, type: 3}
-    volume: 0.6
+    volume: 0.55
     pitchVariation: 0.05
-    maxDistance: 15
+    maxDistance: 12
+    layer: 2
+    minGap: 0
+    onBeat: 0
   - id: passo_madeira_rangendo
     clips:
     - {fileID: 8300000, guid: 2efffc7787d18b543bc97fc5351d128a, type: 3}
     - {fileID: 8300000, guid: fe6a3790f71999149a96822afdbb19d7, type: 3}
     - {fileID: 8300000, guid: 2fbb2ef1d2c3e7f449703f4ab2f54447, type: 3}
-    volume: 0.6
+    volume: 0.5
     pitchVariation: 0.05
-    maxDistance: 15
+    maxDistance: 14
+    layer: 2
+    minGap: 0
+    onBeat: 0
   - id: passo_carpete
     clips:
     - {fileID: 8300000, guid: e1239a4f7fd542c45b107a172549e597, type: 3}
@@ -66,7 +72,10 @@ MonoBehaviour:
     - {fileID: 8300000, guid: 4d390dee235a0b848b8ab922671676ee, type: 3}
     volume: 0.6
     pitchVariation: 0.05
-    maxDistance: 15
+    maxDistance: 9
+    layer: 2
+    minGap: 0
+    onBeat: 0
   - id: passo_fantasma
     clips:
     - {fileID: 8300000, guid: 2ad8c80b1ed5249468d42596954144ef, type: 3}
@@ -74,30 +83,42 @@ MonoBehaviour:
     - {fileID: 8300000, guid: e0b97bf6b0145ea4b8b28ea9426f93a8, type: 3}
     volume: 0.6
     pitchVariation: 0.05
-    maxDistance: 15
+    maxDistance: 14
+    layer: 2
+    minGap: 0
+    onBeat: 0
   - id: bengala
     clips:
     - {fileID: 8300000, guid: ce4248736fa015843aab4efd38cc3402, type: 3}
     - {fileID: 8300000, guid: 7cc99877c73ef6e458d211f720fd1adf, type: 3}
     - {fileID: 8300000, guid: fdbc062bbfd2db24f80dd1b270e38985, type: 3}
     - {fileID: 8300000, guid: 409b11a587eef664b9509e23a7abad97, type: 3}
-    volume: 0.9
+    volume: 0.8
     pitchVariation: 0.05
-    maxDistance: 15
+    maxDistance: 18
+    layer: 2
+    minGap: 0.3
+    onBeat: 0
   - id: apito
     clips:
     - {fileID: 8300000, guid: 85b3e646301279e40b001c5275f06b22, type: 3}
-    volume: 0.9
+    volume: 0.5
     pitchVariation: 0.05
-    maxDistance: 15
+    maxDistance: 25
+    layer: 2
+    minGap: 0.5
+    onBeat: 0
   - id: respiracao_calma
     clips:
     - {fileID: 8300000, guid: dee3bfced85d29342b3013f6cbd0a9fd, type: 3}
     - {fileID: 8300000, guid: fcb14e3e38db52c4589355bde846ac72, type: 3}
     - {fileID: 8300000, guid: c302de27d566fe74d8b65b751a41125d, type: 3}
-    volume: 0.35
+    volume: 0.3
     pitchVariation: 0.05
-    maxDistance: 15
+    maxDistance: 4
+    layer: 2
+    minGap: 0
+    onBeat: 1
   - id: respiracao_ofegante
     clips:
     - {fileID: 8300000, guid: 2c60a21a3e4ccb24b8317f2bd80e0641, type: 3}
@@ -105,160 +126,244 @@ MonoBehaviour:
     - {fileID: 8300000, guid: a8e86b8b69924fc4199371591cde2a7c, type: 3}
     volume: 0.35
     pitchVariation: 0.05
-    maxDistance: 15
+    maxDistance: 6
+    layer: 2
+    minGap: 0
+    onBeat: 1
   - id: esforco_marcelo
     clips:
     - {fileID: 8300000, guid: 038435c5d99ca5149aa8d51bd4688126, type: 3}
     - {fileID: 8300000, guid: 8472238898528be4690d8b902f4fb705, type: 3}
-    volume: 0.9
+    volume: 0.5
     pitchVariation: 0.05
-    maxDistance: 15
+    maxDistance: 10
+    layer: 2
+    minGap: 2
+    onBeat: 0
   - id: impacto_leve
     clips:
     - {fileID: 8300000, guid: b0a343ba81735794f9959c010961bb95, type: 3}
     - {fileID: 8300000, guid: 682a42364da6771499e71a1c75da15a6, type: 3}
     - {fileID: 8300000, guid: 81a526dd7521f6d489aa39f8a5d465c4, type: 3}
-    volume: 0.9
+    volume: 0.7
     pitchVariation: 0.05
-    maxDistance: 25
+    maxDistance: 15
+    layer: 2
+    minGap: 0.15
+    onBeat: 0
   - id: impacto_pesado
     clips:
     - {fileID: 8300000, guid: 33bda1ef53dbf004f9250995e60b43d1, type: 3}
     - {fileID: 8300000, guid: 96fcce5e046379240b13dda411e1a047, type: 3}
     - {fileID: 8300000, guid: 3fb420ec839006449882e1f74d657ec7, type: 3}
-    volume: 0.9
+    volume: 0.8
     pitchVariation: 0.05
-    maxDistance: 25
+    maxDistance: 22
+    layer: 2
+    minGap: 0.25
+    onBeat: 0
   - id: arrastar_movel
     clips:
     - {fileID: 8300000, guid: 6ae1c47ed3d14cf4fb14d23a5d9b402e, type: 3}
-    volume: 0.9
+    volume: 0.6
     pitchVariation: 0.05
-    maxDistance: 25
+    maxDistance: 15
+    layer: 2
+    minGap: 0
+    onBeat: 0
   - id: livro_caindo
     clips:
     - {fileID: 8300000, guid: be05f9e5646d93b4eb8c7b3499beef6e, type: 3}
     - {fileID: 8300000, guid: 28c4fc9f11dcc0d49b830946a0338024, type: 3}
     - {fileID: 8300000, guid: 08153fd3f11a5ee439457fa198673246, type: 3}
-    volume: 0.9
+    volume: 0.7
     pitchVariation: 0.05
-    maxDistance: 25
+    maxDistance: 15
+    layer: 2
+    minGap: 0.15
+    onBeat: 0
   - id: espelho_rachando
     clips:
     - {fileID: 8300000, guid: 71799f2574da32b43b64e7b14d36deb3, type: 3}
-    volume: 0.9
+    volume: 1
     pitchVariation: 0.05
     maxDistance: 25
+    layer: 3
+    minGap: 1
+    onBeat: 0
   - id: imitador_sussurro
     clips:
     - {fileID: 8300000, guid: 0d0d3dfa4aff40847b5381d15e35ac44, type: 3}
     - {fileID: 8300000, guid: a38e01513ddd58d48b1e565799c967f2, type: 3}
     - {fileID: 8300000, guid: 3ebb960f0a2bc064c98d68356a182cf3, type: 3}
-    volume: 0.9
+    volume: 0.45
     pitchVariation: 0.05
-    maxDistance: 25
+    maxDistance: 8
+    layer: 3
+    minGap: 6
+    onBeat: 1
   - id: imitador_voz
     clips:
     - {fileID: 8300000, guid: 168589bc5a6dd7244a8415a1b1c21d94, type: 3}
     - {fileID: 8300000, guid: b9be93cf1730d3b40b57b2ebab2da72e, type: 3}
     - {fileID: 8300000, guid: 672d290c9875d6744a9a255c9502d0e3, type: 3}
-    volume: 0.9
+    volume: 0.7
     pitchVariation: 0.05
-    maxDistance: 25
+    maxDistance: 12
+    layer: 2
+    minGap: 1.5
+    onBeat: 0
   - id: bibliotecario_respiracao
     clips:
     - {fileID: 8300000, guid: 6c5cf0ef73d4d28469ea2e50edc8f933, type: 3}
     - {fileID: 8300000, guid: 656cca44125222b4c98e8ad25ae6c265, type: 3}
-    volume: 0.35
+    volume: 0.3
     pitchVariation: 0.05
-    maxDistance: 25
+    maxDistance: 7
+    layer: 2
+    minGap: 0
+    onBeat: 1
   - id: bibliotecario_orelhas
     clips:
     - {fileID: 8300000, guid: f492fc3909593094eb6100e9ac9860de, type: 3}
-    volume: 0.9
+    volume: 1
     pitchVariation: 0.05
-    maxDistance: 25
+    maxDistance: 15
+    layer: 3
+    minGap: 2
+    onBeat: 0
   - id: captura
     clips:
     - {fileID: 8300000, guid: f648c6442b898824e84116e37bd0b8b4, type: 3}
-    volume: 0.9
+    volume: 1
     pitchVariation: 0.05
-    maxDistance: 25
+    maxDistance: 20
+    layer: 3
+    minGap: 1
+    onBeat: 0
   - id: espelho_puxando
     clips:
     - {fileID: 8300000, guid: f1a98f55c9f08c346ace995e889e2a53, type: 3}
-    volume: 0.9
+    volume: 0.8
     pitchVariation: 0.05
-    maxDistance: 25
+    maxDistance: 15
+    layer: 3
+    minGap: 0
+    onBeat: 0
   - id: casa_noite
     clips:
-    - {fileID: 8300000, guid: 156c62e27fff95a46b186ff2f41119a3, type: 3}
+    - {fileID: 8300000, guid: 3dca3b68e6430b84abd67b3921fac430, type: 3}
     volume: 0.5
     pitchVariation: 0.05
-    maxDistance: 25
+    maxDistance: 30
+    layer: 0
+    minGap: 0
+    onBeat: 0
   - id: vento_janelas
     clips:
     - {fileID: 8300000, guid: 4d03438d1380b2640b1e1aacb6e5e1ac, type: 3}
-    volume: 0.5
+    volume: 0.35
     pitchVariation: 0.05
-    maxDistance: 25
-  - id: relogio_pendulo
+    maxDistance: 30
+    layer: 0
+    minGap: 0
+    onBeat: 0
+  - id: relogio_tique
     clips:
-    - {fileID: 8300000, guid: 8ddaec7e330c81641942bad7289fb387, type: 3}
-    volume: 0.5
+    - {fileID: 8300000, guid: 7d3eaa3c4e435174486180b84e9328e9, type: 3}
+    volume: 0.2
     pitchVariation: 0.05
-    maxDistance: 25
+    maxDistance: 9
+    layer: 1
+    minGap: 0
+    onBeat: 0
+  - id: relogio_taque
+    clips:
+    - {fileID: 8300000, guid: 5c753f481a223824b84478080ed1f245, type: 3}
+    volume: 0.2
+    pitchVariation: 0.05
+    maxDistance: 9
+    layer: 1
+    minGap: 0
+    onBeat: 0
   - id: caminhao_motor
     clips:
     - {fileID: 8300000, guid: 6ea1af12fae291c429d981e33ee73113, type: 3}
-    volume: 0.5
+    volume: 0.25
     pitchVariation: 0.05
-    maxDistance: 25
+    maxDistance: 20
+    layer: 0
+    minGap: 0
+    onBeat: 0
   - id: amanhecer_galo
     clips:
     - {fileID: 8300000, guid: c209cccf8004d8a41955a3c263fee7e9, type: 3}
-    volume: 0.5
+    volume: 0.4
     pitchVariation: 0.05
-    maxDistance: 25
+    maxDistance: 40
+    layer: 0
+    minGap: 0
+    onBeat: 0
   - id: caixinha_musica
     clips:
     - {fileID: 8300000, guid: e2882fb566bf9c54b9ae89c78b4fad7a, type: 3}
-    volume: 0.6
+    volume: 0.5
     pitchVariation: 0.05
-    maxDistance: 25
+    maxDistance: 15
+    layer: 4
+    minGap: 0
+    onBeat: 0
   - id: piano_conservatorio
     clips:
     - {fileID: 8300000, guid: f4acfaff2d14b174aa6470c8c2de3dc3, type: 3}
     volume: 0.6
     pitchVariation: 0.05
     maxDistance: 25
+    layer: 4
+    minGap: 0
+    onBeat: 0
   - id: perigo_stinger
     clips:
     - {fileID: 8300000, guid: 959ff88b1d933134f9386245f7e2c8b1, type: 3}
     volume: 0.6
     pitchVariation: 0.05
-    maxDistance: 25
+    maxDistance: 30
+    layer: 3
+    minGap: 4
+    onBeat: 0
   - id: ui_clique
     clips:
     - {fileID: 8300000, guid: 71799640cad600046b413f5abd26588f, type: 3}
     volume: 0.5
     pitchVariation: 0.05
     maxDistance: 25
+    layer: 5
+    minGap: 0
+    onBeat: 0
   - id: ui_hover
     clips:
     - {fileID: 8300000, guid: 75bd319136eadd349aa7842821c8fed2, type: 3}
     volume: 0.5
     pitchVariation: 0.05
     maxDistance: 25
+    layer: 5
+    minGap: 0.05
+    onBeat: 0
   - id: ui_erro
     clips:
     - {fileID: 8300000, guid: d7abba698b4e2fc42a47e8f78fc589cc, type: 3}
     volume: 0.5
     pitchVariation: 0.05
     maxDistance: 25
+    layer: 5
+    minGap: 0
+    onBeat: 0
   - id: eco_pulso
     clips:
     - {fileID: 8300000, guid: 0b96a39daef2c4d4283894cc9ba3a16d, type: 3}
-    volume: 0.5
+    volume: 0.4
     pitchVariation: 0.05
     maxDistance: 25
+    layer: 5
+    minGap: 0
+    onBeat: 0

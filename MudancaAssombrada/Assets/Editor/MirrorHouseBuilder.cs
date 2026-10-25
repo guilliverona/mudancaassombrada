@@ -14,7 +14,8 @@ namespace MudancaAssombrada.Editor
     // da cena (é a fase que o jogo abre primeiro). Depois de criada, a cena é sua: mova paredes,
     // espelhos e móveis à vontade, e refaça o NavMesh (objeto "NavMesh" > Bake).
     //
-    //   Assets/Prefabs/Casa       Parede Lisa, Parede com Porta, Porta, Piso Xadrez (kit do Blender)
+    //   Assets/Prefabs/Casa       Parede Lisa, Parede com Porta, Porta, Piso Xadrez (kit do Blender),
+    //                             Relógio de Pêndulo (com o tique-taque)
     //   Assets/Prefabs/Espelhos   Espelho P, M e G (molduras + componente Mirror)
     //   Assets/Prefabs/Móveis     Penteadeira
     //   Assets/Prefabs/Relíquias  Cartaz do Teatro (pista do Seu Valdemar)
@@ -44,7 +45,8 @@ namespace MudancaAssombrada.Editor
         const string MirrorLPath = "Assets/Prefabs/Espelhos/Espelho G.prefab";
         const string VanityPath = "Assets/Prefabs/Móveis/Penteadeira.prefab";
         const string PosterPath = "Assets/Prefabs/Relíquias/Cartaz do Teatro.prefab";
-        const string ImitatorPath = "Assets/Prefabs/Fantasmas/Fantasma Imitador.prefab";
+        public const string ImitatorPath = "Assets/Prefabs/Fantasmas/Fantasma Imitador.prefab";
+        public const string ClockPath = "Assets/Prefabs/Casa/Relógio de Pêndulo.prefab";
 
         const float WallWidth = 2f, WallHeight = 2.8f, WallThickness = 0.15f; // o kit (tools/blender)
         const float DoorWidth = 0.9f, DoorHeight = 2.1f;
@@ -83,6 +85,8 @@ namespace MudancaAssombrada.Editor
             LevelPrefabsBuilder.Build(VanityPath, false, BuildVanity);
             LevelPrefabsBuilder.Build(PosterPath, false, BuildPoster);
             LevelPrefabsBuilder.Build(ImitatorPath, false, BuildImitator);
+            LevelPrefabsBuilder.Build(ClockPath, false, BuildClock);
+            UpgradeClock();
             LevelPrefabsBuilder.UpgradeGhost(ImitatorPath, breathes: false); // Imitador antigo ganha o que faltar
             AssetDatabase.SaveAssets();
         }
@@ -199,6 +203,46 @@ namespace MudancaAssombrada.Editor
             return ghost;
         }
 
+        // Relógio de pêndulo (0,55 × 0,32 × 2,1 m): cenário fixo, não carregável. O tique-taque sai
+        // dele (som 3D na altura do mostrador), então a Cida acha o relógio pelo som. É também o
+        // metrônomo da casa (HouseClock): a respiração e os sussurros entram entre as batidas.
+        static GameObject BuildClock()
+        {
+            var root = KitPiece("Relógio de Pêndulo", "Props/RelogioPendulo/SM_PRP_RelogioPendulo",
+                r => Box(r, new Vector3(0, 1.08f, 0), new Vector3(0.55f, 2.16f, 0.33f)));
+            root.AddComponent<NavMeshObstacle>().carving = true; // o fantasma desvia mesmo sem refazer o NavMesh
+            AddTicking(root);
+            return root;
+        }
+
+        static void AddTicking(GameObject clock)
+        {
+            var tick = new GameObject("Tique-taque");
+            tick.transform.SetParent(clock.transform, false);
+            tick.transform.localPosition = new Vector3(0, 1.7f, 0);
+            tick.AddComponent<HouseClock>();
+        }
+
+        // O prefab de antes tocava um loop (AmbientSound); troca pelo metrônomo, sem mexer no resto.
+        public static void UpgradeClock()
+        {
+            if (Load(ClockPath) == null) return;
+            var root = PrefabUtility.LoadPrefabContents(ClockPath);
+            try
+            {
+                if (root.GetComponentInChildren<HouseClock>() != null) return;
+                var old = root.transform.Find("Tique-taque");
+                if (old != null) Object.DestroyImmediate(old.gameObject);
+                AddTicking(root);
+                PrefabUtility.SaveAsPrefabAsset(root, ClockPath);
+                Debug.Log($"Relógio agora é o metrônomo da casa (HouseClock): {ClockPath}");
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+        }
+
         static GameObject Load(string path) => LevelPrefabsBuilder.Load(path);
 
         // ---------- Cena ----------
@@ -273,24 +317,29 @@ namespace MudancaAssombrada.Editor
             Place(LevelPrefabsBuilder.TruckPath, new Vector3(0, 0, -11f), 180, null);
 
             AddAmbience(house);
+            AddClock(house);
         }
 
-        // Os sons que tocam sem parar (AmbientSound): o clima da casa em todo lugar e o relógio
-        // de pêndulo na sala (som 3D: fica mais alto perto dele, e ajuda a Cida a se localizar).
-        // Público para dar para acrescentar numa cena já feita à mão, sem recriá-la.
+        // O clima da casa (AmbientSound 2D, igual em todo lugar). O relógio traz o próprio som.
+        // Públicos para dar para acrescentar numa cena já feita à mão, sem recriá-la.
         public static void AddAmbience(Transform house)
         {
             var sounds = new GameObject("Sons").transform;
             sounds.SetParent(house, false);
-            Ambient(sounds, "Clima da Casa", "casa_noite", Vector3.zero, spatial: false, volume: 0.5f);
-            Ambient(sounds, "Relógio de Pêndulo", "relogio_pendulo", new Vector3(-5.5f, 1.5f, -4.5f), spatial: true, volume: 0.6f);
+            var weather = new GameObject("Clima da Casa");
+            weather.transform.SetParent(sounds, false);
+            Ambient(weather, "casa_noite", spatial: false, volume: 0.5f);
         }
 
-        static void Ambient(Transform parent, string name, string sound, Vector3 position, bool spatial, float volume)
+        // Relógio de pêndulo no canto da sala, encostado na parede oeste e olhando para dentro.
+        public static void AddClock(Transform house)
         {
-            var go = new GameObject(name);
-            go.transform.SetParent(parent, false);
-            go.transform.position = position;
+            float inside = 6 - WallThickness / 2;
+            Piece(ClockPath, house, new Vector3(-inside + 0.17f, 0, -4.5f), 90);
+        }
+
+        static void Ambient(GameObject go, string sound, bool spatial, float volume)
+        {
             var so = new SerializedObject(go.AddComponent<AmbientSound>());
             so.FindProperty("sound").stringValue = sound;
             so.FindProperty("spatial").boolValue = spatial;
