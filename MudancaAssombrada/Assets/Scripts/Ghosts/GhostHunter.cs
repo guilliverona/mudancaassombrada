@@ -52,7 +52,6 @@ public class GhostHunter : MonoBehaviour
 
     void Start()
     {
-        player = FindFirstObjectByType<PlayerMovement>().transform;
         EnterState(State.Patrolling);
     }
 
@@ -99,7 +98,10 @@ public class GhostHunter : MonoBehaviour
                 break;
         }
 
-        if (Vector3.Distance(transform.position, player.position) < catchDistance)
+        // Com multiplayer os jogadores aparecem DEPOIS do fantasma (quando conectam),
+        // então procuramos o mais próximo a cada frame em vez de guardar um só no Start.
+        player = NearestPlayer();
+        if (player != null && Vector3.Distance(transform.position, player.position) < catchDistance)
             GameManager.PlayerCaught("O Bibliotecário te pegou!");
 
         EmitFootsteps();
@@ -116,6 +118,18 @@ public class GhostHunter : MonoBehaviour
             _ => huntSpeed, // "_" = qualquer outro caso
         };
         if (newState == State.Patrolling) agent.SetDestination(RandomPointNear(home, patrolRadius));
+    }
+
+    Transform NearestPlayer()
+    {
+        Transform nearest = null;
+        float best = float.MaxValue;
+        foreach (var p in FindObjectsByType<PlayerMovement>())
+        {
+            float d = Vector3.Distance(transform.position, p.transform.position);
+            if (d < best) { best = d; nearest = p.transform; }
+        }
+        return nearest; // null = ninguém conectado ainda
     }
 
     bool Arrived() => !agent.pathPending && agent.remainingDistance <= agent.stoppingDistance + 0.2f;

@@ -46,39 +46,26 @@ public static class PrototypeSceneBuilder
         zoneCollider.isTrigger = true; // não bloqueia, só detecta
         var truck = truckZone.AddComponent<TruckZone>();
 
-        // --- Player ---
-        var player = new GameObject("Player");
-        player.transform.position = new Vector3(0, 1f, -6f);
-        var movement = player.AddComponent<PlayerMovement>(); // adiciona o CharacterController junto
-        var carrier = player.AddComponent<FurnitureCarrier>();
-        player.AddComponent<CaneTapper>();
-
         // --- Sistema de eco (visão da Dona Cida) ---
         var echo = new GameObject("EchoSystem").AddComponent<EchoSystem>();
         SetReference(echo, "echoShader", AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shaders/Echo.shader"));
 
-        // --- Personagens: Tiago vê vibrações; o switcher troca entre Cida (1) e Tiago (2) ---
-        player.AddComponent<VibrationVision>();
-        player.AddComponent<Whistle>();
-        player.AddComponent<CharacterSwitcher>();
+        // --- Câmera de espera: o que se vê antes de conectar (vista de cima da casa) ---
+        // A câmera padrão da cena vira a "de espera". Ela NÃO é a MainCamera: essa é a do jogador.
+        var lobbyCam = Camera.main;
+        lobbyCam.name = "Câmera de Espera";
+        lobbyCam.tag = "Untagged";
+        lobbyCam.transform.position = new Vector3(0, 22f, -4f);
+        lobbyCam.transform.rotation = Quaternion.Euler(70f, 0, 0);
 
-        var cam = Camera.main;
-        cam.transform.SetParent(player.transform);
-        cam.transform.localPosition = new Vector3(0, 0.6f, 0);
-        cam.transform.localRotation = Quaternion.identity;
-
-        // Os campos são privados ([SerializeField]), então usamos SerializedObject,
-        // que é exatamente o que o Inspector faz quando você arrasta algo para um campo.
-        SetReference(movement, "cameraPivot", cam.transform);
-        SetReference(carrier, "playerCamera", cam);
+        // --- Player: agora é um PREFAB (um "molde") ---
+        // Na cena não existe mais Player nenhum. Cada jogador que conecta ganha uma cópia do molde.
+        CreatePlayerPrefab();
 
         // --- Móveis ---
         CreateFurniture("Armário", new Vector3(2, 0.75f, -4), new Vector3(1f, 1.5f, 0.6f), 3f, new Color(0.45f, 0.3f, 0.2f));
         CreateFurniture("Cadeira", new Vector3(-2, 0.3f, -4), new Vector3(0.5f, 0.6f, 0.5f), 1f, new Color(0.8f, 0.6f, 0.4f));
         CreateFurniture("Caixa",   new Vector3(0, 0.25f, -3), new Vector3(0.5f, 0.5f, 0.5f), 1.5f, new Color(0.7f, 0.55f, 0.35f));
-
-        // O Player não pode virar "buraco" no mapa de caminhos.
-        player.AddComponent<NavMeshModifier>().ignoreFromBuild = true;
 
         // --- NavMesh: o mapa de onde dá para andar ---
         // A Unity analisa o chão e as paredes e gera uma malha azul com as áreas caminháveis.
@@ -109,12 +96,78 @@ public static class PrototypeSceneBuilder
         var gameManager = new GameObject("GameManager").AddComponent<GameManager>();
         SetReference(gameManager, "truck", truck);
 
+        // --- Rede: o NetworkManager é o "cérebro" da conexão ---
+        var netGo = new GameObject("NetworkManager");
+        var net = netGo.AddComponent<Unity.Netcode.NetworkManager>();
+        // O Transport é o "carteiro": quem de fato manda os pacotes pela rede.
+        var transport = netGo.AddComponent<Unity.Netcode.Transports.UTP.UnityTransport>();
+        if (net.NetworkConfig == null) net.NetworkConfig = new Unity.Netcode.NetworkConfig();
+        net.NetworkConfig.NetworkTransport = transport;
+        net.NetworkConfig.PlayerPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(PlayerPrefabPath);
+        netGo.AddComponent<ConnectionMenu>();
+
         EditorSceneManager.SaveScene(scene, "Assets/Scenes/Prototipo1.unity");
 
         // Reiniciar a fase usa SceneManager.LoadScene, que só funciona com cenas na Build Settings.
         EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene("Assets/Scenes/Prototipo1.unity", true) };
 
         Debug.Log("Cena Protótipo 1 criada! Aperte Play.");
+    }
+
+    const string PlayerPrefabPath = "Assets/Prefabs/Player.prefab";
+
+    static void CreatePlayerPrefab()
+    {
+        var player = new GameObject("Player");
+        player.transform.position = new Vector3(0, 1f, -6f); // onde os jogadores nascem
+
+        // Corpo visível: antes só existia a câmera, então o jogador era invisível.
+        // Agora os OUTROS jogadores precisam te ver. O collider é removido porque
+        // o CharacterController já faz esse papel.
+        var body = GameObject.CreatePrimitive(PrimitiveType.Capsule);
+        body.name = "Corpo";
+        Object.DestroyImmediate(body.GetComponent<Collider>());
+        body.transform.SetParent(player.transform, false);
+
+        var camGo = new GameObject("Câmera do Jogador", typeof(Camera), typeof(AudioListener));
+        camGo.tag = "MainCamera";
+        camGo.transform.SetParent(player.transform, false);
+        camGo.transform.localPosition = new Vector3(0, 0.6f, 0);
+        var cam = camGo.GetComponent<Camera>();
+        cam.nearClipPlane = 0.05f;
+
+        var movement = player.AddComponent<PlayerMovement>(); // adiciona o CharacterController junto
+        var carrier = player.AddComponent<FurnitureCarrier>();
+        var cane = player.AddComponent<CaneTapper>();
+        var vibration = player.AddComponent<VibrationVision>();
+        var whistle = player.AddComponent<Whistle>();
+        var switcher = player.AddComponent<CharacterSwitcher>();
+        player.AddComponent<NavMeshModifier>().ignoreFromBuild = true;
+
+        // Os campos são privados ([SerializeField]), então usamos SerializedObject,
+        // que é exatamente o que o Inspector faz quando você arrasta algo para um campo.
+        SetReference(movement, "cameraPivot", camGo.transform);
+        SetReference(carrier, "playerCamera", cam);
+
+        // --- Componentes de rede ---
+        player.AddComponent<Unity.Netcode.NetworkObject>(); // "este objeto existe na rede"
+        var netTransform = player.AddComponent<Unity.Netcode.Components.NetworkTransform>();
+        // Owner = quem controla o boneco manda a posição dele. Sem isso, só o host poderia mover os jogadores.
+        netTransform.AuthorityMode = Unity.Netcode.Components.NetworkTransform.AuthorityModes.Owner;
+
+        var netPlayer = player.AddComponent<NetworkPlayer>();
+        var so = new SerializedObject(netPlayer);
+        var list = so.FindProperty("ownerOnly");
+        Behaviour[] ownerOnly = { movement, carrier, cane, vibration, whistle, switcher };
+        list.arraySize = ownerOnly.Length;
+        for (int i = 0; i < ownerOnly.Length; i++)
+            list.GetArrayElementAtIndex(i).objectReferenceValue = ownerOnly[i];
+        so.ApplyModifiedPropertiesWithoutUndo();
+
+        // Salva o molde como arquivo e apaga a cópia que estava na cena.
+        if (!AssetDatabase.IsValidFolder("Assets/Prefabs")) AssetDatabase.CreateFolder("Assets", "Prefabs");
+        PrefabUtility.SaveAsPrefabAsset(player, PlayerPrefabPath);
+        Object.DestroyImmediate(player);
     }
 
     static void CreateWall(string name, Vector3 position, Vector3 size)
