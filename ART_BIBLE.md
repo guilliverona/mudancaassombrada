@@ -28,8 +28,14 @@ tools/blender/                         ← scripts (Python do Blender)
 ├── build_cida_blockout.py             um script por personagem
 ├── build_tiago_blockout.py
 ├── build_marcelo_blockout.py
-├── build_bibliotecario_blockout.py    fantasmas
+├── build_bibliotecario_blockout.py    fantasmas (um script cada)
+├── build_imitador_blockout.py
+├── build_maestrina_blockout.py
+├── build_valdemar_blockout.py         o chefe (Bosses)
 ├── build_props_blockout.py            armário, cadeira, caixa e caminhão
+├── build_story_props_blockout.py      rádio, bilhete, nota fiscal, relíquias, caixinha
+├── build_furniture_blockout.py        mobília do Art Bible e props da biblioteca
+├── build_env_kit_blockout.py          kit modular: paredes, porta, pisos, molduras
 ├── build_all.ps1                      gera todos
 └── check_fbx.py                       reimporta um FBX e lista o que veio
 Art/Source/<Tipo>/<Nome>/              ← arquivos-fonte (fora do Unity)
@@ -43,7 +49,12 @@ MudancaAssombrada/Assets/Art/<Tipo>/<Nome>/
 |---|---|---|
 | `Characters` | `SK_CHR` | Humanoid |
 | `Ghosts` | `SK_GHO` | Humanoid |
+| `Bosses` | `SK_BOS` | Humanoid |
 | `Props` | `SM_PRP` | sem rig |
+| `Environment` | `SM_ENV` | sem rig |
+
+Os scripts de props, mobília e cenário aceitam nomes depois de `--` para gerar só alguns:
+`blender --background --factory-startup --python tools/blender/build_furniture_blockout.py -- Sofa`.
 
 A importação é configurada sozinha pela pasta
 ([`ArtImportSettings`](MudancaAssombrada/Assets/Editor/ArtImportSettings.cs)): ninguém precisa
@@ -90,10 +101,14 @@ gerar de novo no Blender atualiza os prefabs sozinho, porque o `Modelo` fica lig
 | Tipo | Limite | Hoje |
 |---|---|---|
 | Personagem jogável (com props) | 18k | Cida 10,2k · Tiago 8,5k · Marcelo 7,4k |
-| Fantasma de fase | 20k | Bibliotecário 6,0k |
+| Fantasma de fase | 20k | Bibliotecário 6,0k · Imitador 6,3k · Maestrina 4,2k |
+| Seu Valdemar | 15k | 4,8k |
 | O Inquilino (forma final) | 45k | — |
-| Móvel carregável grande | 3–6k | — |
-| Prop de história | 2–4k | — |
+| Móvel carregável grande | 3–6k | 0,4k a 2,6k (penteadeira) |
+| Prop de história | 2–4k | 0,1k a 1,3k (partitura) |
+| Módulo de cenário | 0,5–1,5k | 0,2k a 0,8k (piso xadrez) |
+
+Os blockouts ficam abaixo do orçamento de propósito: são formas e cores, sem o detalhe da arte final.
 
 ## 2. Personagens jogáveis
 
@@ -118,24 +133,31 @@ Os modelos seguem os desenhos.
 
 ## 3. Situação: o que já existe e o que falta
 
-Já têm modelo: os três jogáveis, o Bibliotecário, os móveis do protótipo e o caminhão.
-O cenário (paredes, chão) ainda é bloco.
+Já têm modelo (blockout): os três jogáveis, os três fantasmas de fase, o Seu Valdemar, todos os
+props de história, a mobília da tabela do Art Bible, o caminhão e o kit modular de cenário.
+Falta modelo só para o **Inquilino** (3 formas + epílogo) e os instrumentos da Fase 2.
+
+**Modelo existe ≠ está no jogo.** Só os móveis do protótipo, o caminhão e o Bibliotecário estão
+ligados a prefabs (`LevelPrefabsBuilder`). Os demais esperam o prefab da fase em que entram.
 
 | Design (prancha do Art Bible) | No jogo hoje | Falta |
 |---|---|---|
 | Cida, Tiago, Marcelo | blockout + rig + ficha | animações (bengala, Libras, carregar), roda de gestos e quadro do Marcelo, colisor por altura |
 | Bibliotecário (GHO_03) | blockout 2,6 m + rig + `GhostHunter` (caça por som) | orelhas que abrem, distração por livros, captura, postura curvada (animação) |
-| Móveis do protótipo | armário, cadeira e caixa com modelo | pontos de pega |
+| Imitador (GHO_01) | blockout 2,3 m + rig (`Ghosts/Imitador`) | prefab; **disfarce** (copia um jogador), máscara comédia → tragédia |
+| Maestrina (GHO_02) | blockout 2,4 m + rig (`Ghosts/Maestrina`) | prefab; **hipnose** pela música, pescoço que estica |
+| Seu Valdemar (BOS_00) | blockout 1,68 m + rig (`Bosses/Valdemar`) | aparições por estado (rádio → translúcido → sólido) |
+| O Inquilino (BOS_01) | ficha do capítulo | **modelo** (3 etapas + epílogo), chefe em 3 etapas, final |
+| Móveis do protótipo | armário, cadeira e caixa com modelo, no prefab | pontos de pega |
+| Mobília do Art Bible | penteadeira, piano de armário, estante, mesa de leitura, sofá, caixas P/G (`Props/`) | prefabs com o peso da tabela |
+| Props de história | rádio, bilhete, nota fiscal, cartaz, partitura, diário, caixinha (`Props/`) | relíquias que pesam mais longe da porta; texto real nos bilhetes (decal) |
+| Biblioteca (ENV_03) | estante, pilha de livros, luminária verde, piso de tábuas | cena; piso que range |
+| Kit modular (ENV_01–04) | parede lisa, parede com porta, porta, piso xadrez, molduras de espelho S/M/L (`Environment/`) | cenas das casas; instrumentos do Conservatório |
 | Caminhão | modelo + zona de entrega | — |
-| Props de história (rádio, bilhetes, relíquias) | bilhetes como texto nos capítulos | modelos; relíquias que pesam mais longe da porta |
-| Casa do Espelho + Imitador (cap. 1) | ficha do capítulo | cena, kit modular, modelo; **disfarce** (copia um jogador) |
-| Conservatório + Maestrina (cap. 2) | ficha do capítulo | cena, instrumentos, modelo; **hipnose** pela música |
-| Biblioteca do Silêncio (cap. 3) | ficha do capítulo | cena, estantes, piso que range |
-| Seu Valdemar | bilhetes e avaliação nos capítulos | modelo; aparições por estado |
-| O Inquilino + Sobrado (cap. 4) | ficha do capítulo | cena, chefe em 3 etapas, final |
 
-Ordem sugerida: ~~Bibliotecário, móveis e caminhão~~ (feito) → Casa do Espelho e Imitador →
-Conservatório e Maestrina → Biblioteca → Valdemar, Inquilino e Sobrado.
+Ordem sugerida: ~~Bibliotecário, móveis e caminhão~~ (feito) → ~~modelos dos fantasmas, chefe,
+props e kit~~ (feito) → Casa do Espelho e Imitador → Conservatório e Maestrina → Biblioteca →
+Inquilino e Sobrado.
 
 ## 4. Decisões em aberto
 

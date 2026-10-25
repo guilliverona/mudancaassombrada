@@ -24,11 +24,13 @@ UNITY_ROOT = REPO / "MudancaAssombrada/Assets/Art"
 
 # tipo -> prefixo do arquivo. A pasta (Art/Source/<tipo> e Assets/Art/<tipo>) também decide
 # o rig ao importar no Unity (Assets/Editor/ArtImportSettings.cs):
-# Characters e Ghosts = Humanoid; Props = sem rig.
+# Characters, Ghosts e Bosses = Humanoid; Props e Environment = sem rig.
 KINDS = {
     "Characters": "SK_CHR",
     "Ghosts": "SK_GHO",
+    "Bosses": "SK_BOS",
     "Props": "SM_PRP",
+    "Environment": "SM_ENV",
 }
 
 K = 1.0

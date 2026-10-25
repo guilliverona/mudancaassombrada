@@ -8,7 +8,9 @@ namespace MudancaAssombrada.Editor
     //
     //   Assets/Art/Characters/...  personagens jogáveis   rig Humanoid
     //   Assets/Art/Ghosts/...      fantasmas              rig Humanoid
+    //   Assets/Art/Bosses/...      Seu Valdemar, Inquilino rig Humanoid
     //   Assets/Art/Props/...       móveis, caminhão...    sem rig
+    //   Assets/Art/Environment/... paredes, pisos, portas sem rig
     //
     // Só roda quando o modelo é importado pela PRIMEIRA vez (arquivo .meta novo): depois disso,
     // o que alguém mudar no Inspector continua valendo.
@@ -29,7 +31,8 @@ namespace MudancaAssombrada.Editor
             importer.importLights = false;
             importer.importAnimation = false; // ainda não há animações nos modelos
 
-            bool hasRig = assetPath.StartsWith(ArtFolder + "Characters/") || assetPath.StartsWith(ArtFolder + "Ghosts/");
+            bool hasRig = assetPath.StartsWith(ArtFolder + "Characters/") || assetPath.StartsWith(ArtFolder + "Ghosts/")
+                          || assetPath.StartsWith(ArtFolder + "Bosses/");
             if (hasRig)
             {
                 // O Unity mapeia os ossos sozinho pelos nomes (Hips, Spine, LeftUpperArm...).
