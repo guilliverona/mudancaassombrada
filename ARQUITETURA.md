@@ -187,6 +187,8 @@ tipo em `Sons.asset` (lista "Defaults").
 ### Um som (arquivo de áudio)
 O `SoundEvent` é a REGRA (quem ouviu, até onde); o arquivo é só o que sai na caixa de som.
 1. Descreva o som em `tools/audio/catalogo.json` (id, pasta, texto em inglês para a IA, duração).
+   Som que a IA entrega baixo demais (os ambientes vêm a ~−60 dB): `"normalizar": -30` gera em
+   PCM, ajusta o volume do arquivo até esse nível e salva em `.wav`.
 2. `python tools/audio/gerar_sons.py --so <id>` (chave do ElevenLabs na variável
    `ELEVENLABS_API_KEY`; o script pula o que já existe). Sai em `Assets/Audio/<pasta>/`, e a
    importação é configurada pela pasta (`AudioImportSettings`).
@@ -194,6 +196,17 @@ O `SoundEvent` é a REGRA (quem ouviu, até onde); o arquivo é só o que sai na
 4. Para tocar: nada a fazer se é um `SoundEvent` (o `GameAudio` toca todos sozinho, pelo tipo).
    Um objeto com som próprio (passos arrastados do fantasma) ganha um `SoundVoice`. Loop de
    cena (clima, relógio, música): componente `AmbientSound`. Som avulso: `GameAudio.Play(id, posição)`.
+   Som pelo estado de um fantasma (vidro trincando ao ser desmascarado, zumbido enquanto puxa):
+   `GhostSounds`, com trocas de estado e loops preenchidos no Inspector (o Imitador já tem).
+
+**Mixagem (para os sons não se atropelarem).** Cada som tem uma **camada** (cama, ritmo, pista,
+ameaça, música, interface), volume, alcance, intervalo mínimo e se entra "no tempo". Os números
+ficam na lista `mixagem` do `catalogo.json` (calculados pelo volume medido de cada arquivo) e o
+menu Atualizar Biblioteca de Sons os copia para o `Sons.asset`. O `GameAudio` aplica três regras:
+o mesmo som não repete antes do intervalo mínimo; sons de **ameaça** abaixam a cama e o ritmo
+(`BedGain`); e sons marcados "no tempo" (respiração, sussurro) esperam o **contratempo** do relógio
+da casa (`HouseClock`, um tique ou taque por segundo), para não cair em cima da batida. Passos,
+batidas, voz e ataques nunca esperam: são informação e precisam ser instantâneos.
 
 ### Um marcador da história (pista, escolha)
 `SaveSystem.Data.SetFlag("achou-cartaz-teatro"); SaveSystem.Save();` e depois

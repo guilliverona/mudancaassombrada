@@ -34,7 +34,7 @@ tools/blender/                         ← scripts (Python do Blender)
 ├── build_valdemar_blockout.py         o chefe (Bosses)
 ├── build_props_blockout.py            armário, cadeira, caixa e caminhão
 ├── build_story_props_blockout.py      rádio, bilhete, nota fiscal, relíquias, caixinha
-├── build_furniture_blockout.py        mobília do Art Bible e props da biblioteca
+├── build_furniture_blockout.py        mobília do Art Bible, props da biblioteca e o relógio de pêndulo
 ├── build_env_kit_blockout.py          kit modular: paredes, porta, pisos, molduras
 ├── build_all.ps1                      gera todos
 └── check_fbx.py                       reimporta um FBX e lista o que veio
@@ -151,6 +151,7 @@ a penteadeira e o cartaz do teatro, pelo `MirrorHouseBuilder` (Casa do Espelho).
 | O Inquilino (BOS_01) | ficha do capítulo | **modelo** (3 etapas + epílogo), chefe em 3 etapas, final |
 | Móveis do protótipo | armário, cadeira e caixa com modelo, no prefab | pontos de pega |
 | Mobília do Art Bible | penteadeira, piano de armário, estante, mesa de leitura, sofá, caixas P/G (`Props/`) | prefabs com o peso da tabela |
+| Relógio de pêndulo (fora do Art Bible: decoração do ENV_01) | modelo 0,55 × 0,32 × 2,1 m + prefab fixo com o tique-taque, na sala da Casa do Espelho | — |
 | Props de história | rádio, bilhete, nota fiscal, cartaz, partitura, diário, caixinha (`Props/`) | relíquias que pesam mais longe da porta; texto real nos bilhetes (decal) |
 | Biblioteca (ENV_03) | estante, pilha de livros, luminária verde, piso de tábuas | cena; piso que range |
 | Kit modular (ENV_01–04) | parede lisa, parede com porta, porta, piso xadrez, molduras de espelho S/M/L (`Environment/`) | cenas das casas; instrumentos do Conservatório |

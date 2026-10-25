@@ -124,6 +124,8 @@ host numa janela, cliente na outra (IP 127.0.0.1). O jogo começa pela cena **Me
   todos os `fileID`. Mesmo assim, conferir o diff antes de propor commit.
 - **Lados nos desenhos:** em várias fichas do Art Bible, o texto diz "direito" e o desenho mostra o
   lado esquerdo (bengala da Cida, lápis e bolsa do Tiago). Os modelos seguem o desenho.
+- **Art Bible offline:** o PDF não abre aqui (falta o poppler). O `.html` salvo é um pacote: cada página
+  vem comprimida (gzip + base64) no `__bundler/manifest`, e as tabelas ficam no `renderVals()` do template.
 - **PowerShell:** dentro de aspas duplas, `$nome_texto` vira variável; usar aspas simples ou
   `${nome}` quando houver `$` no texto. `2>&1` em programas nativos gera falsos erros vermelhos.
 
