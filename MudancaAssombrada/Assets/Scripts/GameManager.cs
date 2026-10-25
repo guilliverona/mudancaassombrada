@@ -176,7 +176,7 @@ namespace MudancaAssombrada
             if (outcome.Value == MatchOutcome.Playing) return; // dois jogadores apertaram R: ignora o segundo
 
             foreach (var f in Furniture.All) f.ServerReset();
-            foreach (var g in GhostHunter.All) g.ServerReset();
+            foreach (var g in Ghost.All) g.ServerReset();
             foreach (var i in Interactable.All) i.ServerReset();
             foreach (var o in Objective.All) o.ServerReset();
             foreach (var p in NetworkPlayer.All) p.ResetPositionRpc();

@@ -52,6 +52,9 @@ namespace MudancaAssombrada
         // aparecer e sumir na hora em que você olha para o objeto ou desvia o olhar.
         Furniture lookTarget;
         Interactable lookInteractable;
+        // Alguém que PARECE um jogador (outro jogador ou a cópia do Imitador): dá para apontar.
+        Ghost lookGhost;
+        bool lookPerson;
 
         // Peso que o jogador SENTE: nunca menos que 1 (nada fica mais leve que "sem peso").
         float FeltWeight => Mathf.Max(1f, held.Weight / Strength);
@@ -74,6 +77,7 @@ namespace MudancaAssombrada
 
             if (held != null) Drop();
             else if (lookInteractable != null) TryUse(lookInteractable);
+            else if (lookPerson) Point();
             else if (requested == null) TryPickUp();
         }
 
@@ -88,6 +92,9 @@ namespace MudancaAssombrada
                 return new InteractionPrompt(canUse ? lookInteractable.Prompt : "Não consigo", canUse);
             }
 
+            // A MESMA dica para o jogador de verdade e para a cópia: a tela não entrega quem é o falso.
+            if (lookPerson) return new InteractionPrompt("Apontar: é falso!", true);
+
             if (lookTarget == null) return InteractionPrompt.None;
             if (lookTarget.IsHeld) return new InteractionPrompt("Ocupado", false);
             return new InteractionPrompt($"Pegar {lookTarget.name}", true);
@@ -97,6 +104,8 @@ namespace MudancaAssombrada
         {
             lookTarget = null;
             lookInteractable = null;
+            lookGhost = null;
+            lookPerson = false;
             if (held != null) return; // de mãos ocupadas, só dá para soltar
 
             // Raycast: um "raio laser" invisível saindo do centro da câmera.
@@ -107,6 +116,20 @@ namespace MudancaAssombrada
             // Só interessa se o objeto atingido for um móvel ou algo usável.
             hit.collider.TryGetComponent(out lookTarget);
             hit.collider.TryGetComponent(out lookInteractable);
+
+            // Apontar só existe enquanto há um fantasma disfarçado na casa (Casa do Espelho).
+            if (Ghost.AnyDisguised)
+            {
+                if (hit.collider.TryGetComponent(out lookGhost) && !lookGhost.IsDisguised) lookGhost = null;
+                lookPerson = lookGhost != null || hit.collider.TryGetComponent(out NetworkPlayer _);
+            }
+        }
+
+        // "Esse aí é falso!" Se era mesmo o Imitador, o host desmascara. Se era um amigo, nada acontece
+        // (mas a equipe perdeu um tempinho, e o falso continua por aí).
+        void Point()
+        {
+            if (lookGhost != null && lookGhost.IsSpawned) lookGhost.RequestUnmask();
         }
 
         void TryUse(Interactable target)

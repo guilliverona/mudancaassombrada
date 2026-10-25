@@ -17,8 +17,8 @@ Como os designs do Art Bible viram jogo, em fases. Cada fase diz **o que entra**
 | Fase | Entrega | Tipo de trabalho | Situação |
 |---|---|---|---|
 | 1 | Bibliotecário, móveis e caminhão com modelo | arte + builder | **feita** |
-| 2 | Fundação de código para os fantasmas e personagens | código | a fazer |
-| 3 | Capítulo 1 — Casa do Espelho + Imitador | cena + arte + mecânica | a fazer |
+| 2 | Fundação de código para os fantasmas e personagens | código | **feita** (falta testar no Unity) |
+| 3 | Capítulo 1 — Casa do Espelho + Imitador | cena + arte + mecânica | **feita** (falta testar no Unity) |
 | 4 | Capítulo 2 — Conservatório + Maestrina | cena + arte + mecânica | a fazer |
 | 5 | Capítulo 3 — Biblioteca do Silêncio | cena + arte + mecânica | depende de decisão |
 | 6 | Seu Valdemar, relíquias e o final (Inquilino + Sobrado) | cena + arte + mecânica | a fazer |
@@ -52,10 +52,16 @@ Antes de escrever código novo, vale lembrar o que já está pronto:
 - Importação configurada pela pasta (`Assets/Editor/ArtImportSettings.cs`).
 - `LevelPrefabsBuilder` troca o bloco pelo modelo quando a arte existe, sem perder ajustes.
 
-## Fase 2 — Fundação de código
+## Fase 2 — Fundação de código ✅
 
 **Entrega:** nenhuma mudança visível para o jogador; tudo que as Fases 3 a 6 vão precisar.
-Mexe em código que outras pessoas escreveram: **alinhar com o time antes de começar.**
+Decisão 4 tomada: **base comum** (`Ghost`) + um comportamento por fantasma (`GhostBehaviour`).
+
+Como ficou: `Ghost` (registro, reinício, captura, passos, estado `GhostState` numa NetworkVariable),
+`GhostHunter` virou um `GhostBehaviour`, `GhostVisual` lê o estado e inclina o modelo,
+`Breathing` emite `SoundType.Breath` (só o dono do objeto), e a ficha ganhou `height`/`radius`,
+aplicados pelo `PlayerMovement.SetBodySize` com os pés fixos. Prefab antigo do fantasma ganha as
+peças novas em **Criar Prefabs que Faltam** (sem perder os números).
 
 1. **Fantasmas por composição** (como já é feito com os personagens).
    - Uma base comum: registro (`All`), reinício, captura, passos e rede.
@@ -74,9 +80,17 @@ Mexe em código que outras pessoas escreveram: **alinhar com o time antes de com
 **Pronta quando:** o Bibliotecário funciona igual a hoje, mas por cima da base nova; os clientes
 veem o estado dele; o eco mostra respiração; a Cida passa por baixo de uma mesa de 1,6 m.
 
-## Fase 3 — Capítulo 1: A Casa do Espelho + o Imitador
+## Fase 3 — Capítulo 1: A Casa do Espelho + o Imitador ✅
 
 **Entrega:** o primeiro capítulo da história jogável.
+
+Como ficou: menu **Criar Cena Casa do Espelho** (`MirrorHouseBuilder`) cria os prefabs do kit,
+espelhos (`Mirror`), penteadeira, cartaz e o Imitador, e um rascunho da cena `CasaDoEspelho`
+(já ligada na ficha do capítulo). `GhostImitator`: escondido → disfarçado (copia o jogador mais
+isolado, modelo espelhado, sem passos nem respiração) → pede ajuda (voz) e puxa a vítima até o
+espelho → desmascarado (qualquer jogador **aponta** com Interagir) foge para o espelho mais longe.
+O cartaz grava `achou-cartaz-teatro` no save (`StoryFlag`); é pista opcional, não objetivo.
+Máscara comédia → tragédia fica para as animações.
 
 - **Arte:** kit modular (parede 2 × 2,8 m, porta 0,9 × 2,1 m, molduras de espelho 0,6 / 1,2 / 2,0 m),
   piso xadrez, armário de figurino, penteadeira de camarim, máscara e luvas do Imitador.
@@ -154,7 +168,7 @@ Precisam de resposta do time antes da fase indicada.
 | 1 | Acabamento do mundo 3D | low-poly com cores chapadas (DESIGN.md) **ou** PBR estilizado com rampa de luz (Art Bible) | arte final a partir da Fase 3 |
 | 2 | Chat de voz | voz por proximidade (Vivox ou similar, tem custo e conta da Unity) **ou** uma tecla "chamar" no lugar | Fase 5 |
 | 3 | Quem troca o visual dos prefabs do mundo | o builder (como na Fase 1) **ou** a pessoa que edita o prefab | Fase 3 |
-| 4 | Fantasmas por composição | refatorar o `GhostHunter` (combinar com quem escreveu) **ou** um script novo por fantasma | Fase 2 |
+| 4 | ~~Fantasmas por composição~~ | **decidido:** base comum `Ghost` + comportamentos | — |
 
 ## Riscos
 

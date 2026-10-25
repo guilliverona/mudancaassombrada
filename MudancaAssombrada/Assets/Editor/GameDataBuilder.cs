@@ -53,6 +53,8 @@ namespace MudancaAssombrada.Editor
             c.condition = "cega";
             c.color = new Color(0.6f, 0.4f, 0.9f); // roxo
             c.description = "Ex-afinadora de pianos. Enxerga pelo eco dos sons; a bengala mapeia o ambiente.";
+            c.height = 1.52f; // baixinha: passa debaixo de uma mesa de 1,6 m
+            c.radius = 0.3f;
             c.blind = true;
             c.canTap = true;
         });
@@ -63,6 +65,8 @@ namespace MudancaAssombrada.Editor
             c.condition = "surdo";
             c.color = new Color(1f, 0.8f, 0.2f); // amarelo
             c.description = "Ex-entregador de bicicleta. Não ouve nada, mas vê as vibrações no chão.";
+            c.height = 1.74f;
+            c.radius = 0.35f;
             c.deaf = true;
             c.vibrationVision = true;
         });
@@ -73,6 +77,8 @@ namespace MudancaAssombrada.Editor
             c.condition = "mudo";
             c.color = new Color(0.3f, 0.75f, 0.35f); // verde
             c.description = "\"Marreta\", ex-estivador. Forte e silencioso; o apito atrai o fantasma.";
+            c.height = 1.98f;
+            c.radius = 0.45f;
             c.speed = 0.85f;
             c.strength = 3f;
             c.carryNoise = 0.4f;
@@ -131,30 +137,13 @@ namespace MudancaAssombrada.Editor
             if (AssetDatabase.LoadAssetAtPath<Campaign>(CampaignPath) != null) return;
             EditorTools.EnsureFolder(ChaptersFolder);
 
-            var prototype = Chapter("0 - Protótipo", c =>
-            {
-                c.id = "prototipo";
-                c.title = "Protótipo";
-                c.ghostName = "O Bibliotecário (teste)";
-                c.featuredCharacter = Marcelo;
-                c.sceneName = "Prototipo1";
-                c.alwaysUnlocked = true; // capítulo de teste: fora da fila da história
-                c.nightDuration = 180f;
-                c.payment = 0;
-                c.openingNote = "Serviço de treino. Três móveis, um inquilino que não gosta de barulho. " +
-                                "Se arranharem o armário, desconto do salário.";
-                c.ratingComments = Comments(
-                    "Andou devagar, mas não esbarrou em nada. Raro.",
-                    "Chegou primeiro em tudo. Pena que não ouviu eu chamar.",
-                    "Carregou o armário sozinho. Sem um pio. Contratado de novo.");
-            });
-
             var mirror = Chapter("1 - A Casa do Espelho", c =>
             {
                 c.id = "casa-do-espelho";
                 c.title = "A Casa do Espelho";
                 c.ghostName = "O Imitador";
                 c.featuredCharacter = Cida;
+                c.sceneName = "CasaDoEspelho"; // a cena sai do menu Criar Cena Casa do Espelho
                 c.openingNote = "Casa de uma família de atores. Muitos espelhos. Se alguém pedir ajuda " +
                                 "com o armário, confiram se é mesmo alguém da equipe.";
             });
@@ -189,7 +178,7 @@ namespace MudancaAssombrada.Editor
 
             var campaign = ScriptableObject.CreateInstance<Campaign>();
             AssetDatabase.CreateAsset(campaign, CampaignPath);
-            EditorTools.SetReferences(campaign, "chapters", new Object[] { prototype, mirror, conservatory, library, finale });
+            EditorTools.SetReferences(campaign, "chapters", new Object[] { mirror, conservatory, library, finale });
             Debug.Log($"Capítulos criados em {ChaptersFolder} e a Campanha em {CampaignPath}.");
         }
 

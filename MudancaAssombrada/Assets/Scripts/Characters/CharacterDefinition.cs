@@ -28,6 +28,10 @@ namespace MudancaAssombrada
         public GameObject model;
         [Tooltip("Altura dos olhos, em metros a partir do chão. É onde a câmera fica.")]
         [Range(0.5f, 2.5f)] public float eyeHeight = 1.6f;
+        [Tooltip("Altura do corpo (o colisor), em metros. A Cida, baixinha, passa debaixo de mesas.")]
+        [Range(1f, 2.5f)] public float height = 1.8f;
+        [Tooltip("Raio do colisor (\"largura dos ombros\"), em metros.")]
+        [Range(0.2f, 0.6f)] public float radius = 0.4f;
 
         [Header("Atributos (1 = normal)")]
         [Min(0.1f)] public float speed = 1f;

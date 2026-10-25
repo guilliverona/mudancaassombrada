@@ -48,3 +48,4 @@ MonoBehaviour:
   waveSpeed: 7
   ringWidth: 0.35
   echoColor: {r: 0.55, g: 0.8, b: 1, a: 1}
+  visibleSounds: -1

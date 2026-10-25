@@ -18,6 +18,8 @@ MonoBehaviour:
   description: Forte e silencioso, mas mais lento. O apito atrai o fantasma.
   model: {fileID: 919132149155446097, guid: f932eb32b75b8ab4baa57121d354db82, type: 3}
   eyeHeight: 1.74
+  height: 1.98
+  radius: 0.45
   speed: 0.85
   strength: 3
   carryNoise: 0.4

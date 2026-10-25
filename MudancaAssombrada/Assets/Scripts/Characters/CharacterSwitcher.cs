@@ -115,6 +115,8 @@ namespace MudancaAssombrada
         void Apply(CharacterDefinition character)
         {
             ShowBody(character);
+            // O colisor muda em TODOS os computadores: o boneco dos outros também esbarra do tamanho certo.
+            movement.SetBodySize(character.height, character.radius);
 
             // TODOS os computadores pintam o boneco de blocos com a cor do personagem
             // (se a ficha tem modelo, o boneco está desligado e a cor não aparece).

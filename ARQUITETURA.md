@@ -30,7 +30,7 @@ Assets/
 │   ├── GameDataBuilder       cria as fichas de personagem (se faltarem)
 │   ├── LevelPrefabsBuilder   cria os prefabs (se faltarem)
 │   ├── HudBuilder / UiBuilder  monta interface com o padrão visual
-│   ├── PrototypeSceneBuilder rascunho inicial da fase
+│   ├── MirrorHouseBuilder    rascunho da Casa do Espelho (capítulo 1)
 │   └── MenuSceneBuilder      cena do menu (100% gerada)
 ├── Data/Personagens/         fichas dos personagens (.asset, editáveis)
 ├── Data/Capítulos/           fichas dos capítulos (.asset, editáveis)
@@ -74,7 +74,7 @@ infinitas. A estrutura segue isso:
    fantasma, eco e vibração ouvem sem se conhecer. `NetworkPlayer.LocalSpawned` avisa
    quando o seu boneco nasce.
 5. **Registros em vez de busca.** `NetworkPlayer.All`, `Furniture.All`,
-   `GhostHunter.All`, `TruckZone.TotalDelivered`: nada de `Find` / `FindObjectsByType`
+   `Ghost.All`, `TruckZone.TotalDelivered`: nada de `Find` / `FindObjectsByType`
    no meio do jogo.
 6. **Controles com nome.** Ninguém lê o teclado direto: tudo passa pelo `GameInput`.
 7. **Cenas de fase são de quem desenha a fase.** O código cria um rascunho; depois,
@@ -112,13 +112,16 @@ mira e o caminhão enxergam. Modelo novo gerado pelo Blender: ver [ART_BIBLE.md]
 
 ### Um fantasma (ou tipo de fantasma)
 Duplique `Assets/Prefabs/Fantasmas/Fantasma Bibliotecário` e ajuste velocidades,
-audição e alcance no Inspector. Comportamento diferente = um script novo baseado no
-`GhostHunter` (ele se registra em `GhostHunter.All` para o reinício funcionar).
+audição e alcance no Inspector. Todo fantasma tem a base **`Ghost`** (registro em `Ghost.All`,
+reinício, captura, passos e o estado na rede), o **`GhostVisual`** (só lê o estado e mexe no
+modelo) e, se respira, o **`Breathing`**. O "jeito" de assombrar é um **comportamento**: uma classe
+que herda de `GhostBehaviour` (ex.: `GhostHunter`, caça por som) e muda `Ghost.ServerSetState`.
+Vários comportamentos no mesmo objeto se somam (é o plano do Inquilino).
 A raiz fica no meio do corpo (cápsula de colisão e `NavMeshAgent` com `baseOffset` = metade da
 altura); o desenho é o filho `Modelo`, com `DollWalk` para balançar braços e pernas.
 
 ### Uma fase (capítulo)
-1. Duplique `Assets/Scenes/Prototipo1` (ou crie uma cena nova com os prefabs de
+1. Duplique `Assets/Scenes/CasaDoEspelho` (ou crie uma cena nova com os prefabs de
    `Sistemas` e `Interface`, mais um `PlayerSpawner`).
 2. Monte a casa com prefabs, selecione o objeto **NavMesh** → **Bake**.
 3. Coloque os **objetivos** (veja abaixo).
@@ -159,7 +162,7 @@ leia na `Hud`. Crie a peça visual no `HudBuilder` (ou direto no prefab HUD).
 |---|---|---|
 | Criar Todas as Cenas | dados + prefabs que faltam + fase (pergunta) + menu | só se você confirmar |
 | Criar Cena Menu | recria o menu | não (o menu é só código) |
-| Criar Cena Protótipo 1 | recria a fase a partir dos prefabs | **sim** (pergunta antes) |
+| Criar Cena Casa do Espelho | prefabs do capítulo 1 que faltam + rascunho da cena + liga a ficha | **sim** (pergunta antes) |
 | Criar Dados que Faltam | cria fichas/Elenco se não existirem | não |
 | Criar Prefabs que Faltam | cria prefabs do mundo que não existem; recria Player, HUD e Pausa | não |
 | Recriar Todos os Prefabs | volta todos os prefabs ao original | **sim** (pergunta antes) |
@@ -170,4 +173,4 @@ leia na `Hud`. Crie a peça visual no `HudBuilder` (ou direto no prefab HUD).
 - Trocar de personagem com 1/2/3 durante a partida só funciona no editor e em builds de
   desenvolvimento (`CharacterSwitcher.DebugSwitchingEnabled`). No jogo final, cada jogador
   é o personagem que escolheu na sala de espera, como no roteiro.
-- O capítulo **Protótipo** é sempre liberado e fica fora da fila da história.
+- Não há mais capítulo de teste: a sala de espera já começa na Casa do Espelho (o primeiro capítulo).

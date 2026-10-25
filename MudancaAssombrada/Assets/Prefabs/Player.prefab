@@ -832,6 +832,7 @@ GameObject:
   - component: {fileID: 7360231509683667312}
   - component: {fileID: 468701515564093837}
   - component: {fileID: 5501792552295832919}
+  - component: {fileID: 2055250738567843756}
   - component: {fileID: 4339543430742910769}
   - component: {fileID: 4202566152706859166}
   - component: {fileID: 2332331131135969243}
@@ -910,6 +911,8 @@ MonoBehaviour:
   staminaDrain: 25
   staminaRegen: 15
   exhaustedUntil: 30
+  pullSpeed: 3
+  pullDistance: 1.2
 --- !u!114 &7989720525728775853
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -994,6 +997,23 @@ MonoBehaviour:
   - {fileID: 986871935944656477}
   doll: {fileID: 3734654629748469287}
   modelRoot: {fileID: 6555804717859961630}
+--- !u!114 &2055250738567843756
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7645197041336742590}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5d0be752c5e066d4c88ff14e4bce1796, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.Breathing
+  interval: 3
+  range: 1.5
+  intensity: 0.2
+  mouthHeight: 0.6
+  runMultiplier: 2
 --- !u!114 &4339543430742910769
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1026,7 +1046,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3137379473
+  GlobalObjectIdHash: 2480069944
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0

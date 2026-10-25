@@ -9,8 +9,8 @@ EditorBuildSettings:
     path: Assets/Scenes/Menu.unity
     guid: 07204f88aaf612e47ba15b5910992eb0
   - enabled: 1
-    path: Assets/Scenes/Prototipo1.unity
-    guid: 7d23b58c633de2e45be475d7f55839f5
+    path: Assets/Scenes/CasaDoEspelho.unity
+    guid: 275af1387c64e3d4387d8557c6a2ea85
   m_configObjects:
     com.unity.dt.app-ui: {fileID: 11400000, guid: 1b1c20d82303e4b5781c3ef50ac1449f, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

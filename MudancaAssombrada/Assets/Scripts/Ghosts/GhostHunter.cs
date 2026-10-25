@@ -1,11 +1,9 @@
-using System.Collections.Generic;
-using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.AI; // NavMeshAgent: o "GPS" da Unity para personagens
 
 namespace MudancaAssombrada
 {
-    // Fantasma cego que caça pelo som (base do Bibliotecário da Fase 3).
+    // COMPORTAMENTO "caçar pelo som" (o Bibliotecário). Fica junto de um Ghost, que cuida
+    // da rede, da captura, dos passos e do reinício; aqui fica só o "jeito" de caçar.
     // Funciona como uma MÁQUINA DE ESTADOS: ele está sempre em UM estado,
     // e regras claras decidem quando muda para outro.
     //
@@ -13,20 +11,10 @@ namespace MudancaAssombrada
     //        ^                           |                           |
     //        +------chegou e esperou-----+<----silêncio por um tempo--+
     //
-    // EM REDE: o fantasma "pensa" só no host (IsServer). Nos clientes ele é um fantoche:
-    // a IA fica desligada e o NetworkTransform só copia a posição que o host manda.
-    // Assim existe UM fantasma só, igual para todos.
-    //
-    // Fantasma novo = duplicar o prefab (Assets/Prefabs/Fantasma) e mexer nos números.
-    [RequireComponent(typeof(NavMeshAgent))]
-    public class GhostHunter : NetworkBehaviour
+    // O estado mora no Ghost (NetworkVariable): todos os computadores veem o mesmo.
+    // Fantasma novo = duplicar o prefab (Assets/Prefabs/Fantasmas) e mexer nos números.
+    public class GhostHunter : GhostBehaviour
     {
-        static readonly List<GhostHunter> all = new();
-        public static IReadOnlyList<GhostHunter> All => all;
-
-        // enum = uma lista fixa de opções com nome. Bem mais legível que usar 0, 1, 2.
-        enum State { Patrolling, Investigating, Hunting }
-
         [Header("Velocidades")]
         [SerializeField] float patrolSpeed = 1.5f;
         [SerializeField] float investigateSpeed = 3f;
@@ -43,167 +31,68 @@ namespace MudancaAssombrada
         [SerializeField] float patrolRadius = 8f;
         [SerializeField] float searchWaitTime = 3f;      // tempo "farejando" ao chegar no som
 
-        [Header("Ataque")]
-        [SerializeField] float catchDistance = 1.2f;
-
-        [Header("Passos (para a Cida ouvir ele chegando)")]
-        [SerializeField] float stepDistance = 1.5f;
-
-        NavMeshAgent agent;
-        Vector3 home;
-        State state;
-        bool caught;
         float lastHeardTime;
         float waitTimer;
-        float walked;
-        Vector3 lastPosition;
-
-        void Awake()
-        {
-            agent = GetComponent<NavMeshAgent>();
-            home = transform.position;
-            lastPosition = transform.position;
-        }
-
-        public override void OnNetworkSpawn()
-        {
-            if (!IsServer)
-            {
-                // Cliente: quem move o fantasma é o NetworkTransform. Se o NavMeshAgent continuasse
-                // ligado, ele "brigaria" com as posições que chegam do host.
-                agent.enabled = false;
-                return;
-            }
-            EnterState(State.Patrolling);
-        }
 
         // OnEnable/OnDisable: o jeito certo de se inscrever num evento e se desinscrever dele.
         // Se esquecer de desinscrever, o evento continua chamando um objeto destruído (bug clássico!).
-        void OnEnable()
-        {
-            all.Add(this);
-            EchoSystem.SoundEmitted += OnSoundHeard;
-        }
+        void OnEnable() => EchoSystem.SoundEmitted += OnSoundHeard;
+        void OnDisable() => EchoSystem.SoundEmitted -= OnSoundHeard;
 
-        void OnDisable()
-        {
-            all.Remove(this);
-            EchoSystem.SoundEmitted -= OnSoundHeard;
-        }
+        public override void ServerStart() => EnterState(GhostState.Patrolling);
 
         void OnSoundHeard(SoundEvent sound)
         {
-            if (!IsServer) return;                  // só o host decide o que o fantasma ouve
-            if (sound.Source == gameObject) return; // ignora os próprios passos
-            if (!sound.Is(hears)) return;           // tipo de som que não interessa a ele
+            if (!Ghost.IsServer || Ghost.Caught) return; // só o host decide o que o fantasma ouve
+            if (sound.Source == gameObject) return;      // ignora os próprios passos
+            if (!sound.Is(hears)) return;                // tipo de som que não interessa a ele
 
             float distance = Vector3.Distance(transform.position, sound.Position);
             if (distance > sound.Range * hearingMultiplier) return; // longe demais, não ouviu
 
             lastHeardTime = Time.time;
-            agent.SetDestination(sound.Position); // o NavMesh calcula o caminho desviando das paredes
+            Ghost.Agent.SetDestination(sound.Position); // o NavMesh calcula o caminho desviando das paredes
 
-            if (distance < huntDistance) EnterState(State.Hunting);
-            else if (state == State.Patrolling) EnterState(State.Investigating);
+            if (distance < huntDistance) EnterState(GhostState.Hunting);
+            else if (Ghost.State == GhostState.Patrolling) EnterState(GhostState.Investigating);
         }
 
-        void Update()
+        public override void ServerTick()
         {
-            // Antes de conectar, IsServer é false em todos: o fantasma fica parado esperando.
-            if (!IsServer || caught) return;
-
-            switch (state)
+            switch (Ghost.State)
             {
-                case State.Patrolling:
+                case GhostState.Patrolling:
                     // Chegou no ponto da patrulha? Escolhe outro.
-                    if (Arrived()) agent.SetDestination(RandomPointNear(home, patrolRadius));
+                    if (Ghost.Arrived()) Ghost.Agent.SetDestination(Ghost.RandomPointNear(Ghost.Home, patrolRadius));
                     break;
 
-                case State.Investigating:
+                case GhostState.Investigating:
                     // Chegou onde ouviu o som: fica parado "escutando" um pouco.
-                    if (Arrived())
+                    if (Ghost.Arrived())
                     {
                         waitTimer += Time.deltaTime;
-                        if (waitTimer >= searchWaitTime) EnterState(State.Patrolling);
+                        if (waitTimer >= searchWaitTime) EnterState(GhostState.Patrolling);
                     }
                     break;
 
-                case State.Hunting:
+                case GhostState.Hunting:
                     // Silêncio por tempo demais: perdeu a pista, volta a investigar.
-                    if (Time.time - lastHeardTime > giveUpTime) EnterState(State.Investigating);
+                    if (Time.time - lastHeardTime > giveUpTime) EnterState(GhostState.Investigating);
                     break;
             }
-
-            // Com multiplayer os jogadores aparecem DEPOIS do fantasma (quando conectam),
-            // então procuramos o mais próximo a cada frame em vez de guardar um só no Start.
-            var player = NearestPlayer();
-            if (player != null && Vector3.Distance(transform.position, player.position) < catchDistance)
-            {
-                // O GameManager (no host) muda o resultado, e a NetworkVariable avisa todo mundo:
-                // a equipe inteira perde junta.
-                caught = true;
-                GameManager.ServerPlayerCaught();
-            }
-
-            EmitFootsteps();
         }
 
-        void EnterState(State newState)
+        void EnterState(GhostState newState)
         {
-            state = newState;
+            Ghost.ServerSetState(newState);
             waitTimer = 0;
-            agent.speed = newState switch
+            Ghost.Agent.speed = newState switch
             {
-                State.Patrolling => patrolSpeed,
-                State.Investigating => investigateSpeed,
+                GhostState.Patrolling => patrolSpeed,
+                GhostState.Investigating => investigateSpeed,
                 _ => huntSpeed, // "_" = qualquer outro caso
             };
-            if (newState == State.Patrolling) agent.SetDestination(RandomPointNear(home, patrolRadius));
-        }
-
-        // Só no host (chamado pelo GameManager ao reiniciar): volta para casa e recomeça a patrulha.
-        public void ServerReset()
-        {
-            caught = false;
-            agent.Warp(home); // Warp = teleporte do NavMeshAgent (mover o transform direto confunde ele)
-            lastPosition = home;
-            EnterState(State.Patrolling);
-        }
-
-        Transform NearestPlayer()
-        {
-            Transform nearest = null;
-            float best = float.MaxValue;
-            foreach (var p in NetworkPlayer.All)
-            {
-                float d = Vector3.Distance(transform.position, p.transform.position);
-                if (d < best) { best = d; nearest = p.transform; }
-            }
-            return nearest; // null = ninguém conectado ainda
-        }
-
-        bool Arrived() => !agent.pathPending && agent.remainingDistance <= agent.stoppingDistance + 0.2f;
-
-        // Escolhe um ponto aleatório e "gruda" ele no NavMesh mais próximo (para não ser dentro de uma parede).
-        static Vector3 RandomPointNear(Vector3 center, float radius)
-        {
-            Vector3 random = center + Random.insideUnitSphere * radius;
-            return NavMesh.SamplePosition(random, out NavMeshHit hit, radius, NavMesh.AllAreas) ? hit.position : center;
-        }
-
-        void EmitFootsteps()
-        {
-            Vector3 delta = transform.position - lastPosition;
-            delta.y = 0;
-            walked += delta.magnitude;
-            lastPosition = transform.position;
-
-            if (walked < stepDistance) return;
-            walked = 0;
-            // Passos mais fortes quando está caçando: a Cida percebe que ele está correndo.
-            float intensity = state == State.Hunting ? 0.9f : 0.5f;
-            Vector3 feet = transform.position + Vector3.down * 0.9f;
-            EchoSystem.Emit(new SoundEvent(feet, 3.5f, intensity, SoundType.Footstep, gameObject));
+            if (newState == GhostState.Patrolling) Ghost.Agent.SetDestination(Ghost.RandomPointNear(Ghost.Home, patrolRadius));
         }
     }
 }

@@ -14,6 +14,9 @@ GameObject:
   - component: {fileID: 4377145726283061097}
   - component: {fileID: 439547152740658001}
   - component: {fileID: 3793458411525593201}
+  - component: {fileID: 934942517353329539}
+  - component: {fileID: 2520928885104176063}
+  - component: {fileID: 5873419566687055423}
   - component: {fileID: 7768179928271216375}
   m_Layer: 0
   m_Name: "Fantasma Bibliotec\xE1rio"
@@ -35,7 +38,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 4916675955340428343}
+  - {fileID: 4245644174282576009}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!136 &6579054896276248939
@@ -115,7 +118,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2920074416
+  GlobalObjectIdHash: 4265047366
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -176,6 +179,57 @@ MonoBehaviour:
   SwitchTransformSpaceWhenParented: 0
   Interpolate: 1
   SlerpPosition: 0
+--- !u!114 &934942517353329539
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5969367421630075796}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 501536e96bf8fc349938cd449d4d99e1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.Ghost
+  ShowTopMostFoldoutHeaderGroup: 1
+  catchDistance: 1.2
+  footsteps: 1
+  stepDistance: 1.5
+--- !u!114 &2520928885104176063
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5969367421630075796}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe7427b163158ce41955683770ecd303, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.GhostVisual
+  model: {fileID: 0}
+  smoothing: 4
+  patrolLean: 0
+  investigateLean: 8
+  huntLean: 18
+  fleeLean: -8
+--- !u!114 &5873419566687055423
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5969367421630075796}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5d0be752c5e066d4c88ff14e4bce1796, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.Breathing
+  interval: 3
+  range: 1.5
+  intensity: 0.2
+  mouthHeight: 1
+  runMultiplier: 2
 --- !u!114 &7768179928271216375
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -188,7 +242,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a9e8a0398b09626478f0c3c77a50c23f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.GhostHunter
-  ShowTopMostFoldoutHeaderGroup: 1
   patrolSpeed: 1.5
   investigateSpeed: 3
   huntSpeed: 4.2
@@ -198,9 +251,7 @@ MonoBehaviour:
   giveUpTime: 4
   patrolRadius: 8
   searchWaitTime: 3
-  catchDistance: 1.2
-  stepDistance: 1.5
---- !u!1001 &4877736797711901660
+--- !u!1001 &4422877455101769570
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -258,25 +309,20 @@ PrefabInstance:
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 23f997b62790a5c4f82d5f9060eb3cbf, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 7955358968027835244}
+      addedObject: {fileID: 5776399955805337175}
   m_SourcePrefab: {fileID: 100100000, guid: 23f997b62790a5c4f82d5f9060eb3cbf, type: 3}
---- !u!4 &4916675955340428343 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 23f997b62790a5c4f82d5f9060eb3cbf, type: 3}
-  m_PrefabInstance: {fileID: 4877736797711901660}
-  m_PrefabAsset: {fileID: 0}
---- !u!1 &5724174184632098445 stripped
+--- !u!1 &3575961790152018483 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 919132149155446097, guid: 23f997b62790a5c4f82d5f9060eb3cbf, type: 3}
-  m_PrefabInstance: {fileID: 4877736797711901660}
+  m_PrefabInstance: {fileID: 4422877455101769570}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &7955358968027835244
+--- !u!114 &5776399955805337175
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5724174184632098445}
+  m_GameObject: {fileID: 3575961790152018483}
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 14713d2edd3681948b9675c7de39bec8, type: 3}
@@ -289,3 +335,8 @@ MonoBehaviour:
   swingAngle: 35
   stepsPerMeter: 1.6
   hideBody: 0
+--- !u!4 &4245644174282576009 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 23f997b62790a5c4f82d5f9060eb3cbf, type: 3}
+  m_PrefabInstance: {fileID: 4422877455101769570}
+  m_PrefabAsset: {fileID: 0}

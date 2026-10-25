@@ -37,7 +37,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 2410063825721173480}
+  - {fileID: 778269546675227144}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!65 &3161563943097396839
@@ -73,7 +73,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 4273873095
+  GlobalObjectIdHash: 4265047366
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
@@ -228,7 +228,7 @@ NavMeshObstacle:
   m_CarveOnlyStationary: 1
   m_Center: {x: 0, y: 0, z: 0}
   m_TimeToStationary: 0.5
---- !u!1001 &2808272796245574147
+--- !u!1001 &956523963166076387
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -285,8 +285,8 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 0409cd82ca0c13c4185209508c16fe42, type: 3}
---- !u!4 &2410063825721173480 stripped
+--- !u!4 &778269546675227144 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 0409cd82ca0c13c4185209508c16fe42, type: 3}
-  m_PrefabInstance: {fileID: 2808272796245574147}
+  m_PrefabInstance: {fileID: 956523963166076387}
   m_PrefabAsset: {fileID: 0}

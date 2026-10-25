@@ -13,7 +13,6 @@ MonoBehaviour:
   m_Name: Campanha
   m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.Campaign
   chapters:
-  - {fileID: 11400000, guid: 073c7e08f760f7a4c8f764a41e3da586, type: 2}
   - {fileID: 11400000, guid: fcc499585f05008438ad3a2812788f0c, type: 2}
   - {fileID: 11400000, guid: d0e28c528c556ba42bac5ac93426a0b4, type: 2}
   - {fileID: 11400000, guid: 7bb2b6d9121c1a0428d2667ac9c666b0, type: 2}

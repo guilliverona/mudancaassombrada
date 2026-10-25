@@ -125,7 +125,7 @@ namespace MudancaAssombrada.Editor
             EditorBuildSettings.scenes = scenes.ToArray();
         }
 
-        // Acha o caminho de uma cena pelo nome (ex.: "Prototipo1" -> "Assets/Scenes/Prototipo1.unity").
+        // Acha o caminho de uma cena pelo nome (ex.: "CasaDoEspelho" -> "Assets/Scenes/CasaDoEspelho.unity").
         static string FindScenePath(string sceneName)
         {
             foreach (string guid in AssetDatabase.FindAssets($"t:Scene {sceneName}"))

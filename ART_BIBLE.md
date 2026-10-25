@@ -137,14 +137,15 @@ Já têm modelo (blockout): os três jogáveis, os três fantasmas de fase, o Se
 props de história, a mobília da tabela do Art Bible, o caminhão e o kit modular de cenário.
 Falta modelo só para o **Inquilino** (3 formas + epílogo) e os instrumentos da Fase 2.
 
-**Modelo existe ≠ está no jogo.** Só os móveis do protótipo, o caminhão e o Bibliotecário estão
-ligados a prefabs (`LevelPrefabsBuilder`). Os demais esperam o prefab da fase em que entram.
+**Modelo existe ≠ está no jogo.** Os móveis do protótipo, o caminhão e o Bibliotecário estão
+ligados a prefabs (`LevelPrefabsBuilder`); o Imitador, o kit (paredes, porta, piso xadrez, molduras),
+a penteadeira e o cartaz do teatro, pelo `MirrorHouseBuilder` (Casa do Espelho). Os demais esperam o prefab da fase em que entram.
 
 | Design (prancha do Art Bible) | No jogo hoje | Falta |
 |---|---|---|
-| Cida, Tiago, Marcelo | blockout + rig + ficha | animações (bengala, Libras, carregar), roda de gestos e quadro do Marcelo, colisor por altura |
-| Bibliotecário (GHO_03) | blockout 2,6 m + rig + `GhostHunter` (caça por som) | orelhas que abrem, distração por livros, captura, postura curvada (animação) |
-| Imitador (GHO_01) | blockout 2,3 m + rig (`Ghosts/Imitador`) | prefab; **disfarce** (copia um jogador), máscara comédia → tragédia |
+| Cida, Tiago, Marcelo | blockout + rig + ficha + colisor da altura de cada um + respiração (`Breathing`) | animações (bengala, Libras, carregar), roda de gestos e quadro do Marcelo |
+| Bibliotecário (GHO_03) | blockout 2,6 m + rig + `Ghost` (base) + `GhostHunter` (caça por som) + `GhostVisual` + respiração | orelhas que abrem, distração por livros, captura, postura curvada (animação) |
+| Imitador (GHO_01) | blockout 2,3 m + rig + prefab + `GhostImitator` (disfarce espelhado, puxa para o espelho) | máscara comédia → tragédia (animação) |
 | Maestrina (GHO_02) | blockout 2,4 m + rig (`Ghosts/Maestrina`) | prefab; **hipnose** pela música, pescoço que estica |
 | Seu Valdemar (BOS_00) | blockout 1,68 m + rig (`Bosses/Valdemar`) | aparições por estado (rádio → translúcido → sólido) |
 | O Inquilino (BOS_01) | ficha do capítulo | **modelo** (3 etapas + epílogo), chefe em 3 etapas, final |
@@ -165,5 +166,3 @@ Inquilino e Sobrado.
   chapadas e pouca textura; o Art Bible propõe um visual estilizado com material PBR
   (rampa de luz em 3 tons, rim light) e texturas `_BC`/`_N`/`_MSAO`. Os blockouts atuais
   seguem o DESIGN.md. Decidir antes da arte final.
-- **Colisor por personagem.** O CharacterController tem 2 m para todos; a Cida (1,52 m)
-  não passa onde caberia.

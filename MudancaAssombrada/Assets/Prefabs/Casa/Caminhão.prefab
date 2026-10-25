@@ -32,7 +32,7 @@ Transform:
   - {fileID: 3093232448974452319}
   - {fileID: 6600042046751968539}
   - {fileID: 7087565206288847785}
-  - {fileID: 6012787204539851850}
+  - {fileID: 4285779981063527537}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1313959941469916189
@@ -207,7 +207,7 @@ BoxCollider:
   serializedVersion: 3
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!1001 &6123505055579620257
+--- !u!1001 &4391184815290383258
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -264,8 +264,8 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 9accdcc8d998ca541917ab1ec3f3b958, type: 3}
---- !u!4 &6012787204539851850 stripped
+--- !u!4 &4285779981063527537 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 9accdcc8d998ca541917ab1ec3f3b958, type: 3}
-  m_PrefabInstance: {fileID: 6123505055579620257}
+  m_PrefabInstance: {fileID: 4391184815290383258}
   m_PrefabAsset: {fileID: 0}

@@ -73,6 +73,7 @@ namespace MudancaAssombrada.Editor
             Build(GameManagerPath, recreateAll, BuildGameManager);
             Build(SpawnerPath, recreateAll, BuildSpawner);
             // Noite que vira amanhecer. As cores ficam no Inspector do prefab.
+            UpgradeGhost(GhostPath);
             Build(NightPath, recreateAll, () => new GameObject("Iluminação Noturna", typeof(NightLighting)));
             Build(HudPath, recreate: true, HudBuilder.Build);
             Build(PausePath, recreate: true, BuildPauseMenu);
@@ -81,7 +82,7 @@ namespace MudancaAssombrada.Editor
         }
 
         // Cria o prefab só se ele não existe (ou se pediram para recriar tudo).
-        static void Build(string path, bool recreate, System.Func<GameObject> create)
+        internal static void Build(string path, bool recreate, System.Func<GameObject> create)
         {
             if (!recreate && AssetDatabase.LoadAssetAtPath<GameObject>(path) != null) return;
             EditorTools.SavePrefab(create(), path);
@@ -174,8 +175,42 @@ namespace MudancaAssombrada.Editor
             // Em rede: o fantasma existe na rede, e o host (dono) manda a posição para todos.
             ghost.AddComponent<NetworkObject>();
             ghost.AddComponent<NetworkTransform>(); // padrão: autoridade do servidor
-            ghost.AddComponent<GhostHunter>();
+            AddGhostParts(ghost);
+            ghost.AddComponent<GhostHunter>(); // o comportamento: caçar pelo som
             return ghost;
+        }
+
+        // A base comum de todo fantasma (Fase 2): rede, captura, passos e estado (Ghost),
+        // o desenho que lê o estado (GhostVisual) e a respiração. O comportamento vem à parte.
+        // breathes = false: fantasma que NÃO respira (o Imitador; é a pista da Cida).
+        internal static void AddGhostParts(GameObject ghost, bool breathes = true)
+        {
+            if (!ghost.TryGetComponent(out Ghost _)) ghost.AddComponent<Ghost>();
+            if (!ghost.TryGetComponent(out GhostVisual _)) ghost.AddComponent<GhostVisual>();
+            if (breathes && !ghost.TryGetComponent(out Breathing breathing))
+            {
+                breathing = ghost.AddComponent<Breathing>();
+                EditorTools.SetFloat(breathing, "mouthHeight", 1f); // o Bibliotecário é alto
+            }
+        }
+
+        // Prefabs de fantasma feitos ANTES da base comum só tinham o GhostHunter.
+        // Aqui só ACRESCENTAMOS o que falta: números ajustados no Inspector continuam.
+        static void UpgradeGhost(string prefabPath)
+        {
+            if (Load(prefabPath) == null) return;
+            var root = PrefabUtility.LoadPrefabContents(prefabPath);
+            try
+            {
+                if (root.TryGetComponent(out Ghost _) && root.TryGetComponent(out GhostVisual _) && root.TryGetComponent(out Breathing _)) return;
+                AddGhostParts(root);
+                PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
+                Debug.Log($"Fantasma atualizado para a base comum: {prefabPath}");
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
         }
 
         // ---------- Arte (modelos do Blender) ----------
@@ -195,7 +230,7 @@ namespace MudancaAssombrada.Editor
             ApplyArt(ChairPath, "Props/Cadeira/SM_PRP_Cadeira", (root, model) => FurnitureArt(root, model, new Vector3(0.5f, 0.6f, 0.5f)));
             ApplyArt(BoxPath, "Props/Caixa/SM_PRP_Caixa", (root, model) => FurnitureArt(root, model, new Vector3(0.5f, 0.5f, 0.5f)));
             ApplyArt(TruckPath, "Props/Caminhao/SM_PRP_Caminhao", TruckArt);
-            ApplyArt(GhostPath, "Ghosts/Bibliotecario/SK_GHO_Bibliotecario", GhostArt);
+            ApplyArt(GhostPath, "Ghosts/Bibliotecario/SK_GHO_Bibliotecario", (root, model) => GhostArt(root, model, GhostHeight));
         }
 
         // Abre o prefab, troca o visual e salva. Prefab que já tem "Modelo" não é tocado de novo.
@@ -246,23 +281,23 @@ namespace MudancaAssombrada.Editor
 
         // Fantasma: a cápsula esticada vira uma cápsula de colisão do tamanho do modelo, e o
         // NavMeshAgent passa a "flutuar" metade da altura acima do chão (a raiz fica no meio do corpo).
-        static void GhostArt(GameObject root, GameObject model)
+        internal static void GhostArt(GameObject root, GameObject model, float height)
         {
             root.transform.localScale = Vector3.one;
             RemoveMesh(root);
             var capsule = root.GetComponent<CapsuleCollider>();
             capsule.center = Vector3.zero;
-            capsule.height = GhostHeight;
+            capsule.height = height;
             capsule.radius = 0.3f;
             var agent = root.GetComponent<NavMeshAgent>();
-            agent.baseOffset = GhostHeight / 2f;
-            agent.height = GhostHeight;
+            agent.baseOffset = height / 2f;
+            agent.height = height;
 
-            var visual = AddModel(root, model, new Vector3(0, -GhostHeight / 2f, 0));
+            var visual = AddModel(root, model, new Vector3(0, -height / 2f, 0));
             visual.AddComponent<DollWalk>(); // balança braços e pernas pelos ossos do Humanoid
         }
 
-        static GameObject AddModel(GameObject root, GameObject model, Vector3 localPosition)
+        internal static GameObject AddModel(GameObject root, GameObject model, Vector3 localPosition)
         {
             var visual = (GameObject)PrefabUtility.InstantiatePrefab(model, root.transform);
             visual.name = ModelChild;
@@ -271,7 +306,7 @@ namespace MudancaAssombrada.Editor
         }
 
         // Tira o desenho do bloco e deixa só a colisão.
-        static void RemoveMesh(GameObject go)
+        internal static void RemoveMesh(GameObject go)
         {
             if (go.TryGetComponent(out MeshRenderer renderer)) Object.DestroyImmediate(renderer);
             if (go.TryGetComponent(out MeshFilter filter)) Object.DestroyImmediate(filter);
@@ -375,6 +410,7 @@ namespace MudancaAssombrada.Editor
             var vibration = player.AddComponent<VibrationVision>();
             var whistle = player.AddComponent<Whistle>();
             var switcher = player.AddComponent<CharacterSwitcher>();
+            player.AddComponent<Breathing>(); // a Cida ouve quem respira (o Imitador não respira)
             player.AddComponent<NavMeshModifier>().ignoreFromBuild = true;
 
             EditorTools.SetReference(movement, "cameraPivot", camGo.transform);

@@ -32,8 +32,9 @@ namespace MudancaAssombrada
         float stamina;
         float verticalVelocity;  // velocidade de queda (eixo Y)
         float cameraPitch;       // quanto a câmera olha para cima/baixo
-        float standHeight;       // altura original do CharacterController
+        float standHeight;       // altura do CharacterController em pé (vem da ficha do personagem)
         float eyeHeight;         // altura dos olhos acima dos pés, em pé (vem da ficha do personagem)
+        float feetY;             // onde ficam os pés, medido a partir do centro do Player (fixo)
 
         // Multiplicador que outros scripts podem mudar (ex.: carregando peso = mais lento).
         public float SpeedMultiplier { get; set; } = 1f;
@@ -41,6 +42,12 @@ namespace MudancaAssombrada
         // Velocidade do PERSONAGEM (vem da ficha dele, ex.: Marcelo é mais lento).
         // Fica separado do SpeedMultiplier porque o carregador sobrescreve aquele ao pegar/soltar.
         public float CharacterSpeed { get; set; } = 1f;
+
+        // Quem está ARRASTANDO este jogador (o Imitador puxando para o espelho). null = ninguém.
+        public Transform PulledBy { get; set; }
+        [Header("Sendo puxado")]
+        [SerializeField] float pullSpeed = 3f;      // mais rápido que andar agachado: não dá para fugir sozinho
+        [SerializeField] float pullDistance = 1.2f; // fica "segurando a outra ponta", a esta distância
 
         // "private set": outros scripts podem LER (o CaneTapper e a HUD leem), mas só este script muda.
         public bool IsCrouching { get; private set; }
@@ -52,13 +59,31 @@ namespace MudancaAssombrada
         // A câmera vai deslizando até a nova altura, pelo mesmo Lerp do agachar.
         public void SetEyeHeight(float metersAboveFeet) => eyeHeight = metersAboveFeet;
 
+        // Cada personagem tem um corpo do seu tamanho (Cida 1,52 m, Marcelo 1,98 m).
+        // Os PÉS ficam sempre no mesmo lugar (feetY): o colisor cresce ou encolhe para cima,
+        // e o modelo (que está com os pés em feetY) continua pisando no chão.
+        public void SetBodySize(float height, float radius)
+        {
+            standHeight = height;
+            controller.radius = radius;
+            controller.stepOffset = Mathf.Min(controller.stepOffset, height * 0.25f);
+            ApplyHeight(IsCrouching ? Mathf.Min(crouchHeight, height) : height);
+        }
+
+        // Muda a altura do colisor mantendo os pés no chão: o centro fica no meio, entre os pés e o topo.
+        void ApplyHeight(float height)
+        {
+            controller.height = height;
+            controller.center = new Vector3(0, feetY + height / 2f, 0);
+        }
+
         // Awake roda uma vez, antes de Start. Bom lugar para pegar referências.
         void Awake()
         {
             controller = GetComponent<CharacterController>();
             standHeight = controller.height;
-            // O centro do Player fica no meio do CharacterController, então os pés estão em -altura/2.
-            eyeHeight = cameraPivot.localPosition.y + standHeight / 2f;
+            feetY = controller.center.y - controller.height / 2f; // no prefab: centro 0, altura 2 -> pés em -1
+            eyeHeight = cameraPivot.localPosition.y - feetY;
             stamina = maxStamina;
             Cursor.lockState = CursorLockMode.Locked; // prende e esconde o mouse
         }
@@ -76,25 +101,25 @@ namespace MudancaAssombrada
             bool wantsCrouch = GameInput.Crouch.IsPressed();
 
             // Soltou o botão, mas tem algo em cima da cabeça (debaixo de uma mesa)? Continua agachado.
-            // O raio sai do centro do jogador para cima e testa se há espaço para ficar em pé.
+            // O raio sai do meio do corpo agachado para cima e testa se há espaço para ficar em pé.
+            float crouched = Mathf.Min(crouchHeight, standHeight); // quem é baixinho não "cresce" agachando
             if (!wantsCrouch && IsCrouching)
             {
-                float room = standHeight - controller.height / 2f + 0.05f;
-                if (Physics.Raycast(transform.position, Vector3.up, room, ~0, QueryTriggerInteraction.Ignore))
+                Vector3 from = transform.position + Vector3.up * (feetY + crouched / 2f);
+                float room = standHeight - crouched / 2f + 0.05f;
+                if (Physics.Raycast(from, Vector3.up, room, ~0, QueryTriggerInteraction.Ignore))
                     wantsCrouch = true;
             }
             IsCrouching = wantsCrouch;
 
-            // Encolhe o collider mantendo os pés no chão: se a altura diminui X, o centro desce X/2.
-            float height = IsCrouching ? crouchHeight : standHeight;
-            controller.height = height;
-            controller.center = new Vector3(0, (height - standHeight) / 2f, 0);
+            // Encolhe o collider mantendo os pés no chão.
+            ApplyHeight(IsCrouching ? crouched : standHeight);
 
-            // Agachado, os olhos descem na mesma proporção que o corpo (60% da altura em pé),
+            // Agachado, os olhos descem na mesma proporção que o corpo,
             // então cada personagem agacha "do seu tamanho".
-            float eye = IsCrouching ? eyeHeight * (crouchHeight / standHeight) : eyeHeight;
+            float eye = IsCrouching ? eyeHeight * (crouched / standHeight) : eyeHeight;
             // A câmera desce suavemente. Lerp = "ande uma fração do caminho até o alvo" a cada frame.
-            float targetY = eye - standHeight / 2f;
+            float targetY = feetY + eye;
             Vector3 cam = cameraPivot.localPosition;
             cam.y = Mathf.Lerp(cam.y, targetY, crouchTransitionSpeed * Time.deltaTime);
             cameraPivot.localPosition = cam;
@@ -133,6 +158,14 @@ namespace MudancaAssombrada
 
             float modifier = IsCrouching ? crouchSpeedMultiplier : IsRunning ? runSpeedMultiplier : 1f;
             Vector3 velocity = move * walkSpeed * CharacterSpeed * SpeedMultiplier * modifier + Vector3.up * verticalVelocity;
+
+            // Sendo puxado: além do próprio passo, é arrastado na direção de quem puxa.
+            if (PulledBy != null)
+            {
+                Vector3 toPuller = PulledBy.position - transform.position;
+                toPuller.y = 0;
+                if (toPuller.magnitude > pullDistance) velocity += toPuller.normalized * pullSpeed;
+            }
 
             // Time.deltaTime = segundos desde o último frame. Multiplicar por ele deixa
             // o movimento igual em PCs rápidos ou lentos.

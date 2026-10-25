@@ -23,7 +23,7 @@ namespace MudancaAssombrada.Editor
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
 
             LevelPrefabsBuilder.EnsurePrefabs(recreateAll: false); // também cria os dados que faltam
-            if (PrototypeSceneBuilder.ConfirmOverwrite()) PrototypeSceneBuilder.BuildScene();
+            if (MirrorHouseBuilder.ConfirmOverwrite()) MirrorHouseBuilder.BuildScene();
             BuildScene();
 
             EditorSceneManager.OpenScene(ScenePath); // termina com o Menu aberto, pronto para o Play
