@@ -271,6 +271,31 @@ namespace MudancaAssombrada.Editor
 
             // --- Caminhão na rua, com a cabine para longe da casa ---
             Place(LevelPrefabsBuilder.TruckPath, new Vector3(0, 0, -11f), 180, null);
+
+            AddAmbience(house);
+        }
+
+        // Os sons que tocam sem parar (AmbientSound): o clima da casa em todo lugar e o relógio
+        // de pêndulo na sala (som 3D: fica mais alto perto dele, e ajuda a Cida a se localizar).
+        // Público para dar para acrescentar numa cena já feita à mão, sem recriá-la.
+        public static void AddAmbience(Transform house)
+        {
+            var sounds = new GameObject("Sons").transform;
+            sounds.SetParent(house, false);
+            Ambient(sounds, "Clima da Casa", "casa_noite", Vector3.zero, spatial: false, volume: 0.5f);
+            Ambient(sounds, "Relógio de Pêndulo", "relogio_pendulo", new Vector3(-5.5f, 1.5f, -4.5f), spatial: true, volume: 0.6f);
+        }
+
+        static void Ambient(Transform parent, string name, string sound, Vector3 position, bool spatial, float volume)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            go.transform.position = position;
+            var so = new SerializedObject(go.AddComponent<AmbientSound>());
+            so.FindProperty("sound").stringValue = sound;
+            so.FindProperty("spatial").boolValue = spatial;
+            so.FindProperty("volume").floatValue = volume;
+            so.ApplyModifiedPropertiesWithoutUndo();
         }
         // A ficha do capítulo aponta para esta cena (é assim que ele sai de "Em produção").
         static void LinkChapter()
