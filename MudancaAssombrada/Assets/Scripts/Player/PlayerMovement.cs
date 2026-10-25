@@ -33,7 +33,7 @@ namespace MudancaAssombrada
         float verticalVelocity;  // velocidade de queda (eixo Y)
         float cameraPitch;       // quanto a câmera olha para cima/baixo
         float standHeight;       // altura original do CharacterController
-        float standCameraY;      // altura original da câmera
+        float eyeHeight;         // altura dos olhos acima dos pés, em pé (vem da ficha do personagem)
 
         // Multiplicador que outros scripts podem mudar (ex.: carregando peso = mais lento).
         public float SpeedMultiplier { get; set; } = 1f;
@@ -48,12 +48,17 @@ namespace MudancaAssombrada
         public bool IsExhausted { get; private set; }
         public float Stamina01 => stamina / maxStamina; // 0 = vazia, 1 = cheia
 
+        // Cada personagem tem uma altura de olhos (a Cida é baixinha, o Marcelo é enorme).
+        // A câmera vai deslizando até a nova altura, pelo mesmo Lerp do agachar.
+        public void SetEyeHeight(float metersAboveFeet) => eyeHeight = metersAboveFeet;
+
         // Awake roda uma vez, antes de Start. Bom lugar para pegar referências.
         void Awake()
         {
             controller = GetComponent<CharacterController>();
             standHeight = controller.height;
-            standCameraY = cameraPivot.localPosition.y;
+            // O centro do Player fica no meio do CharacterController, então os pés estão em -altura/2.
+            eyeHeight = cameraPivot.localPosition.y + standHeight / 2f;
             stamina = maxStamina;
             Cursor.lockState = CursorLockMode.Locked; // prende e esconde o mouse
         }
@@ -85,8 +90,11 @@ namespace MudancaAssombrada
             controller.height = height;
             controller.center = new Vector3(0, (height - standHeight) / 2f, 0);
 
+            // Agachado, os olhos descem na mesma proporção que o corpo (60% da altura em pé),
+            // então cada personagem agacha "do seu tamanho".
+            float eye = IsCrouching ? eyeHeight * (crouchHeight / standHeight) : eyeHeight;
             // A câmera desce suavemente. Lerp = "ande uma fração do caminho até o alvo" a cada frame.
-            float targetY = standCameraY - (IsCrouching ? standHeight - crouchHeight : 0f);
+            float targetY = eye - standHeight / 2f;
             Vector3 cam = cameraPivot.localPosition;
             cam.y = Mathf.Lerp(cam.y, targetY, crouchTransitionSpeed * Time.deltaTime);
             cameraPivot.localPosition = cam;

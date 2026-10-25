@@ -70,7 +70,9 @@ namespace MudancaAssombrada
 
                 // Meu próprio boneco some da minha tela (a câmera fica dentro da cabeça).
                 // Os outros jogadores continuam vendo ele normalmente.
-                GetComponentInChildren<DollWalk>().HideBody();
+                // Pode haver mais de um (boneco de blocos + modelo da ficha), e algum desligado.
+                foreach (var walk in GetComponentsInChildren<DollWalk>(true))
+                    walk.HideBody();
 
                 Local = this;
                 LocalSpawned?.Invoke(this);

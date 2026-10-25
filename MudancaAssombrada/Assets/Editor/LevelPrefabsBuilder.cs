@@ -56,6 +56,7 @@ namespace MudancaAssombrada.Editor
         public static void EnsurePrefabs(bool recreateAll)
         {
             GameDataBuilder.EnsureData();
+            GameDataBuilder.AssignMissingModels();
 
             // O Player é sempre recriado: ninguém monta ele à mão, e ele nunca fica numa cena
             // (nasce pela rede). Assim, mudanças no código chegam nele sempre.
@@ -252,6 +253,12 @@ namespace MudancaAssombrada.Editor
             var body = CreateDoll();
             body.transform.SetParent(player.transform, false);
 
+            // Lugar onde nasce o modelo 3D da ficha do personagem (se ela tiver um).
+            // Pés em y=-1: o centro do Player é o meio do CharacterController de 2m.
+            var modelRoot = new GameObject("Modelo").transform;
+            modelRoot.SetParent(player.transform, false);
+            modelRoot.localPosition = new Vector3(0, -1f, 0);
+
             var camGo = new GameObject("Câmera do Jogador", typeof(Camera), typeof(AudioListener));
             camGo.tag = "MainCamera";
             camGo.transform.SetParent(player.transform, false);
@@ -279,6 +286,8 @@ namespace MudancaAssombrada.Editor
                 body.transform.Find("Braço E/Braço E (malha)").GetComponent<Renderer>(),
                 body.transform.Find("Braço D/Braço D (malha)").GetComponent<Renderer>(),
             });
+            EditorTools.SetReference(switcher, "doll", body);
+            EditorTools.SetReference(switcher, "modelRoot", modelRoot);
 
             // --- Componentes de rede ---
             player.AddComponent<NetworkObject>(); // "este objeto existe na rede"

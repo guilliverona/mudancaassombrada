@@ -22,6 +22,13 @@ namespace MudancaAssombrada
         public Color color = Color.white;
         [TextArea] public string description = "";
 
+        [Header("Corpo")]
+        [Tooltip("Modelo 3D (FBX importado como Humanoid, ex.: Assets/Art/Characters/Cida). " +
+                 "Vazio = boneco de blocos pintado com a cor acima.")]
+        public GameObject model;
+        [Tooltip("Altura dos olhos, em metros a partir do chão. É onde a câmera fica.")]
+        [Range(0.5f, 2.5f)] public float eyeHeight = 1.6f;
+
         [Header("Atributos (1 = normal)")]
         [Min(0.1f)] public float speed = 1f;
         [Tooltip("Divide o peso dos móveis. 3 = o armário (peso 3) parece uma cadeira.")]

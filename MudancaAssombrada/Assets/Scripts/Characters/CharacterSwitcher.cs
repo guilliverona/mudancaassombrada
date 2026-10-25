@@ -23,7 +23,11 @@ namespace MudancaAssombrada
         readonly NetworkVariable<int> characterIndex = new(
             0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
-        [SerializeField] Renderer[] body; // as partes do boneco que mudam de cor (a "roupa")
+        [SerializeField] Renderer[] body; // as partes do boneco de blocos que mudam de cor (a "roupa")
+        [SerializeField] GameObject doll; // o boneco de blocos: usado quando a ficha não tem modelo
+        [SerializeField] Transform modelRoot; // onde o modelo da ficha nasce (pés no chão)
+
+        GameObject currentModel; // o modelo 3D do personagem atual (null = boneco de blocos)
 
         VibrationVision vibration;
         CaneTapper cane;
@@ -110,7 +114,10 @@ namespace MudancaAssombrada
 
         void Apply(CharacterDefinition character)
         {
-            // TODOS os computadores pintam este boneco com a cor do personagem.
+            ShowBody(character);
+
+            // TODOS os computadores pintam o boneco de blocos com a cor do personagem
+            // (se a ficha tem modelo, o boneco está desligado e a cor não aparece).
             // MaterialPropertyBlock muda a cor só DESTE objeto, sem criar material novo,
             // e continua valendo mesmo quando a Cida troca os materiais pelos de eco.
             var block = new MaterialPropertyBlock();
@@ -123,6 +130,25 @@ namespace MudancaAssombrada
 
             // Habilidades e sentidos: só no computador de quem controla este boneco.
             if (IsOwner) Become(character);
+        }
+
+        // TODOS os computadores trocam o corpo: o modelo da ficha, ou o boneco de blocos se ela não tiver.
+        // O modelo é criado a partir da ficha, então um personagem novo não precisa mexer no Player.
+        void ShowBody(CharacterDefinition character)
+        {
+            if (currentModel != null) Destroy(currentModel);
+            currentModel = null;
+
+            bool hasModel = character.model != null && modelRoot != null;
+            if (doll != null) doll.SetActive(!hasModel);
+            if (!hasModel) return;
+
+            currentModel = Instantiate(character.model, modelRoot, false);
+            currentModel.name = character.displayName;
+            if (!currentModel.TryGetComponent(out DollWalk walk))
+                walk = currentModel.AddComponent<DollWalk>(); // acha os ossos sozinho pelo Humanoid
+            // O meu próprio corpo fica invisível para a minha câmera (ver NetworkPlayer).
+            if (IsOwner) walk.HideBody();
         }
 
         // Cada personagem é só uma combinação diferente dos mesmos componentes ligados/desligados
@@ -138,6 +164,7 @@ namespace MudancaAssombrada
             carrier.CarryNoise = c.carryNoise;
             cane.StepVolume = c.stepVolume;
             movement.CharacterSpeed = c.speed;
+            movement.SetEyeHeight(c.eyeHeight); // a câmera fica na altura dos olhos de cada um
 
             // Surdo: zera o volume de TODO o jogo. Fica em GameSettings.Muted para mexer
             // no volume pela pausa não "curar" a surdez.

@@ -80,6 +80,35 @@ namespace MudancaAssombrada.Editor
             c.whistle = true;
         });
 
+        // Modelos 3D dos personagens (gerados pelos scripts em tools/blender) e a altura dos olhos
+        // medida em cada modelo. A chave é o nome do arquivo da ficha.
+        static readonly (string file, float eyeHeight)[] ArtModels =
+        {
+            ("Cida", 1.09f), ("Tiago", 1.52f), ("Marcelo", 1.74f),
+        };
+
+        static string ModelPath(string file) => $"Assets/Art/Characters/{file}/SK_CHR_{file}.fbx";
+
+        // Fichas criadas antes de existirem os modelos ficam com o campo "Modelo" vazio.
+        // Aqui só preenchemos o que está VAZIO: um modelo ou altura ajustados à mão não são tocados.
+        [MenuItem("Mudança Assombrada/Ligar Modelos 3D nas Fichas", priority = 23)]
+        public static void AssignMissingModels()
+        {
+            foreach (var (file, eyeHeight) in ArtModels)
+            {
+                var character = AssetDatabase.LoadAssetAtPath<CharacterDefinition>($"{CharactersFolder}/{file}.asset");
+                var model = AssetDatabase.LoadAssetAtPath<GameObject>(ModelPath(file));
+                if (character == null || model == null || character.model != null) continue;
+
+                character.model = model;
+                // 1.6 é o valor padrão do campo: significa que ninguém mexeu ainda.
+                if (Mathf.Approximately(character.eyeHeight, 1.6f)) character.eyeHeight = eyeHeight;
+                EditorUtility.SetDirty(character);
+                Debug.Log($"Ficha {file}: modelo {ModelPath(file)}, olhos a {character.eyeHeight} m.");
+            }
+            AssetDatabase.SaveAssets();
+        }
+
         static CharacterDefinition Character(string fileName, System.Action<CharacterDefinition> fill)
         {
             string path = $"{CharactersFolder}/{fileName}.asset";
