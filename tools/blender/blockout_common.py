@@ -284,13 +284,26 @@ def report_tris(objs):
 
 
 def export_fbx(path):
+    """Exporta para o Unity com a frente do personagem em +Z (a frente do Player).
+
+    Medido no Unity (Bake Axis Conversion ligado): o -Y do Blender chega como -Z, então o
+    personagem ficava de costas. Giramos as raízes 180° só durante a exportação; o .blend e
+    as prévias continuam com o personagem olhando para -Y, como no Art Bible.
+    """
     path.parent.mkdir(parents=True, exist_ok=True)
+    roots = [o for o in bpy.data.objects if o.parent is None and o.type in {"ARMATURE", "MESH", "EMPTY"}]
+    for o in roots:
+        o.rotation_euler.z += math.pi
+    bpy.context.view_layer.update()
     bpy.ops.export_scene.fbx(
         filepath=str(path), use_selection=False, object_types={"ARMATURE", "MESH", "EMPTY"},
         apply_scale_options="FBX_SCALE_ALL", axis_forward="-Z", axis_up="Y",
         mesh_smooth_type="FACE", add_leaf_bones=False, primary_bone_axis="Y",
         secondary_bone_axis="X", use_armature_deform_only=False, bake_anim=False,
     )
+    for o in roots:
+        o.rotation_euler.z -= math.pi
+    bpy.context.view_layer.update()
 
 
 def render_previews(scene, collection, out_dir, prefix, height):

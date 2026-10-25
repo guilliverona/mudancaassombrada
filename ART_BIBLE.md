@@ -50,9 +50,9 @@ liga os modelos nas fichas que estiverem vazias).
 | Regra | Valor |
 |---|---|
 | Escala | Metric, Unit Scale 1.0 · **1 BU = 1 m** |
-| Frente | o personagem olha para **−Y** no Blender (vira +Z no Unity) |
+| Frente | o personagem olha para **−Y** no Blender e precisa olhar para **+Z** no Unity (a frente do Player) |
 | Origem | pés no chão (0,0,0); props no ponto de pega |
-| Export FBX | Apply Scalings: FBX All · Forward −Z · Up Y · sem leaf bones |
+| Export FBX | Apply Scalings: FBX All · Forward −Z · Up Y · sem leaf bones · **raízes giradas 180° em Z só durante o export** (sem isso, o −Y do Blender chega como −Z no Unity e o personagem anda de costas; o `export_fbx` do `blockout_common.py` já faz) |
 | Import no Unity | Rig **Humanoid** (Create From This Model) · Bake Axis Conversion · sem câmeras, luzes e animação |
 | Ossos | nomes do Unity Humanoid: `Hips`, `Spine`, `Chest`, `UpperChest`, `Neck`, `Head`, `LeftUpperArm`... (o Unity mapeia sozinho) |
 | Altura | a altura escrita na ficha do Art Bible manda; o script escala o desenho até ela |
