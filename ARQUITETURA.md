@@ -3,6 +3,7 @@
 Como o código está organizado e **onde mexer para adicionar cada tipo de coisa**.
 O visual (cores, fontes, tamanhos) está em [DESIGN.md](DESIGN.md).
 Os modelos 3D (personagens, fantasmas, cenários, pipeline Blender → Unity) estão em [ART_BIBLE.md](ART_BIBLE.md).
+O que vem pela frente, em fases: [PLANEJAMENTO.md](PLANEJAMENTO.md).
 
 ---
 
@@ -106,11 +107,15 @@ Use `GameInput.Flashlight.WasPressedThisFrame()` e `GameInput.KeyLabel(...)` par
 ### Um móvel
 Duplique um prefab em `Assets/Prefabs/Móveis`, troque o modelo/tamanho e o **peso**
 (componente Furniture). Arraste para a cena. O caminhão e o placar contam sozinhos.
+O desenho fica no filho `Modelo` (o FBX); a colisão é o BoxCollider da raiz, que é o que a
+mira e o caminhão enxergam. Modelo novo gerado pelo Blender: ver [ART_BIBLE.md](ART_BIBLE.md).
 
 ### Um fantasma (ou tipo de fantasma)
 Duplique `Assets/Prefabs/Fantasmas/Fantasma Bibliotecário` e ajuste velocidades,
 audição e alcance no Inspector. Comportamento diferente = um script novo baseado no
 `GhostHunter` (ele se registra em `GhostHunter.All` para o reinício funcionar).
+A raiz fica no meio do corpo (cápsula de colisão e `NavMeshAgent` com `baseOffset` = metade da
+altura); o desenho é o filho `Modelo`, com `DollWalk` para balançar braços e pernas.
 
 ### Uma fase (capítulo)
 1. Duplique `Assets/Scenes/Prototipo1` (ou crie uma cena nova com os prefabs de

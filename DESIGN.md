@@ -6,6 +6,7 @@
 
 Como o código está organizado: [ARQUITETURA.md](ARQUITETURA.md).
 Personagens, fantasmas, cenários e pipeline de modelos 3D: [ART_BIBLE.md](ART_BIBLE.md).
+Planejamento em fases: [PLANEJAMENTO.md](PLANEJAMENTO.md).
 
 Os valores (cores, tamanhos, durações) ficam no código em
 [`Assets/Scripts/Theme.cs`](MudancaAssombrada/Assets/Scripts/Theme.cs).

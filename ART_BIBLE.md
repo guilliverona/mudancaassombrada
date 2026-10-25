@@ -13,6 +13,7 @@ Cópia em PDF: [LINK](https://drive.google.com/drive/folders/1PjxH6G6GQJBmZjVnji
 
 Como o código está organizado: [ARQUITETURA.md](ARQUITETURA.md).
 Padrão visual da interface: [DESIGN.md](DESIGN.md).
+Ordem de implementação dos designs, em fases: [PLANEJAMENTO.md](PLANEJAMENTO.md).
 
 ---
 
@@ -27,14 +28,26 @@ tools/blender/                         ← scripts (Python do Blender)
 ├── build_cida_blockout.py             um script por personagem
 ├── build_tiago_blockout.py
 ├── build_marcelo_blockout.py
+├── build_bibliotecario_blockout.py    fantasmas
+├── build_props_blockout.py            armário, cadeira, caixa e caminhão
 ├── build_all.ps1                      gera todos
 └── check_fbx.py                       reimporta um FBX e lista o que veio
-Art/Source/Characters/<Nome>/          ← arquivos-fonte (fora do Unity)
-├── SK_CHR_<Nome>_Blockout.blend
+Art/Source/<Tipo>/<Nome>/              ← arquivos-fonte (fora do Unity)
+├── <PREFIXO>_<Nome>_Blockout.blend
 └── previews/                          frente, perfil, costas e 3/4 (para comparar com o Art Bible)
-MudancaAssombrada/Assets/Art/Characters/<Nome>/
-└── SK_CHR_<Nome>.fbx                  ← o que o jogo usa
+MudancaAssombrada/Assets/Art/<Tipo>/<Nome>/
+└── <PREFIXO>_<Nome>.fbx               ← o que o jogo usa
 ```
+
+| Tipo (pasta) | Prefixo | Rig no Unity |
+|---|---|---|
+| `Characters` | `SK_CHR` | Humanoid |
+| `Ghosts` | `SK_GHO` | Humanoid |
+| `Props` | `SM_PRP` | sem rig |
+
+A importação é configurada sozinha pela pasta
+([`ArtImportSettings`](MudancaAssombrada/Assets/Editor/ArtImportSettings.cs)): ninguém precisa
+mexer no Rig do Inspector. Vale só na primeira importação; depois, o Inspector manda.
 
 **Gerar de novo:** na raiz do repositório, com o Blender 5.2 instalado:
 
@@ -42,8 +55,11 @@ MudancaAssombrada/Assets/Art/Characters/<Nome>/
 .\tools\blender\build_all.ps1
 ```
 
-Depois, no Unity: **Mudança Assombrada › Criar Prefabs que Faltam** (recria o Player e
-liga os modelos nas fichas que estiverem vazias).
+Depois, no Unity: **Mudança Assombrada › Criar Prefabs que Faltam**. Ele recria o Player,
+liga os modelos nas fichas que estiverem vazias e **troca o bloco pelo modelo** nos prefabs do
+mundo que já têm arte (móveis, caminhão, fantasma): o bloco vira só a colisão e o modelo entra
+como filho `Modelo`. Peso, velocidades e tamanho ajustados no Inspector continuam. Depois disso,
+gerar de novo no Blender atualiza os prefabs sozinho, porque o `Modelo` fica ligado ao FBX.
 
 ### Regras de modelagem
 
@@ -74,7 +90,7 @@ liga os modelos nas fichas que estiverem vazias).
 | Tipo | Limite | Hoje |
 |---|---|---|
 | Personagem jogável (com props) | 18k | Cida 10,2k · Tiago 8,5k · Marcelo 7,4k |
-| Fantasma de fase | 20k | — |
+| Fantasma de fase | 20k | Bibliotecário 6,0k |
 | O Inquilino (forma final) | 45k | — |
 | Móvel carregável grande | 3–6k | — |
 | Prop de história | 2–4k | — |
@@ -102,14 +118,15 @@ Os modelos seguem os desenhos.
 
 ## 3. Situação: o que já existe e o que falta
 
-Hoje só os três jogáveis têm modelo. Cenário, móveis, caminhão e fantasma ainda são blocos.
+Já têm modelo: os três jogáveis, o Bibliotecário, os móveis do protótipo e o caminhão.
+O cenário (paredes, chão) ainda é bloco.
 
 | Design (prancha do Art Bible) | No jogo hoje | Falta |
 |---|---|---|
 | Cida, Tiago, Marcelo | blockout + rig + ficha | animações (bengala, Libras, carregar), roda de gestos e quadro do Marcelo, colisor por altura |
-| Bibliotecário (GHO_03) | cápsula + `GhostHunter` (caça por som) | modelo; orelhas que abrem, distração por livros, captura |
-| Móveis do protótipo | cubos com peso | modelos e pontos de pega |
-| Caminhão | cubos + zona de entrega | modelo |
+| Bibliotecário (GHO_03) | blockout 2,6 m + rig + `GhostHunter` (caça por som) | orelhas que abrem, distração por livros, captura, postura curvada (animação) |
+| Móveis do protótipo | armário, cadeira e caixa com modelo | pontos de pega |
+| Caminhão | modelo + zona de entrega | — |
 | Props de história (rádio, bilhetes, relíquias) | bilhetes como texto nos capítulos | modelos; relíquias que pesam mais longe da porta |
 | Casa do Espelho + Imitador (cap. 1) | ficha do capítulo | cena, kit modular, modelo; **disfarce** (copia um jogador) |
 | Conservatório + Maestrina (cap. 2) | ficha do capítulo | cena, instrumentos, modelo; **hipnose** pela música |
@@ -117,7 +134,7 @@ Hoje só os três jogáveis têm modelo. Cenário, móveis, caminhão e fantasma
 | Seu Valdemar | bilhetes e avaliação nos capítulos | modelo; aparições por estado |
 | O Inquilino + Sobrado (cap. 4) | ficha do capítulo | cena, chefe em 3 etapas, final |
 
-Ordem sugerida: Bibliotecário e móveis → caminhão e caixas → Casa do Espelho e Imitador →
+Ordem sugerida: ~~Bibliotecário, móveis e caminhão~~ (feito) → Casa do Espelho e Imitador →
 Conservatório e Maestrina → Biblioteca → Valdemar, Inquilino e Sobrado.
 
 ## 4. Decisões em aberto

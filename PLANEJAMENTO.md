@@ -1,0 +1,174 @@
+# Planejamento — do Art Bible ao jogo
+
+Como os designs do Art Bible viram jogo, em fases. Cada fase diz **o que entra**,
+**o que o código precisa ganhar** e **quando está pronta**.
+
+- Os designs: [ART_BIBLE.md](ART_BIBLE.md) (resumo) e o Art Bible completo (link lá).
+- Onde mexer no código: [ARQUITETURA.md](ARQUITETURA.md).
+- Padrão visual da interface: [DESIGN.md](DESIGN.md).
+
+> Este é um plano **vivo**: ao terminar uma fase, marque aqui e atualize a tabela
+> "Situação" do ART_BIBLE.md. Mudou de ideia? Mude o plano antes do código.
+
+---
+
+## Visão geral
+
+| Fase | Entrega | Tipo de trabalho | Situação |
+|---|---|---|---|
+| 1 | Bibliotecário, móveis e caminhão com modelo | arte + builder | **feita** |
+| 2 | Fundação de código para os fantasmas e personagens | código | a fazer |
+| 3 | Capítulo 1 — Casa do Espelho + Imitador | cena + arte + mecânica | a fazer |
+| 4 | Capítulo 2 — Conservatório + Maestrina | cena + arte + mecânica | a fazer |
+| 5 | Capítulo 3 — Biblioteca do Silêncio | cena + arte + mecânica | depende de decisão |
+| 6 | Seu Valdemar, relíquias e o final (Inquilino + Sobrado) | cena + arte + mecânica | a fazer |
+| — | Animações e comunicação da equipe | arte + código | em paralelo |
+
+Ordem pensada para que cada fase use o que a anterior deixou pronto: a Fase 2 prepara
+o terreno para os três fantasmas, e o Inquilino (Fase 6) junta os três.
+
+## O que já existe e serve aos designs
+
+Antes de escrever código novo, vale lembrar o que já está pronto:
+
+| Já existe | Atende |
+|---|---|
+| Tipos de som (`SoundType`: passo, respiração, voz, impacto, bengala, apito, música) | Imitador sem passos, Maestrina pela música, Bibliotecário pela voz |
+| Ficha do personagem com modelo (`CharacterDefinition.model`) | personagens jogáveis e o disfarce do Imitador |
+| `Interactable` com `onlyFor` | instrumentos que só o Tiago desliga |
+| Objetivos por etapa (`Objective.Stage`) | as 3 etapas do chefe final |
+| Marcadores no save (`SaveSystem.SetFlag`) | pistas do Valdemar e final alternativo |
+| `NightLighting` | o relógio da noite (a luz conta o tempo) |
+| Fichas de capítulo (bilhete e avaliação do Valdemar) | o texto do chefe em cada fase |
+| Pipeline Blender → Unity (`tools/blender`, `ArtImportSettings`, troca de bloco por modelo) | todos os modelos novos |
+
+---
+
+## Fase 1 — Arte nos sistemas que já funcionam ✅
+
+**Entrega:** a fase Protótipo com cara de jogo, sem mudar mecânica.
+
+- Modelos gerados por script: Bibliotecário (2,6 m, Humanoid), armário, cadeira, caixa e caminhão.
+- Importação configurada pela pasta (`Assets/Editor/ArtImportSettings.cs`).
+- `LevelPrefabsBuilder` troca o bloco pelo modelo quando a arte existe, sem perder ajustes.
+
+## Fase 2 — Fundação de código
+
+**Entrega:** nenhuma mudança visível para o jogador; tudo que as Fases 3 a 6 vão precisar.
+Mexe em código que outras pessoas escreveram: **alinhar com o time antes de começar.**
+
+1. **Fantasmas por composição** (como já é feito com os personagens).
+   - Uma base comum: registro (`All`), reinício, captura, passos e rede.
+   - Um comportamento por fantasma: caçar por som (o `GhostHunter` de hoje), imitar, reger.
+   - O Inquilino usa os três comportamentos juntos.
+2. **Estado do fantasma na rede.** Hoje ele pensa só no host e os clientes recebem só a
+   posição. Com o estado numa `NetworkVariable`, todos veem a mesma coisa (orelhas abrindo,
+   máscara virando, pescoço esticando).
+3. **Visual separado da lógica** ("lógica não desenha"): um componente só lê o estado do
+   fantasma e anima o modelo.
+4. **Respiração:** um emissor de `SoundType.Breath` nos jogadores e nos fantasmas que respiram.
+   Sem isso, a pista da Cida contra o Imitador ("não respira") não existe.
+5. **Colisor por personagem:** altura e raio na ficha, aplicados no `CharacterController`
+   (hoje é 2 m para todos e a Cida, com 1,52 m, não passa onde caberia).
+
+**Pronta quando:** o Bibliotecário funciona igual a hoje, mas por cima da base nova; os clientes
+veem o estado dele; o eco mostra respiração; a Cida passa por baixo de uma mesa de 1,6 m.
+
+## Fase 3 — Capítulo 1: A Casa do Espelho + o Imitador
+
+**Entrega:** o primeiro capítulo da história jogável.
+
+- **Arte:** kit modular (parede 2 × 2,8 m, porta 0,9 × 2,1 m, molduras de espelho 0,6 / 1,2 / 2,0 m),
+  piso xadrez, armário de figurino, penteadeira de camarim, máscara e luvas do Imitador.
+- **Cena:** receita "Uma fase" do ARQUITETURA.md; preencher `sceneName` na ficha do capítulo.
+- **Comportamento "imitar":**
+  - escolhe o jogador mais afastado do grupo e copia o modelo da ficha dele;
+  - a cópia tem o logo do colete espelhado e não emite passos nem respiração;
+  - pede ajuda ("segura a outra ponta") e puxa a vítima para o espelho;
+  - desmascarado, foge para outro espelho.
+- **Relíquia:** cartaz do teatro (ver Fase 6).
+
+**Pronta quando:** dá para jogar do bilhete de abertura até a avaliação, e a Cida consegue
+apontar qual cópia é falsa só pelo eco.
+
+## Fase 4 — Capítulo 2: O Conservatório + a Maestrina
+
+**Entrega:** o segundo capítulo jogável.
+
+- **Arte:** auditório, piano de cauda, violino, caixinha de música, a Maestrina
+  (pescoço que estica, fitas de partitura).
+- **`MusicSource`:** instrumento que emite `SoundType.Music` enquanto está ligado e desliga
+  por um `Interactable` com `onlyFor` = Tiago.
+- **Hipnose:** quem ouve a música fica com a tela embaçada e lenta; quem tem `deaf` na ficha
+  é imune. Jogador hipnotizado fica "travado" até alguém arrastá-lo.
+- **Relíquia:** partitura da Maestrina.
+
+**Pronta quando:** o Tiago consegue desligar os três instrumentos enquanto os outros se escondem,
+e a música atrapalha quem não é surdo.
+
+## Fase 5 — Capítulo 3: A Biblioteca do Silêncio
+
+**Entrega:** o terceiro capítulo jogável, onde o Marcelo brilha.
+
+- **Arte:** estantes modulares (1,0 × 2,4 × 0,4 m), mezanino, tapetes, luminárias verdes.
+- **Mecânica:** piso que range (gera som), luminária que faz "clique", livros derrubáveis
+  como distração (o Bibliotecário para para guardá-los).
+- **Voz:** o design depende de "falar alto atrai o fantasma" → **ver decisão 2**.
+- **Relíquia:** o diário do Seu Valdemar.
+
+**Pronta quando:** a fase é vencível em silêncio e perdível por barulho.
+
+## Fase 6 — Seu Valdemar, relíquias e o final
+
+**Entrega:** a campanha completa, com os dois finais.
+
+- **Relíquias:** um móvel especial que pesa mais quanto mais longe da porta e grava um marcador
+  no save ao ser entregue (cartaz, partitura, diário).
+- **Seu Valdemar:** modelo e presença por estado (só rádio → translúcido → sólido), com a borda
+  de luz indo de ciano a âmbar conforme as relíquias.
+- **O Inquilino + o Sobrado:**
+  - etapa 1: os três comportamentos de fantasma ao mesmo tempo;
+  - etapa 2: carregar as relíquias pela escada estreita;
+  - etapa 3: a conversa final e o encolhimento até o velho na caixa.
+- **Final alternativo:** relíquia esquecida → bilhete "Volte para buscar o resto".
+
+**Pronta quando:** a campanha vai do capítulo 1 ao final, e o final muda conforme as relíquias.
+
+## Em paralelo — animações e comunicação da equipe
+
+Não bloqueia nenhuma fase; entra quando houver gente livre.
+
+- **Animações** (Animator com andar e ações): batida de bengala da Cida, sinais de Libras do Tiago,
+  postura carregando peso, postura curvada do Bibliotecário. O `DollWalk` continua como reserva.
+- **Marcelo:** roda de gestos (8 sinais) e quadro branco (desenho do jogador num RenderTexture).
+- **Tiago:** bloquinho com desenho.
+
+---
+
+## Decisões em aberto
+
+Precisam de resposta do time antes da fase indicada.
+
+| # | Decisão | Opções | Bloqueia |
+|---|---|---|---|
+| 1 | Acabamento do mundo 3D | low-poly com cores chapadas (DESIGN.md) **ou** PBR estilizado com rampa de luz (Art Bible) | arte final a partir da Fase 3 |
+| 2 | Chat de voz | voz por proximidade (Vivox ou similar, tem custo e conta da Unity) **ou** uma tecla "chamar" no lugar | Fase 5 |
+| 3 | Quem troca o visual dos prefabs do mundo | o builder (como na Fase 1) **ou** a pessoa que edita o prefab | Fase 3 |
+| 4 | Fantasmas por composição | refatorar o `GhostHunter` (combinar com quem escreveu) **ou** um script novo por fantasma | Fase 2 |
+
+## Riscos
+
+- **Rede:** cada mecânica nova (disfarce, hipnose, relíquia) precisa funcionar no host e no
+  cliente. Testar sempre com dois jogadores (Multiplayer Play Mode).
+- **Conflitos no Git:** builders e prefabs são mexidos por várias pessoas. Combinar quem está em
+  qual arquivo e fazer pull antes de começar.
+- **Escopo do final:** a Fase 6 é a maior. Se apertar, o Inquilino pode estrear com uma etapa e
+  ganhar as outras depois.
+
+## Como trabalhar numa fase
+
+1. Escolha a fase e avise o time (quem pega o quê).
+2. Crie uma branch a partir da `main` atualizada.
+3. Arte primeiro (scripts em `tools/blender`), depois mecânica, depois a cena.
+4. Teste com dois jogadores.
+5. Atualize este arquivo e a tabela "Situação" do ART_BIBLE.md no mesmo PR.
