@@ -93,9 +93,14 @@ entrarem sem mexer no jogador.
    Falta: pose de caído no boneco (animação).
 3. ✅ **Acontecimentos pelos sentidos:** `GameCue` + `CueListener` + legendas na HUD.
    O Imitador já avisa (pedido de ajuda, vítima sendo puxada, desmascarado) e apontar avisa a equipe.
-4. ⬜ **Sentidos do fantasma separados + árbitro** de comportamentos (quem controla o agente).
-5. ⬜ **Kit de autoria do mapa:** prefab único "Sistemas da Fase" e marcadores (nascer, esconderijo
-   de fantasma, cômodos); o construtor só cria a cena vazia.
+4. ✅ **Sentidos do fantasma separados + árbitro:** `GhostHearing` só ouve e avisa (`Heard`); o `Ghost`
+   entrega o "volante" ao comportamento com maior `ServerPriority` (os outros recebem `ServerIdleTick`
+   e continuam percebendo). `GhostHunter` e `GhostImitator` guardam o próprio estado e só aplicam no
+   corpo com o volante. O Inquilino = os três comportamentos no mesmo fantasma.
+5. ✅ **Kit de autoria do mapa:** prefab único **Sistemas da Fase** (GameManager + SoundRelay na raiz,
+   eco/noite/nascimento/HUD/pausa como filhos ligados), marcadores `SpawnPoint`, `GhostHideout`
+   (o `Mirror` virou um tipo) e `Room`. Menus **Nova Fase (cena vazia)** e **Usar Sistemas da Fase
+   na cena aberta**. O rascunho da Casa do Espelho agora é montado por cima da fase vazia.
 6. ⬜ **Ferramentas de teste** no editor (estado do fantasma, atalhos de depuração).
 
 **Pronta quando:** pegar móvel, usar objeto e apontar funcionam como antes; o Tiago não recebe as

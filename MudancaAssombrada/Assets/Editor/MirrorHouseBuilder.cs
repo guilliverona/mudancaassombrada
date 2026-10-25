@@ -203,17 +203,19 @@ namespace MudancaAssombrada.Editor
 
         // ---------- Cena ----------
 
+        // O rascunho da casa por cima de uma fase vazia do kit (LevelSceneTools): os sistemas,
+        // a luz, a câmera de espera, o chão, os objetivos e o NavMesh vêm de lá.
         public static void BuildScene()
         {
             EnsurePrefabs();
-            var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
+            LevelSceneTools.NewLevelScene(ScenePath, BuildHouse);
+            LinkChapter();
+            EditorTools.UpdateBuildSettings();
+            Debug.Log("Cena Casa do Espelho criada! Abra a cena Menu, aperte Play e escolha o capítulo 1.");
+        }
 
-            // --- Chão: a rua (colisão) e o piso xadrez da casa (só desenho, por cima) ---
-            var ground = GameObject.CreatePrimitive(PrimitiveType.Plane);
-            ground.name = "Chão";
-            ground.transform.localScale = new Vector3(3f, 1f, 3f); // 30 x 30 m
-            ground.transform.position = new Vector3(0, -0.01f, -4f); // um fio abaixo do piso: sem "piscar"
-
+        static void BuildHouse()
+        {
             var house = new GameObject("Casa").transform;
             var floor = new GameObject("Piso").transform;
             floor.SetParent(house);
@@ -240,7 +242,13 @@ namespace MudancaAssombrada.Editor
             foreach (int x in new[] { -5, -1, 1, 5 }) Piece(WallPlainPath, walls, new Vector3(x, 0, 0), 0); // passagens em x = -3 e 3
             foreach (int z in new[] { 1, 3 }) Piece(WallPlainPath, walls, new Vector3(0, 0, z), 90);        // passagem em z = 5
 
-            // --- Espelhos (as portas do Imitador). Encostados nas paredes, olhando para dentro ---
+            // --- Cômodos (marcadores com nome, para os avisos) ---
+            var markers = GameObject.Find("Marcadores").transform;
+            LevelSceneTools.RoomMarker(markers, "Sala", new Vector3(0, 1.4f, -3), new Vector3(12, 2.8f, 6));
+            LevelSceneTools.RoomMarker(markers, "Camarim", new Vector3(-3, 1.4f, 3), new Vector3(6, 2.8f, 6));
+            LevelSceneTools.RoomMarker(markers, "Corredor dos Espelhos", new Vector3(3, 1.4f, 3), new Vector3(6, 2.8f, 6));
+
+            // --- Espelhos (os esconderijos do Imitador). Encostados nas paredes, olhando para dentro ---
             float inside = 6 - WallThickness / 2 - 0.04f;
             Place(MirrorLPath, new Vector3(-inside, 0, 3), 90, "Espelho do Camarim");
             Place(MirrorLPath, new Vector3(3, 0, inside), 180, "Espelho do Corredor (fundo)");
@@ -263,54 +271,7 @@ namespace MudancaAssombrada.Editor
 
             // --- Caminhão na rua, com a cabine para longe da casa ---
             Place(LevelPrefabsBuilder.TruckPath, new Vector3(0, 0, -11f), 180, null);
-
-            // --- Objetivo: levar todos os móveis ao caminhão ---
-            var objectives = new GameObject("Objetivos").transform;
-            var deliver = new GameObject("Entregar todos os móveis");
-            deliver.transform.SetParent(objectives);
-            deliver.AddComponent<DeliverFurnitureObjective>();
-
-            // --- Câmera de espera (vista de cima) ---
-            var lobbyCam = Camera.main;
-            lobbyCam.name = "Câmera de Espera";
-            lobbyCam.tag = "Untagged";
-            lobbyCam.transform.position = new Vector3(0, 20f, -10f);
-            lobbyCam.transform.rotation = Quaternion.Euler(60f, 0, 0);
-            lobbyCam.gameObject.AddComponent<LobbyCamera>();
-
-            // --- Sistemas, noite e interface (iguais em toda fase) ---
-            Place(LevelPrefabsBuilder.EchoPath, Vector3.zero, 0, null);
-            Place(LevelPrefabsBuilder.SoundRelayPath, Vector3.zero, 0, null);
-            Place(LevelPrefabsBuilder.GameManagerPath, Vector3.zero, 0, null);
-            Place(LevelPrefabsBuilder.SpawnerPath, new Vector3(0, 1f, -4f), 0, null); // na sala, perto da saída
-
-            var light = Object.FindFirstObjectByType<Light>();
-            light.name = "Lua / Sol";
-            light.shadows = LightShadows.Soft;
-            RenderSettings.sun = light;
-            Place(LevelPrefabsBuilder.NightPath, Vector3.zero, 0, null);
-
-            UiBuilder.CreateEventSystem();
-            Place(LevelPrefabsBuilder.HudPath, Vector3.zero, 0, null);
-            Place(LevelPrefabsBuilder.PausePath, Vector3.zero, 0, null);
-
-            // --- NavMesh ---
-            var navGo = new GameObject("NavMesh");
-            var surface = navGo.AddComponent<NavMeshSurface>();
-            surface.collectObjects = CollectObjects.All;
-            surface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
-            surface.BuildNavMesh();
-            string navPath = $"{EditorTools.ScenesFolder}/{SceneName}_NavMesh.asset";
-            AssetDatabase.DeleteAsset(navPath);
-            AssetDatabase.CreateAsset(surface.navMeshData, navPath);
-
-            EditorSceneManager.SaveScene(scene, ScenePath);
-            EditorTools.FixNetworkObjectIds(scene);
-            LinkChapter();
-            EditorTools.UpdateBuildSettings();
-            Debug.Log("Cena Casa do Espelho criada! Abra a cena Menu, aperte Play e escolha o capítulo 1.");
         }
-
         // A ficha do capítulo aponta para esta cena (é assim que ele sai de "Em produção").
         static void LinkChapter()
         {

@@ -66,13 +66,8 @@ namespace MudancaAssombrada
 
             if (IsOwner)
             {
-                // Cada jogador nasce um pouco ao lado do anterior, para não nascerem um dentro do outro.
-                // O CharacterController "segura" a posição, então desligamos ele um instante.
-                var controller = GetComponent<CharacterController>();
-                controller.enabled = false;
-                transform.position += Vector3.right * (OwnerClientId * 1.5f);
-                controller.enabled = true;
-                spawnPosition = transform.position; // para o reinício da fase
+                // Onde nasci (o PlayerSpawner escolhe um SpawnPoint para cada um): o reinício volta aqui.
+                spawnPosition = transform.position;
 
                 // Meu próprio boneco some da minha tela (a câmera fica dentro da cabeça).
                 // Os outros jogadores continuam vendo ele normalmente.

@@ -830,6 +830,7 @@ GameObject:
   - component: {fileID: 7989720525728775853}
   - component: {fileID: 3022898349990388413}
   - component: {fileID: 6247077974802937140}
+  - component: {fileID: 4375266110615980532}
   - component: {fileID: 7384375665614101427}
   - component: {fileID: 1565150017572927767}
   - component: {fileID: 7360231509683667312}
@@ -961,6 +962,20 @@ MonoBehaviour:
   m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.CueListener
   maxLines: 4
   lineDuration: 6
+--- !u!114 &4375266110615980532
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7645197041336742590}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 36f68d2409f29bb4d9441f8bb97d90b6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.PlayerCondition
+  ShowTopMostFoldoutHeaderGroup: 1
+  cueRange: 15
 --- !u!114 &7384375665614101427
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1090,7 +1105,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 1143130524
+  GlobalObjectIdHash: 3408781451
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0

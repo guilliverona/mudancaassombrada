@@ -6,7 +6,7 @@ using UnityEngine.SceneManagement;
 namespace MudancaAssombrada
 {
     // Fica na cena da fase. Cria o boneco de cada jogador quando a fase termina de carregar
-    // em TODOS os computadores. Os jogadores nascem na posição deste objeto.
+    // em TODOS os computadores. Os jogadores nascem nos marcadores SpawnPoint da cena.
     //
     // A conexão acontece no menu (onde não pode ter boneco andando), então o Netcode não cria
     // os bonecos sozinho: criamos aqui, na hora certa.
@@ -43,14 +43,27 @@ namespace MudancaAssombrada
         {
             if (sceneName != gameObject.scene.name) return;
 
-            foreach (ulong clientId in clientsCompleted)
+            for (int i = 0; i < clientsCompleted.Count; i++)
             {
-                // Nasce aqui (cada um depois se afasta um pouco: ver NetworkPlayer).
-                var player = Instantiate(playerPrefab, transform.position, transform.rotation);
+                ulong clientId = clientsCompleted[i];
+                SpawnPlace(i, out Vector3 position, out Quaternion rotation);
+                var player = Instantiate(playerPrefab, position, rotation);
                 // SpawnAsPlayerObject: "nasça na rede e pertença a este jogador" (ele vira o dono).
                 // destroyWithScene: true = some junto com a fase, se a cena trocar.
                 player.GetComponent<NetworkObject>().SpawnAsPlayerObject(clientId, destroyWithScene: true);
             }
+        }
+
+        // Onde nasce o jogador número i: no i-ésimo marcador (SpawnPoint). Faltando marcador,
+        // repete os marcadores e põe o jogador 1,5 m ao lado, para ninguém nascer dentro de outro.
+        // Sem marcador nenhum (cena antiga), vale a posição deste objeto.
+        void SpawnPlace(int i, out Vector3 position, out Quaternion rotation)
+        {
+            var points = SpawnPoint.All;
+            Transform place = points.Count > 0 ? points[i % points.Count].transform : transform;
+            int round = points.Count > 0 ? i / points.Count : i;
+            position = place.position + place.right * (round * 1.5f);
+            rotation = place.rotation;
         }
     }
 }

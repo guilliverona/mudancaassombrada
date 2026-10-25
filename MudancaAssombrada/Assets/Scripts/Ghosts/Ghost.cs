@@ -62,6 +62,8 @@ namespace MudancaAssombrada
         public NavMeshAgent Agent { get; private set; }
         public Vector3 Home { get; private set; }
         public GhostState State => state.Value;
+        // O comportamento que está no "volante" agora (só no host; null = nenhum quer agir).
+        public GhostBehaviour Active { get; private set; }
 
         // Avisa quando o estado muda (em TODOS os computadores): (anterior, novo).
         public event Action<GhostState, GhostState> StateChanged;
@@ -82,11 +84,13 @@ namespace MudancaAssombrada
             }
         }
 
-        // Comportamentos podem calar os passos por um tempo (ex.: disfarçado).
+        // Passos e captura são do CORPO: quem está no volante decide (ao ganhar o controle).
+        // O Imitador cala os passos e não "pega" encostando (ele puxa para o espelho);
+        // o Bibliotecário liga os dois de volta.
         public bool Footsteps { get => footsteps; set => footsteps = value; }
-
-        // Captura ligada? O Imitador, por exemplo, não "pega" encostando: ele puxa para o espelho.
         public bool CatchesOnTouch { get; set; } = true;
+        // Como o prefab veio (o Inspector): os comportamentos voltam a isto quando não precisam mudar.
+        public bool DefaultFootsteps { get; private set; }
 
         void Awake()
         {
@@ -94,6 +98,7 @@ namespace MudancaAssombrada
             Home = transform.position;
             lastPosition = transform.position;
             behaviours = GetComponents<GhostBehaviour>();
+            DefaultFootsteps = footsteps;
         }
 
         void OnEnable() => all.Add(this);
@@ -151,8 +156,13 @@ namespace MudancaAssombrada
             // Antes de conectar, IsServer é false em todos: o fantasma fica parado esperando.
             if (!IsServer) return;
 
+            Arbitrate();
             foreach (var b in behaviours)
-                if (b.enabled) b.ServerTick();
+            {
+                if (!b.enabled) continue;
+                if (b == Active) b.ServerTick();
+                else b.ServerIdleTick();
+            }
 
             // Com multiplayer os jogadores aparecem DEPOIS do fantasma (quando conectam),
             // então procuramos o mais próximo a cada frame em vez de guardar um só no Start.
@@ -161,6 +171,27 @@ namespace MudancaAssombrada
                 ServerCatch(player);
 
             EmitFootsteps();
+        }
+
+        // O ÁRBITRO: entrega o "volante" ao comportamento que mais quer o controle agora.
+        // Empate fica com quem já está (sem ficar trocando de um frame para o outro).
+        void Arbitrate()
+        {
+            GhostBehaviour best = Active != null && Active.enabled ? Active : null;
+            int bestPriority = best != null ? best.ServerPriority() : int.MinValue;
+            foreach (var b in behaviours)
+            {
+                if (!b.enabled || b == best) continue;
+                int p = b.ServerPriority();
+                if (p > bestPriority) { best = b; bestPriority = p; }
+            }
+            if (best != null && bestPriority < 0) best = null; // ninguém quer: fica parado
+
+            if (best == Active) return;
+            var previous = Active;
+            Active = best;
+            if (previous != null) previous.ServerLoseControl();
+            if (Active != null) Active.ServerGainControl();
         }
 
         // PEGOU alguém: o jogador fica CAÍDO até um colega ajudar (PlayerCondition).
@@ -176,9 +207,11 @@ namespace MudancaAssombrada
         public void ServerReset()
         {
             CatchesOnTouch = true;
+            footsteps = DefaultFootsteps;
             ServerSetDisguise(-1);
             Agent.Warp(Home); // Warp = teleporte do NavMeshAgent (mover o transform direto confunde ele)
             lastPosition = Home;
+            Active = null; // o árbitro escolhe de novo no próximo frame
             foreach (var b in behaviours) b.ServerReset();
         }
 

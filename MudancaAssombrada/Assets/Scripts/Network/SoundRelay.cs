@@ -8,8 +8,8 @@ namespace MudancaAssombrada
     // Os passos do Tiago precisam aparecer no eco da Cida, o fantasma (que pensa no host)
     // precisa ouvir os passos de todo mundo, e o "socorro!" de um precisa chegar aos outros.
     //
-    // Fica num objeto da cena com NetworkObject. Objetos de rede que já estão na cena
-    // "nascem" sozinhos para todos quando o host inicia a partida.
+    // Fica no prefab "Sistemas da Fase", junto do GameManager (o mesmo objeto de rede).
+    // Objetos de rede que já estão na cena "nascem" sozinhos para todos quando o host inicia a partida.
     public class SoundRelay : NetworkBehaviour
     {
         public override void OnNetworkSpawn()

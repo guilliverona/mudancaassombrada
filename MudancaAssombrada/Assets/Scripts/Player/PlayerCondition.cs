@@ -75,8 +75,9 @@ namespace MudancaAssombrada
             // Avisos para a equipe, saindo deste jogador (o host os manda pelo fantasma/jogador dono).
             if (newState == PlayerState.Down)
             {
-                Cue(Senses.Sight, $"{DisplayName} caiu! Vá até lá e ajude ({GameInput.KeyLabel(GameInput.Interact)}).");
-                Cue(Senses.Hearing, $"{DisplayName} pede socorro!");
+                string where = Room.InRoomText(transform.position); // " (Camarim)", se houver cômodo marcado
+                Cue(Senses.Sight, $"{DisplayName} caiu{where}! Vá até lá e ajude ({GameInput.KeyLabel(GameInput.Interact)}).");
+                Cue(Senses.Hearing, $"{DisplayName} pede socorro{where}!");
                 Cue(Senses.Vibration, $"Um baque no chão: {DisplayName} caiu.");
             }
         }

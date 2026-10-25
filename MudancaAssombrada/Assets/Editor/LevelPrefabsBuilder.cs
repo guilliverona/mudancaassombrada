@@ -14,7 +14,8 @@ namespace MudancaAssombrada.Editor
     //   Assets/Prefabs/Casa       Parede, Caminhão
     //   Assets/Prefabs/Móveis     Armário, Cadeira, Caixa
     //   Assets/Prefabs/Fantasmas  Fantasma Bibliotecário
-    //   Assets/Prefabs/Sistemas   EchoSystem, SoundRelay, GameManager, PlayerSpawner
+    //   Assets/Prefabs/Sistemas   EchoSystem, PlayerSpawner, Iluminação Noturna e o
+    //                             "Sistemas da Fase" (GameManager + SoundRelay + estes; ver LevelSceneTools)
     //   Assets/Prefabs/Interface  HUD, Pausa        (sempre recriados: interface é código)
     //   Assets/Prefabs/Player                       (sempre recriado: é montado 100% por código)
     //
@@ -33,8 +34,6 @@ namespace MudancaAssombrada.Editor
         public const string BoxPath = "Assets/Prefabs/Móveis/Caixa.prefab";
         public const string GhostPath = "Assets/Prefabs/Fantasmas/Fantasma Bibliotecário.prefab";
         public const string EchoPath = "Assets/Prefabs/Sistemas/EchoSystem.prefab";
-        public const string SoundRelayPath = "Assets/Prefabs/Sistemas/SoundRelay.prefab";
-        public const string GameManagerPath = "Assets/Prefabs/Sistemas/GameManager.prefab";
         public const string SpawnerPath = "Assets/Prefabs/Sistemas/PlayerSpawner.prefab";
         public const string NightPath = "Assets/Prefabs/Sistemas/Iluminação Noturna.prefab";
         public const string HudPath = "Assets/Prefabs/Interface/HUD.prefab";
@@ -69,15 +68,14 @@ namespace MudancaAssombrada.Editor
             Build(BoxPath, recreateAll, () => BuildFurniture("Caixa", new Vector3(0.5f, 0.5f, 0.5f), 1.5f, new Color(0.7f, 0.55f, 0.35f)));
             Build(GhostPath, recreateAll, BuildGhost);
             Build(EchoPath, recreateAll, BuildEchoSystem);
-            Build(SoundRelayPath, recreateAll, BuildSoundRelay);
-            Build(GameManagerPath, recreateAll, BuildGameManager);
             Build(SpawnerPath, recreateAll, BuildSpawner);
-            // Noite que vira amanhecer. As cores ficam no Inspector do prefab.
             UpgradeGhost(GhostPath);
+            // Noite que vira amanhecer. As cores ficam no Inspector do prefab.
             Build(NightPath, recreateAll, () => new GameObject("Iluminação Noturna", typeof(NightLighting)));
             Build(HudPath, recreate: true, HudBuilder.Build);
             Build(PausePath, recreate: true, BuildPauseMenu);
             ApplyArtToPrefabs();
+            LevelSceneTools.EnsureSystemsPrefab(); // o prefab único que toda fase usa (kit de autoria)
             AssetDatabase.SaveAssets();
         }
 
@@ -203,9 +201,12 @@ namespace MudancaAssombrada.Editor
             var root = PrefabUtility.LoadPrefabContents(prefabPath);
             try
             {
+                // Quem caça pelo som precisa do ouvido (GhostHearing), que antes morava dentro do GhostHunter.
+                bool needsEar = root.TryGetComponent(out GhostHunter _) && !root.TryGetComponent(out GhostHearing _);
                 if (root.TryGetComponent(out Ghost _) && root.TryGetComponent(out GhostVisual _) && root.TryGetComponent(out Pointable _) &&
-                    (!breathes || root.TryGetComponent(out Breathing _))) return;
+                    (!breathes || root.TryGetComponent(out Breathing _)) && !needsEar) return;
                 AddGhostParts(root, breathes);
+                if (needsEar) root.AddComponent<GhostHearing>();
                 PrefabUtility.SaveAsPrefabAsset(root, prefabPath);
                 Debug.Log($"Fantasma atualizado para a base comum: {prefabPath}");
             }
@@ -323,23 +324,6 @@ namespace MudancaAssombrada.Editor
             var echo = new GameObject("EchoSystem").AddComponent<EchoSystem>();
             EditorTools.SetReference(echo, "echoShader", AssetDatabase.LoadAssetAtPath<Shader>("Assets/Shaders/Echo.shader"));
             return echo.gameObject;
-        }
-
-        static GameObject BuildSoundRelay()
-        {
-            // Leva os sons de um computador para os outros.
-            var relay = new GameObject("SoundRelay");
-            relay.AddComponent<NetworkObject>();
-            relay.AddComponent<SoundRelay>();
-            return relay;
-        }
-
-        static GameObject BuildGameManager()
-        {
-            var go = new GameObject("GameManager");
-            go.AddComponent<NetworkObject>(); // o cronômetro e o resultado existem na rede
-            go.AddComponent<GameManager>();
-            return go;
         }
 
         static GameObject BuildSpawner()

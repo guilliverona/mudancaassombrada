@@ -26,18 +26,51 @@ namespace MudancaAssombrada
         [SerializeField] float askDistance = 2f;     // perto assim, pede ajuda e começa a puxar
         [SerializeField] float voiceRange = 6f;      // "segura a outra ponta do armário?"
 
+        GhostState mode = GhostState.Patrolling; // o MEU estado (no Ghost só quando estou no volante)
         float timer;
         NetworkPlayer victim;
         Mirror targetMirror;
 
-        public override void ServerStart()
+        public override void ServerStart() => Lurk();
+
+        // Escondido, quase não quer o corpo; disfarçado ou puxando, não larga por nada.
+        public override int ServerPriority() => mode switch
         {
-            // Sem passos e sem pegar ninguém encostando: ele puxa para o espelho.
-            Ghost.Footsteps = false;
-            Ghost.CatchesOnTouch = false;
-            Lurk();
+            GhostState.Disguised or GhostState.Pulling => 20,
+            GhostState.Fleeing => 15,
+            _ => timer <= 0 ? 20 : 0, // escondido: quando chega a hora, pede o volante para atacar
+        };
+
+        // Sem o volante, só conta o tempo escondido.
+        public override void ServerIdleTick()
+        {
+            if (mode == GhostState.Patrolling) timer -= Time.deltaTime;
         }
 
+        // Ganhou o volante: sem passos e sem pegar ninguém encostando (ele puxa para o espelho).
+        public override void ServerGainControl()
+        {
+            Ghost.Footsteps = false;
+            Ghost.CatchesOnTouch = false;
+            Ghost.ServerSetState(mode);
+        }
+
+        // Perdeu o volante (outro comportamento do mesmo fantasma, no Inquilino): tira o disfarce.
+        public override void ServerLoseControl()
+        {
+            if (mode == GhostState.Patrolling) return;
+            Release();
+            Ghost.ServerSetDisguise(-1);
+            mode = GhostState.Patrolling;
+            timer = lurkTime;
+        }
+
+        // Muda o MEU estado; o Ghost (que todos veem) só muda se eu estiver no volante.
+        void SetMode(GhostState newMode)
+        {
+            mode = newMode;
+            if (HasControl) Ghost.ServerSetState(newMode);
+        }
         public override void ServerReset()
         {
             Release();
@@ -51,15 +84,15 @@ namespace MudancaAssombrada
             Cue(Senses.Hearing, "Um barulho de vidro trincando... o falso fugiu!");
             Release();
             Ghost.ServerSetDisguise(-1);
-            Ghost.ServerSetState(GhostState.Fleeing);
+            SetMode(GhostState.Fleeing);
             Ghost.Agent.speed = fleeSpeed;
-            targetMirror = Mirror.Farthest(transform.position);
+            targetMirror = GhostHideout.Farthest<Mirror>(transform.position);
             if (targetMirror != null) Ghost.Agent.SetDestination(targetMirror.ExitPoint);
         }
 
         public override void ServerTick()
         {
-            switch (Ghost.State)
+            switch (mode)
             {
                 case GhostState.Patrolling: // escondido, esperando a hora
                     timer -= Time.deltaTime;
@@ -97,7 +130,7 @@ namespace MudancaAssombrada
         {
             Release();
             Ghost.ServerSetDisguise(-1);
-            Ghost.ServerSetState(GhostState.Patrolling);
+            SetMode(GhostState.Patrolling);
             Ghost.Agent.ResetPath(); // fica parado na frente do espelho
             timer = lurkTime;
         }
@@ -113,11 +146,11 @@ namespace MudancaAssombrada
             if (victim == null) { timer = 1f; return; }
 
             // Sai do espelho mais perto da vítima, já disfarçado.
-            var mirror = Mirror.Nearest(victim.transform.position);
+            var mirror = GhostHideout.Nearest<Mirror>(victim.transform.position);
             if (mirror != null) Ghost.Agent.Warp(mirror.ExitPoint);
 
             Ghost.ServerSetDisguise(copied.Character.CurrentIndex);
-            Ghost.ServerSetState(GhostState.Disguised);
+            SetMode(GhostState.Disguised);
             Ghost.Agent.speed = approachSpeed;
             timer = giveUpTime;
         }
@@ -129,9 +162,9 @@ namespace MudancaAssombrada
             // O pedido chega como FALA para quem ouve (o Tiago, surdo, não fica sabendo).
             Cue(Senses.Hearing, $"{CopiedName()}: \"Me ajuda a segurar a outra ponta?\"", voiceRange);
 
-            targetMirror = Mirror.Nearest(transform.position);
+            targetMirror = GhostHideout.Nearest<Mirror>(transform.position);
             if (targetMirror == null) { Ghost.ServerCatch(victim); Lurk(); return; } // cena sem espelho: derruba direto
-            Ghost.ServerSetState(GhostState.Pulling);
+            SetMode(GhostState.Pulling);
             Ghost.Agent.speed = pullSpeed;
             Ghost.Agent.SetDestination(targetMirror.ExitPoint);
             victim.Condition.ServerSet(PlayerState.Pulled, Ghost.NetworkObject); // a condição cuida do arrasto

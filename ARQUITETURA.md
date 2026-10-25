@@ -118,15 +118,25 @@ audição e alcance no Inspector. Todo fantasma tem a base **`Ghost`** (registro
 reinício, captura, passos e o estado na rede), o **`GhostVisual`** (só lê o estado e mexe no
 modelo) e, se respira, o **`Breathing`**. O "jeito" de assombrar é um **comportamento**: uma classe
 que herda de `GhostBehaviour` (ex.: `GhostHunter`, caça por som) e muda `Ghost.ServerSetState`.
-Vários comportamentos no mesmo objeto se somam (é o plano do Inquilino).
+Vários comportamentos no mesmo objeto se somam (é o plano do Inquilino): a cada frame o `Ghost`
+pergunta `ServerPriority()` a todos e dá o "volante" a quem quer mais (`ServerGainControl` /
+`ServerLoseControl`); só ele recebe `ServerTick`, os outros `ServerIdleTick`. Os SENTIDOS são
+componentes à parte: `GhostHearing` (ouve os tipos de som marcados e avisa pelo evento `Heard`).
 A raiz fica no meio do corpo (cápsula de colisão e `NavMeshAgent` com `baseOffset` = metade da
 altura); o desenho é o filho `Modelo`, com `DollWalk` para balançar braços e pernas.
 
 ### Uma fase (capítulo)
-1. Duplique `Assets/Scenes/CasaDoEspelho` (ou crie uma cena nova com os prefabs de
-   `Sistemas` e `Interface`, mais um `PlayerSpawner`).
-2. Monte a casa com prefabs, selecione o objeto **NavMesh** → **Bake**.
+1. **Mudança Assombrada › Nova Fase (cena vazia)**. A cena nasce com o prefab **Sistemas da Fase**
+   (partida, rede, eco, noite, nascimento, HUD, pausa: não mexa nele na cena), luz, câmera de
+   espera, chão, 3 marcadores de nascer e o objetivo padrão.
+2. Monte a casa à mão com os prefabs (`Casa`, `Móveis`, `Espelhos`...) e os **marcadores**
+   (componentes num objeto vazio):
+   - **Spawn Point**: onde cada jogador nasce (1º jogador no 1º da Hierarchy);
+   - **Ghost Hideout** (ou um tipo, como **Mirror**): esconderijo de onde o fantasma sai e para onde foge;
+   - **Room**: cômodo com nome e caixa (os avisos dizem "caiu (Camarim)").
+   Depois selecione o objeto **NavMesh** → **Bake**.
 3. Coloque os **objetivos** (veja abaixo).
+   Cena antiga, com sistemas soltos? Abra e rode **Usar Sistemas da Fase na cena aberta**.
 4. Na ficha do capítulo (`Data/Capítulos`), preencha **Scene Name** com o nome da cena.
    As 4 fases do roteiro já têm ficha, só falta a cena ("Em produção" no menu).
 5. Rode **Criar Cena Menu** (atualiza a Build Settings). O capítulo aparece na sala de espera.
@@ -184,6 +194,8 @@ leia na `Hud`. Crie a peça visual no `HudBuilder` (ou direto no prefab HUD).
 | Criar Todas as Cenas | dados + prefabs que faltam + fase (pergunta) + menu | só se você confirmar |
 | Criar Cena Menu | recria o menu | não (o menu é só código) |
 | Criar Cena Casa do Espelho | prefabs do capítulo 1 que faltam + rascunho da cena + liga a ficha | **sim** (pergunta antes) |
+| Nova Fase (cena vazia) | cena nova com Sistemas da Fase, chão e marcadores | não (cena nova) |
+| Usar Sistemas da Fase na cena aberta | troca eco/partida/HUD/pausa soltos pelo prefab e cria marcadores de nascer | só os sistemas (pergunta antes) |
 | Criar Dados que Faltam | cria fichas/Elenco se não existirem | não |
 | Criar Prefabs que Faltam | cria prefabs do mundo que não existem; recria Player, HUD e Pausa | não |
 | Recriar Todos os Prefabs | volta todos os prefabs ao original | **sim** (pergunta antes) |
