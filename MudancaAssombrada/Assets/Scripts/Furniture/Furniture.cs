@@ -26,7 +26,31 @@ public class Furniture : NetworkBehaviour
     public bool IsHeld => isHeld.Value;
     public float NoiseMultiplier { get; set; } = 1f; // < 1 = batidas mais silenciosas
 
-    void Awake() => Body = GetComponent<Rigidbody>();
+    Vector3 startPosition;
+    Quaternion startRotation;
+
+    void Awake()
+    {
+        Body = GetComponent<Rigidbody>();
+        startPosition = transform.position; // guarda onde o móvel começa, para o reinício
+        startRotation = transform.rotation;
+    }
+
+    // Só no host (chamado pelo GameManager ao reiniciar): devolve o móvel ao lugar inicial.
+    public void ServerReset()
+    {
+        if (isHeld.Value)
+        {
+            isHeld.Value = false;
+            NetworkObject.RemoveOwnership(); // tira da mão de quem estava carregando
+        }
+        Body.linearVelocity = Vector3.zero;
+        Body.angularVelocity = Vector3.zero;
+        Body.position = startPosition;
+        // Teleport: "pule para lá sem deslizar". Sem ele, os outros computadores veriam o
+        // móvel atravessar a casa voando até o lugar inicial (a interpolação "suaviza" o salto).
+        GetComponent<Unity.Netcode.Components.NetworkTransform>().Teleport(startPosition, startRotation, transform.localScale);
+    }
 
     public void RequestPickUp() => PickUpRpc();
     public void RequestDrop() => DropRpc();

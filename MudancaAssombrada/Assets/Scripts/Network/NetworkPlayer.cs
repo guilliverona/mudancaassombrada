@@ -25,6 +25,7 @@ public class NetworkPlayer : NetworkBehaviour
             controller.enabled = false;
             transform.position += Vector3.right * (OwnerClientId * 1.5f);
             controller.enabled = true;
+            spawnPosition = transform.position; // para o reinício da fase
 
             // A câmera da cena de espera não é mais necessária: agora vemos pelos nossos olhos.
             var lobbyCamera = GameObject.Find("Câmera de Espera");
@@ -47,5 +48,19 @@ public class NetworkPlayer : NetworkBehaviour
         cam.GetComponent<AudioListener>().enabled = false;
         // A câmera do fantoche não pode ser "a câmera principal" do meu computador.
         cam.tag = "Untagged";
+    }
+
+    Vector3 spawnPosition;
+
+    // O host pede, mas quem move é o DONO do boneco (a posição dos jogadores é
+    // autoridade de cada um). SendTo.Owner: roda só no computador do dono deste boneco.
+    [Rpc(SendTo.Owner)]
+    public void ResetPositionRpc()
+    {
+        var controller = GetComponent<CharacterController>();
+        controller.enabled = false;
+        // Teleport em vez de mudar a posição: os outros veem o boneco "pular", não deslizar.
+        GetComponent<Unity.Netcode.Components.NetworkTransform>().Teleport(spawnPosition, transform.rotation, transform.localScale);
+        controller.enabled = true;
     }
 }

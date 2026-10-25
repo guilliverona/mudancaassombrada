@@ -105,6 +105,16 @@ public class FurnitureCarrier : MonoBehaviour
     {
         if (held == null) return;
 
+        // O host tomou o móvel de volta (ex.: a fase reiniciou): só largo localmente,
+        // sem pedir nada ao host, porque o móvel já não é meu.
+        if (!held.IsOwner)
+        {
+            movement.SpeedMultiplier = 1f;
+            held.NoiseMultiplier = 1f;
+            held = null;
+            return;
+        }
+
         Vector3 target = playerCamera.transform.position + playerCamera.transform.forward * holdDistance;
         Vector3 toTarget = target - held.Body.position;
 

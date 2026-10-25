@@ -101,7 +101,9 @@ public static class PrototypeSceneBuilder
         relay.AddComponent<SoundRelay>();
 
         // --- GameManager ---
-        var gameManager = new GameObject("GameManager").AddComponent<GameManager>();
+        var gmGo = new GameObject("GameManager");
+        gmGo.AddComponent<Unity.Netcode.NetworkObject>(); // o cronômetro e o resultado existem na rede
+        var gameManager = gmGo.AddComponent<GameManager>();
         SetReference(gameManager, "truck", truck);
 
         // --- Rede: o NetworkManager é o "cérebro" da conexão ---

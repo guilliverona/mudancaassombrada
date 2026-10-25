@@ -120,8 +120,10 @@ public class GhostHunter : NetworkBehaviour
         player = NearestPlayer();
         if (player != null && Vector3.Distance(transform.position, player.position) < catchDistance)
         {
-            caught = true; // senão mandaria o RPC de novo a cada frame
-            CaughtRpc();
+            // O GameManager (no host) muda o resultado, e a NetworkVariable avisa todo mundo:
+            // a equipe inteira perde junta.
+            caught = true;
+            GameManager.ServerPlayerCaught();
         }
 
         EmitFootsteps();
@@ -140,10 +142,14 @@ public class GhostHunter : NetworkBehaviour
         if (newState == State.Patrolling) agent.SetDestination(RandomPointNear(home, patrolRadius));
     }
 
-    // O host percebeu que pegou alguém e avisa TODO mundo (inclusive ele mesmo):
-    // a equipe inteira perde junta.
-    [Rpc(SendTo.Everyone)]
-    void CaughtRpc() => GameManager.PlayerCaught("O Bibliotecário pegou alguém da equipe!");
+    // Só no host (chamado pelo GameManager ao reiniciar): volta para casa e recomeça a patrulha.
+    public void ServerReset()
+    {
+        caught = false;
+        agent.Warp(home); // Warp = teleporte do NavMeshAgent (mover o transform direto confunde ele)
+        lastPosition = home;
+        EnterState(State.Patrolling);
+    }
 
     Transform NearestPlayer()
     {
