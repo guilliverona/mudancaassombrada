@@ -15,6 +15,11 @@ namespace MudancaAssombrada
         [Header("Câmera")]
         [SerializeField] Transform cameraPivot;      // a câmera, filha do Player
         [SerializeField] float mouseSensitivity = 0.1f;
+        [Tooltip("Os olhos ficam à frente do meio do corpo (metros), não dentro do peito.")]
+        [SerializeField] float eyeForward = 0.12f;
+        [Tooltip("Quanto a cabeça avança ao olhar todo para baixo (o pescoço inclina): assim você vê o corpo de fora.")]
+        [SerializeField] float lookDownForward = 0.22f;
+        [SerializeField] float nearClip = 0.05f; // perto o bastante para ver o peito sem cortar
 
         [Header("Agachar")]
         [SerializeField] float crouchHeight = 1.2f;
@@ -88,6 +93,8 @@ namespace MudancaAssombrada
             feetY = controller.center.y - controller.height / 2f; // no prefab: centro 0, altura 2 -> pés em -1
             eyeHeight = cameraPivot.localPosition.y - feetY;
             stamina = maxStamina;
+            var eye = cameraPivot.GetComponentInChildren<Camera>();
+            if (eye != null) eye.nearClipPlane = Mathf.Min(eye.nearClipPlane, nearClip);
             Cursor.lockState = CursorLockMode.Locked; // prende e esconde o mouse
         }
 
@@ -125,6 +132,10 @@ namespace MudancaAssombrada
             float targetY = feetY + eye;
             Vector3 cam = cameraPivot.localPosition;
             cam.y = Mathf.Lerp(cam.y, targetY, crouchTransitionSpeed * Time.deltaTime);
+            // Para a frente: os olhos estão no rosto, e o rosto avança quando você olha para baixo
+            // (pitch positivo = olhando para baixo). Sem isso, a câmera fica dentro do próprio peito.
+            float down = Mathf.Clamp01(cameraPitch / 80f);
+            cam.z = eyeForward + lookDownForward * down;
             cameraPivot.localPosition = cam;
         }
 
