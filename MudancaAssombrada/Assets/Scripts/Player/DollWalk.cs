@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering; // ShadowCastingMode
 
@@ -70,10 +71,25 @@ namespace MudancaAssombrada
         // Esconde o boneco da SUA câmera: a câmera fica dentro da cabeça, então você veria
         // braços e o interior do corpo. "ShadowsOnly" deixa ele invisível, mas ainda faz sombra.
         // "true" = inclui as partes desligadas.
+        // Os espelhos (MirrorReflection) ligam estes de volta só enquanto desenham o reflexo:
+        // assim você se vê no espelho sem ver o interior da própria cabeça.
         public void HideBody()
         {
             foreach (var renderer in GetComponentsInChildren<Renderer>(true))
+            {
                 renderer.shadowCastingMode = ShadowCastingMode.ShadowsOnly;
+                if (!HiddenBodies.Contains(renderer)) HiddenBodies.Add(renderer);
+            }
+            // Ao olhar para baixo você vê o corpo: uma cópia sem cabeça (FirstPersonBody).
+            FirstPersonBody.For(this);
+        }
+
+        // Registro das partes escondidas da SUA câmera (o seu próprio corpo).
+        public static readonly List<Renderer> HiddenBodies = new();
+
+        void OnDestroy()
+        {
+            HiddenBodies.RemoveAll(r => r == null || r.transform.IsChildOf(transform));
         }
 
         void Update()

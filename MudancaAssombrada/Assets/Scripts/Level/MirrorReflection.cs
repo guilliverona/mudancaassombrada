@@ -59,7 +59,12 @@ namespace MudancaAssombrada
 
         void OnEnable()
         {
-            if (All.Count == 0) RenderPipelineManager.beginContextRendering += UpdateAll;
+            if (All.Count == 0)
+            {
+                RenderPipelineManager.beginContextRendering += UpdateAll;
+                RenderPipelineManager.beginCameraRendering += ShowOwnBody;
+                RenderPipelineManager.endCameraRendering += HideOwnBody;
+            }
             All.Add(this);
             SetActive(false);
         }
@@ -67,8 +72,14 @@ namespace MudancaAssombrada
         void OnDisable()
         {
             All.Remove(this);
-            if (All.Count == 0) RenderPipelineManager.beginContextRendering -= UpdateAll;
+            if (All.Count == 0)
+            {
+                RenderPipelineManager.beginContextRendering -= UpdateAll;
+                RenderPipelineManager.beginCameraRendering -= ShowOwnBody;
+                RenderPipelineManager.endCameraRendering -= HideOwnBody;
+            }
             SetActive(false);
+            if (reflectionCamera != null) ReflectionCameras.Remove(reflectionCamera);
             if (reflectionCamera != null) Destroy(reflectionCamera.gameObject);
             if (texture != null) { texture.Release(); Destroy(texture); }
             reflectionCamera = null;
@@ -123,6 +134,26 @@ namespace MudancaAssombrada
             for (int i = MaxActive; i < chosen.Count; i++) chosen[i].mirror.SetActive(false);
             foreach (var m in All)
                 if (!chosen.Exists(c => c.mirror == m)) m.SetActive(false);
+        }
+
+        // O seu próprio corpo é invisível para a sua câmera (DollWalk.HideBody), mas no espelho
+        // você se vê: o corpo aparece só enquanto uma câmera de reflexo desenha, e a cópia sem
+        // cabeça (FirstPersonBody, o que você vê ao olhar para baixo) some nesse meio-tempo.
+        // A Dona Cida não se vê porque, no modo cego, nenhum espelho reflete (UpdateAll).
+        static readonly HashSet<Camera> ReflectionCameras = new();
+
+        static void ShowOwnBody(ScriptableRenderContext context, Camera cam) => SetOwnBody(cam, ShadowCastingMode.On);
+        static void HideOwnBody(ScriptableRenderContext context, Camera cam) => SetOwnBody(cam, ShadowCastingMode.ShadowsOnly);
+
+        static void SetOwnBody(Camera cam, ShadowCastingMode mode)
+        {
+            if (!ReflectionCameras.Contains(cam)) return;
+            foreach (var part in DollWalk.HiddenBodies)
+                if (part != null) part.shadowCastingMode = mode;
+            // A cópia sem cabeça (corpo em primeira pessoa) não entra no reflexo.
+            bool reflecting = mode == ShadowCastingMode.On;
+            foreach (var part in FirstPersonBody.Parts)
+                if (part != null) part.forceRenderingOff = reflecting;
         }
 
         // Distância até a câmera, ou -1 se este espelho não precisa refletir agora.
@@ -188,6 +219,7 @@ namespace MudancaAssombrada
             go.transform.SetParent(transform, false);
             reflectionCamera = go.AddComponent<Camera>();
             reflectionCamera.enabled = false;
+            ReflectionCameras.Add(reflectionCamera);
             var data = go.AddComponent<UniversalAdditionalCameraData>();
             data.renderShadows = false;          // reflexo sem sombras: bem mais barato
             data.renderPostProcessing = false;
