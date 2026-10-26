@@ -29,3 +29,6 @@ Thumbs.db
 
 # Cache do Python (gerado ao rodar os scripts de tools/)
 __pycache__/
+
+# Preferências pessoais de cada um para o Claude Code
+CLAUDE.local.md
