@@ -216,6 +216,14 @@ batidas, voz e ataques nunca esperam: são informação e precisam ser instantâ
 Exponha o estado no script que é dono dele (propriedade pública, só leitura) e
 leia na `Hud`. Crie a peça visual no `HudBuilder` (ou direto no prefab HUD).
 
+### Um espelho com reflexo
+Use um prefab de `Prefabs/Espelhos` (o `MirrorHouseBuilder` já põe o `MirrorReflection` e troca o
+vidro da moldura, material `MAT_ENV_Espelho`, pelo `Espelho Vidro.mat`, do shader `Espelho`). O
+reflexo é planar: uma câmera espelhada grava a cena numa textura, só neste computador. Para pesar
+pouco, só os **2 espelhos mais perto e na tela** refletem (meia resolução, sem sombras nem
+pós-processamento); os outros, e todos no modo cego, mostram o vidro escuro. O campo **Reflected
+Layers** escolhe o que aparece no espelho: é o gancho para pistas que só existem no reflexo.
+
 ## Menus do editor (Mudança Assombrada)
 
 | Menu | O que faz | Apaga trabalho manual? |
