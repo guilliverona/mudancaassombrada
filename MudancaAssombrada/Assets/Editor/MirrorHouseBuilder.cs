@@ -90,6 +90,7 @@ namespace MudancaAssombrada.Editor
             LevelPrefabsBuilder.Build(ImitatorPath, false, BuildImitator);
             LevelPrefabsBuilder.Build(ClockPath, false, BuildClock);
             UpgradeClock();
+            UpgradeMirrors();
             LevelPrefabsBuilder.UpgradeGhost(ImitatorPath, breathes: false); // Imitador antigo ganha o que faltar
             AssetDatabase.SaveAssets();
         }
@@ -136,7 +137,62 @@ namespace MudancaAssombrada.Editor
             var root = KitPiece(name, $"Environment/{art}/SM_ENV_{art}", r =>
                 Box(r, new Vector3(0, height / 2, 0), new Vector3(height * 0.62f, height, 0.06f)));
             root.AddComponent<Mirror>();
+            AddReflection(root);
             return root;
+        }
+
+        // Reflexo de verdade (MirrorReflection): troca o material do vidro da moldura pelo do
+        // shader Espelho e diz ao componente qual renderer/material é o vidro.
+        static bool AddReflection(GameObject root)
+        {
+            if (root.GetComponent<MirrorReflection>() != null) return false;
+            foreach (var r in root.GetComponentsInChildren<MeshRenderer>())
+            {
+                var mats = r.sharedMaterials;
+                for (int i = 0; i < mats.Length; i++)
+                {
+                    if (mats[i] == null || !mats[i].name.Contains("Espelho")) continue;
+                    mats[i] = GlassMaterial();
+                    r.sharedMaterials = mats;
+                    root.AddComponent<MirrorReflection>().Configure(r, i);
+                    return true;
+                }
+            }
+            Debug.LogWarning($"{root.name}: não achei o vidro (material MAT_ENV_Espelho) na moldura.");
+            return false;
+        }
+
+        const string GlassMaterialPath = "Assets/Prefabs/Materiais/Espelho Vidro.mat";
+
+        // Um material só para todos os espelhos: a textura de cada um vai por MaterialPropertyBlock.
+        static Material GlassMaterial()
+        {
+            var mat = AssetDatabase.LoadAssetAtPath<Material>(GlassMaterialPath);
+            if (mat != null) return mat;
+            EditorTools.EnsureFolder("Assets/Prefabs/Materiais");
+            mat = new Material(Shader.Find("MudancaAssombrada/Espelho"));
+            AssetDatabase.CreateAsset(mat, GlassMaterialPath);
+            return mat;
+        }
+
+        // Os espelhos de antes não tinham reflexo; acrescenta sem mexer no resto do prefab.
+        public static void UpgradeMirrors()
+        {
+            foreach (var path in new[] { MirrorSPath, MirrorMPath, MirrorLPath })
+            {
+                if (Load(path) == null) continue;
+                var root = PrefabUtility.LoadPrefabContents(path);
+                try
+                {
+                    if (!AddReflection(root)) continue;
+                    PrefabUtility.SaveAsPrefabAsset(root, path);
+                    Debug.Log($"Espelho agora tem reflexo (MirrorReflection): {path}");
+                }
+                finally
+                {
+                    PrefabUtility.UnloadPrefabContents(root);
+                }
+            }
         }
 
         // Penteadeira de camarim (1,2 x 1,6 x 0,5 m): um móvel carregável, como o armário.
