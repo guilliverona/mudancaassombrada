@@ -163,6 +163,7 @@ namespace MudancaAssombrada
             ChosenCharacters.Clear();
             foreach (var p in players) ChosenCharacters[p.ClientId] = p.Character;
             GameStarted = true; // a partir daqui ninguém novo entra
+            NetworkSession.LockRoom(); // e a sala some da lista de salas online
 
             // Todos cobrem a tela ANTES de a cena trocar (a mensagem chega antes da troca).
             ShowLoadingRpc(selectedChapter.Value);

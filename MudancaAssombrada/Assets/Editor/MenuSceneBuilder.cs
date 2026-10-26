@@ -80,19 +80,48 @@ namespace MudancaAssombrada.Editor
             var optionsButton = UiBuilder.CreateButton("Opções", mainPanel);
             var quitButton = UiBuilder.CreateButton("Sair", mainPanel);
 
-            // --- Painel Conexão ---
-            var connectPanel = UiBuilder.CreatePanel("Painel Conexão", canvas);
+            // --- Painel Salas Online ---
+            // Criar sala, lista de salas abertas (preenchida pelo MainMenu) e entrar por código.
+            var connectPanel = UiBuilder.CreatePanel("Painel Salas Online", canvas);
             UiBuilder.CreateText("Seu nome", connectPanel, "Seu nome:", Theme.BodySize);
             var nameInput = UiBuilder.CreateInput(connectPanel, "Como os outros vão te ver");
             nameInput.characterLimit = 20; // cabe no FixedString32Bytes da sala de espera
-            var hostButton = UiBuilder.CreateButton("Hospedar partida", connectPanel);
-            UiBuilder.CreateText("Separador", connectPanel, "— ou entre na partida de um amigo —", Theme.NoteSize).color = Theme.MutedColor;
-            UiBuilder.CreateText("IP", connectPanel, "IP do host:", Theme.BodySize);
-            var addressInput = UiBuilder.CreateInput(connectPanel, "127.0.0.1");
-            var joinButton = UiBuilder.CreateButton("Entrar na partida", connectPanel);
+            var createRoomButton = UiBuilder.CreateButton("Criar sala", connectPanel);
+
+            // Linha: "Salas abertas" ............ [Atualizar]
+            var listHeader = CreateRow("Cabeçalho das Salas", connectPanel, 50);
+            var roomsLabel = UiBuilder.CreateText("Salas abertas", listHeader, "Salas abertas:", Theme.BodySize);
+            roomsLabel.alignment = TextAnchor.MiddleLeft;
+            roomsLabel.GetComponent<LayoutElement>().flexibleWidth = 1;
+            var refreshButton = UiBuilder.CreateButton("Atualizar", listHeader);
+            refreshButton.GetComponent<LayoutElement>().preferredWidth = 160;
+
+            // A lista: uma coluna de botões (um por sala), criados durante o jogo a partir do modelo.
+            var roomList = new GameObject("Lista de Salas", typeof(RectTransform), typeof(VerticalLayoutGroup));
+            roomList.transform.SetParent(connectPanel, false);
+            var listLayout = roomList.GetComponent<VerticalLayoutGroup>();
+            listLayout.spacing = 8;
+            listLayout.childControlWidth = listLayout.childControlHeight = true;
+            listLayout.childForceExpandWidth = true;
+            listLayout.childForceExpandHeight = false;
+            UiBuilder.SetHeight(roomList, MainMenu.MaxRoomsShown * 48 + (MainMenu.MaxRoomsShown - 1) * 8);
+            var emptyRoomsText = UiBuilder.CreateText("Sem Salas", roomList.transform, "Procurando salas...", Theme.NoteSize);
+            emptyRoomsText.color = Theme.MutedColor;
+            var roomButtonTemplate = UiBuilder.CreateButton("Sala (modelo)", roomList.transform);
+            UiBuilder.SetHeight(roomButtonTemplate.gameObject, 48);
+            roomButtonTemplate.gameObject.SetActive(false);
+
+            // Linha: [ código da sala ] [Entrar]
+            var codeRow = CreateRow("Entrar por Código", connectPanel, 56);
+            var codeInput = UiBuilder.CreateInput(codeRow, "Código da sala (ex.: K7Q2XM)");
+            codeInput.characterLimit = 10;
+            codeInput.GetComponent<LayoutElement>().flexibleWidth = 1;
+            var joinCodeButton = UiBuilder.CreateButton("Entrar", codeRow);
+            joinCodeButton.GetComponent<LayoutElement>().preferredWidth = 160;
+
             var statusText = UiBuilder.CreateText("Status", connectPanel, "", Theme.NoteSize);
-            statusText.color = Theme.DangerColor; // aqui só aparecem erros de conexão
-            UiBuilder.SetHeight(statusText.gameObject, 70);
+            statusText.color = Theme.DangerColor; // aqui aparecem os avisos e erros de conexão
+            UiBuilder.SetHeight(statusText.gameObject, 50);
             var connectBackButton = UiBuilder.CreateButton("Voltar", connectPanel);
 
             // --- Painel Sala de Espera ---
@@ -153,9 +182,13 @@ namespace MudancaAssombrada.Editor
             Set("optionsButton", optionsButton);
             Set("quitButton", quitButton);
             Set("nameInput", nameInput);
-            Set("addressInput", addressInput);
-            Set("hostButton", hostButton);
-            Set("joinButton", joinButton);
+            Set("createRoomButton", createRoomButton);
+            Set("refreshButton", refreshButton);
+            Set("roomList", roomList.transform);
+            Set("roomButtonTemplate", roomButtonTemplate);
+            Set("emptyRoomsText", emptyRoomsText);
+            Set("codeInput", codeInput);
+            Set("joinCodeButton", joinCodeButton);
             Set("connectBackButton", connectBackButton);
             Set("statusText", statusText);
             Set("playerListText", playerListText);
@@ -181,6 +214,19 @@ namespace MudancaAssombrada.Editor
                 return;
             }
             Debug.Log("Cena Menu criada! Aperte Play nela para jogar.");
+        }
+
+        // Uma linha horizontal (elementos lado a lado) dentro de um painel.
+        static Transform CreateRow(string name, Transform parent, float height)
+        {
+            var row = new GameObject(name, typeof(RectTransform), typeof(HorizontalLayoutGroup));
+            row.transform.SetParent(parent, false);
+            var layout = row.GetComponent<HorizontalLayoutGroup>();
+            layout.spacing = 12;
+            layout.childControlWidth = layout.childControlHeight = true;
+            layout.childForceExpandWidth = false;
+            UiBuilder.SetHeight(row, height);
+            return row.transform;
         }
 
         // O NetworkManager vira um prefab: o menu cria uma cópia na primeira vez que abre,
