@@ -58,8 +58,10 @@ namespace MudancaAssombrada
         // Travado (caído ou hipnotizado): não anda nem corre, mas ainda olha em volta.
         public bool Frozen { get; set; }
         [Header("Sendo puxado")]
-        [SerializeField] float pullSpeed = 3f;      // mais rápido que andar agachado: não dá para fugir sozinho
+        [SerializeField] float pullSpeed = 6f;      // mais rápido que andar (4) e que o fantasma (2,5): acompanha o puxão
         [SerializeField] float pullDistance = 1.2f; // fica "segurando a outra ponta", a esta distância
+        [Tooltip("Quanto do próprio passo sobra sendo puxado: dá para resistir um pouco, não para fugir.")]
+        [SerializeField, Range(0f, 1f)] float pulledMoveMultiplier = 0.3f;
 
         // "private set": outros scripts podem LER (o CaneTapper e a HUD leem), mas só este script muda.
         public bool IsCrouching { get; private set; }
@@ -174,12 +176,23 @@ namespace MudancaAssombrada
             Vector2 delta = GameInput.Look.ReadValue<Vector2>() * mouseSensitivity * GameSettings.MouseSensitivity;
 
             // Girar para os lados: gira o corpo inteiro no eixo Y.
-            transform.Rotate(Vector3.up * delta.x);
+            // Caído (BodyLocked), o corpo está deitado no chão e não pode girar feito pião:
+            // só a cabeça (a câmera) olha para os lados, até 90°. Ao levantar, ela volta ao centro.
+            if (BodyLocked) cameraYaw = Mathf.Clamp(cameraYaw + delta.x, -90f, 90f);
+            else
+            {
+                transform.Rotate(Vector3.up * delta.x);
+                cameraYaw = Mathf.MoveTowards(cameraYaw, 0f, 180f * Time.deltaTime);
+            }
 
             // Olhar para cima/baixo: só a câmera, limitado a ±80° para não "dar cambalhota".
             cameraPitch = Mathf.Clamp(cameraPitch - delta.y, -80f, 80f);
-            cameraPivot.localRotation = Quaternion.Euler(cameraPitch, 0f, 0f);
+            cameraPivot.localRotation = Quaternion.Euler(cameraPitch, cameraYaw, 0f);
         }
+
+        // Corpo travado no chão (caído): o mouse só vira a cabeça. Quem liga é o PlayerCondition.
+        public bool BodyLocked { get; set; }
+        float cameraYaw; // quanto a cabeça está virada para o lado, com o corpo travado
 
         void Move()
         {
@@ -199,9 +212,12 @@ namespace MudancaAssombrada
             float modifier = IsCrouching ? crouchSpeedMultiplier : IsRunning ? runSpeedMultiplier : 1f;
             Vector3 velocity = move * walkSpeed * CharacterSpeed * SpeedMultiplier * modifier + Vector3.up * verticalVelocity;
 
-            // Sendo puxado: além do próprio passo, é arrastado na direção de quem puxa.
+            // Sendo puxado: o próprio passo quase não conta (só resiste: correndo para longe, sai
+            // 7,2 x 0,3 = 2,2 m/s contra 6 m/s do puxão) e é arrastado na direção de quem puxa.
             if (PulledBy != null)
             {
+                velocity.x *= pulledMoveMultiplier;
+                velocity.z *= pulledMoveMultiplier;
                 Vector3 toPuller = PulledBy.position - transform.position;
                 toPuller.y = 0;
                 if (toPuller.magnitude > pullDistance) velocity += toPuller.normalized * pullSpeed;

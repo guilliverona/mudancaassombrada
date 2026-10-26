@@ -25,6 +25,7 @@ namespace MudancaAssombrada
 
         CharacterSwitcher character;
         IInteractionTarget target; // o que está na mira AGORA (null = nada)
+        IHoldInteractionTarget holding; // alvo em que a tecla está sendo SEGURADA (null = nenhum)
 
         void Awake()
         {
@@ -33,14 +34,29 @@ namespace MudancaAssombrada
             character = GetComponent<CharacterSwitcher>();
         }
 
-        void OnDisable() => Prompt = InteractionPrompt.None;
+        void OnDisable()
+        {
+            Prompt = InteractionPrompt.None;
+            StopHolding();
+        }
+
+        // Soltou, tirou a mira ou ficou sem alcance: avisa o alvo que segurava (ex.: o colega desaba de novo).
+        void StopHolding()
+        {
+            if (holding == null) return;
+            holding.HoldStop(this);
+            holding = null;
+        }
 
         void Update()
         {
-            // Caído ou hipnotizado: não alcança nada (puxado ainda pode apontar para quem puxa).
+            // Caído, ainda se levantando (BodyLocked) ou hipnotizado: não alcança nada
+            // (puxado ainda pode apontar para quem puxa).
             var state = Player != null && Player.Condition != null ? Player.Condition.State : PlayerState.Normal;
-            if (state == PlayerState.Down || state == PlayerState.Hypnotized)
+            bool gettingUp = Player != null && Player.Movement != null && Player.Movement.BodyLocked;
+            if (state == PlayerState.Down || state == PlayerState.Hypnotized || gettingUp)
             {
+                StopHolding();
                 target = null;
                 Prompt = InteractionPrompt.None;
                 return;
@@ -48,6 +64,7 @@ namespace MudancaAssombrada
 
             if (Carrier != null && Carrier.IsHolding)
             {
+                StopHolding();
                 target = null;
                 Prompt = Carrier.DropPrompt;
                 if (Pressed()) Carrier.Drop();
@@ -55,21 +72,31 @@ namespace MudancaAssombrada
             }
 
             Prompt = FindTarget(out target);
-            if (Pressed() && target != null && Prompt.Available) target.Interact(this);
+
+            // Segurando: continua enquanto a tecla estiver apertada E a mira no mesmo alvo.
+            if (holding != null && (!Held() || !ReferenceEquals(target, holding))) StopHolding();
+
+            if (Pressed() && target != null && Prompt.Available)
+            {
+                target.Interact(this);
+                if (target is IHoldInteractionTarget hold) holding = hold;
+            }
         }
 
         static bool Pressed() => !PauseMenu.IsOpen && GameInput.Interact.WasPressedThisFrame();
+        static bool Held() => !PauseMenu.IsOpen && GameInput.Interact.IsPressed();
 
         // Raycast: um "raio laser" invisível saindo do centro da câmera.
         // Um objeto pode ter VÁRIOS alvos (ex.: um móvel que também é usável): vale o primeiro
-        // que tem algo a dizer.
+        // que tem algo a dizer. O alvo pode estar no PAI do colisor atingido (ex.: o colisor do
+        // corpo caído é um filho do Player, e quem sabe "Ajudar" é o PlayerCondition do Player).
         InteractionPrompt FindTarget(out IInteractionTarget found)
         {
             found = null;
             Ray ray = new Ray(playerCamera.transform.position, playerCamera.transform.forward);
             if (!Physics.Raycast(ray, out RaycastHit hit, reach)) return InteractionPrompt.None;
 
-            foreach (var candidate in hit.collider.GetComponents<IInteractionTarget>())
+            foreach (var candidate in hit.collider.GetComponentsInParent<IInteractionTarget>())
             {
                 var prompt = candidate.PromptFor(this);
                 if (!prompt.Visible) continue;

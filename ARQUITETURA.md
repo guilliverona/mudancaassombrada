@@ -163,7 +163,10 @@ em **On Used** sem código.
 Crie um componente que assina `IInteractionTarget` (dois métodos: `PromptFor`, que devolve a dica,
 e `Interact`) e coloque num objeto com Collider. O `PlayerInteractor` mira, mostra a dica e chama.
 Exemplos: `Furniture` (pegar), `Interactable` (usar), `Pointable` (apontar o falso).
-O jogador não muda; um objeto pode ter vários alvos (vale o primeiro com dica).
+O jogador não muda; um objeto pode ter vários alvos (vale o primeiro com dica). O alvo pode ficar no
+pai do Collider atingido. Para **segurar** a tecla, assine `IHoldInteractionTarget`: `Interact` é o
+começo e `HoldStop` chega quando o jogador solta, tira a mira ou sai de alcance; quem conta o tempo é o
+alvo (ex.: `PlayerCondition`, levantar um colega: 8,4 s segurando, contados no host).
 
 ### Um acontecimento que os jogadores percebem (aviso)
 `GameCues.Emit(new GameCue(posição, alcance, Senses.Sight | Senses.Hearing, "texto", gameObject))`.
@@ -229,7 +232,17 @@ frente tocado ao contrário. O controller só é criado se faltar (ou se for da
 versão antiga, sem direção); depois é editado no Animator do Unity. Quem
 preenche os parâmetros é o `DollWalk` (em todos os computadores: a posição vem pelo `NetworkTransform`
 e o agachar pela `NetworkVariable` do `NetworkPlayer`). Modelo sem Humanoid e o boneco de blocos
-continuam com a animação por código do `DollWalk`.
+continuam com a animação por código do `DollWalk`. Caído (`PlayerState.Down`): bool `Caido`, de
+Em pé ou Agachado para `Cair` (Falling Forward Death, sem loop: fica deitado no último quadro).
+`Levantar` (Standing Up From Lying On Stomach, que termina relaxado; o começo, parado no chão, foi
+cortado: `firstFrame` 85) não toca sozinho: o tempo do estado é o float `Ajuda`, o progresso do
+resgate (`PlayerCondition.RescueProgress`), que sobe enquanto um colega segura a tecla e volta se
+ele soltar; completo, `Caido` desliga e volta para Em pé. Sem *Any State*, de propósito: ele
+dispararia a queda de novo quando a `Ajuda` voltasse a zero. Os dois precisam combinar: o fim da queda e o começo do levantar
+com a cabeça para o mesmo lado. O Mixamo gira o corpo dentro dos clipes: o *Offset* de rotação
+(Cair −45°, Levantar 0°, no `.meta`) foi medido pela curva `RootQ` do clipe. A queda termina de lado
+e o levantar começa de bruços: a troca dura 0,6 s, para virar uma rolada. Deitado e levantando, o
+mouse só vira a cabeça (`PlayerMovement.BodyLocked`).
 
 ### Um espelho com reflexo
 Use um prefab de `Prefabs/Espelhos` (o `MirrorHouseBuilder` já põe o `MirrorReflection` e troca o

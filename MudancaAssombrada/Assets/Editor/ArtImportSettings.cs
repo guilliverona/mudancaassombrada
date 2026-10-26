@@ -59,8 +59,12 @@ namespace MudancaAssombrada.Editor
 
         bool IsAnimation => assetPath.StartsWith(ArtFolder + "Animations/");
 
+        // Clipes que tocam uma vez só (transições): o resto fica em loop.
+        // O "Cair" para no último quadro: é a pose de caído, até alguém ajudar.
+        static readonly string[] OneShot = { "Agachar", "Cair", "Levantar" };
+
         // Os clipes de Animations/: o nome do clipe vira o do arquivo (Andar, Correr...), todos em
-        // loop menos o "Agachar" (a transição), e o corpo não sai do lugar nem gira sozinho: quem
+        // loop menos os de OneShot (transições), e o corpo não sai do lugar nem gira sozinho: quem
         // move o jogador é o CharacterController (PlayerMovement), não a animação.
         void OnPreprocessAnimation()
         {
@@ -71,7 +75,7 @@ namespace MudancaAssombrada.Editor
             foreach (var clip in clips)
             {
                 clip.name = name;
-                clip.loopTime = name != "Agachar";
+                clip.loopTime = System.Array.IndexOf(OneShot, name) < 0;
                 clip.lockRootRotation = true;
                 clip.lockRootHeightY = true;
                 clip.lockRootPositionXZ = true;

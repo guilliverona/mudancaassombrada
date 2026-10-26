@@ -31,6 +31,10 @@ namespace MudancaAssombrada
 
         GameObject currentModel; // o modelo 3D do personagem atual (null = boneco de blocos)
 
+        // A animação do modelo atual (null = boneco de blocos). O PlayerCondition pergunta a ela
+        // se o boneco ainda está se levantando.
+        public DollWalk Walk { get; private set; }
+
         VibrationVision vibration;
         CaneTapper cane;
         Whistle whistle;
@@ -146,6 +150,7 @@ namespace MudancaAssombrada
             bool hasModel = character.model != null && modelRoot != null;
             if (doll != null) doll.SetActive(!hasModel);
             if (IsOwner) movement.FollowHead(null); // até achar a cabeça do modelo novo (abaixo)
+            Walk = null;
             if (!hasModel) return;
 
             currentModel = Instantiate(character.model, modelRoot, false);
@@ -153,6 +158,7 @@ namespace MudancaAssombrada
             if (!currentModel.TryGetComponent(out DollWalk walk))
                 walk = currentModel.AddComponent<DollWalk>(); // acha os ossos sozinho pelo Humanoid
             walk.UseClips(animations); // com os clipes do Mixamo, o Animator anima no lugar do código
+            Walk = walk;
 
             // Com animação de verdade, a MINHA câmera segue a cabeça do modelo (não entra no pescoço
             // quando a cabeça vai à frente, e desce junto ao agachar).

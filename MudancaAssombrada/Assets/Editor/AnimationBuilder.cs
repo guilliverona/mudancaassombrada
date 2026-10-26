@@ -16,6 +16,8 @@ namespace MudancaAssombrada.Editor
     //             (para a esquerda: o AgachadoDireita espelhado; clipe "para trás" que faltar é
     //             o da frente tocado ao contrário)
     //   Em pé <-> Agachado: pelo parâmetro Agachado (bool)
+    //   Caído (bool Caido): de QUALQUER estado vai para "Caindo" (o clipe Cair, que para deitado
+    //   no último quadro); ao ser ajudado, "Levantando" (Levantar) e volta para Em pé.
     //
     // As velocidades são as do PlayerMovement (andar 4, correr x1,8, agachado x0,5). Quem preenche
     // os parâmetros é o DollWalk, em todos os computadores (a posição e o agachar vêm pela rede).
@@ -33,6 +35,8 @@ namespace MudancaAssombrada.Editor
         public const string ForwardParam = "Frente";
         public const string SideParam = "Lado";
         public const string CrouchParam = "Agachado";
+        public const string DownParam = "Caido";
+        public const string RescueParam = "Ajuda";
 
         const float Walk = 4f, Run = 7.2f, Crouch = 2f;
 
@@ -42,6 +46,7 @@ namespace MudancaAssombrada.Editor
             "Parado", "Andar", "AndarTras", "AndarEsquerda", "AndarDireita",
             "Correr", "CorrerTras", "CorrerEsquerda", "CorrerDireita",
             "AgachadoParado", "AgachadoAndar", "AgachadoTras", "AgachadoDireita",
+            "Cair", "Levantar",
             // AgachadoEsquerda fica de fora: veio girado do Mixamo, usamos o AgachadoDireita espelhado.
         };
 
@@ -63,12 +68,14 @@ namespace MudancaAssombrada.Editor
                 var missing = ClipNames.Where(n => Clip(n) != null && !used.Contains(n)).ToList();
                 // ...ou se ainda usa um clipe que saiu da lista (ex.: o AgachadoEsquerda girado).
                 var removed = used.Where(n => !ClipNames.Contains(n)).ToList();
-                if (existing.parameters.Any(p => p.name == SideParam) && missing.Count == 0 && removed.Count == 0)
+                // ...ou se falta um parâmetro de uma versão mais nova (ex.: Ajuda, do resgate segurando a tecla).
+                bool upToDate = new[] { SideParam, RescueParam }.All(n => existing.parameters.Any(p => p.name == n));
+                if (upToDate && missing.Count == 0 && removed.Count == 0)
                     return existing;
                 AssetDatabase.DeleteAsset(ControllerPath);
                 Debug.Log(missing.Count + removed.Count > 0
                     ? $"Animator dos jogadores refeito (novos: {string.Join(", ", missing)}; retirados: {string.Join(", ", removed)})"
-                    : "Animator dos jogadores: versão antiga (sem direção) substituída.");
+                    : "Animator dos jogadores: versão antiga substituída (faltava um parâmetro).");
             }
 
             var idle = Clip("Parado");
@@ -86,6 +93,8 @@ namespace MudancaAssombrada.Editor
             controller.AddParameter(ForwardParam, AnimatorControllerParameterType.Float);
             controller.AddParameter(SideParam, AnimatorControllerParameterType.Float);
             controller.AddParameter(CrouchParam, AnimatorControllerParameterType.Bool);
+            controller.AddParameter(DownParam, AnimatorControllerParameterType.Bool);
+            controller.AddParameter(RescueParam, AnimatorControllerParameterType.Float);
 
             // Em pé. Sem um clipe de direção, usa o "Andar" (para trás: tocado ao contrário).
             var standing = controller.CreateBlendTreeInController("Em pé", out var stand, 0);
@@ -116,10 +125,56 @@ namespace MudancaAssombrada.Editor
             machine.defaultState = standing;
             Transition(standing, crouched, true);
             Transition(crouched, standing, false);
+            AddFalling(machine, standing, crouched);
 
             AssetDatabase.SaveAssets();
             Debug.Log($"Animator dos jogadores criado: {ControllerPath}");
             return controller;
+        }
+
+        // Caído: de Em pé ou Agachado para "Caindo" assim que Caido liga. O clipe Cair não é loop:
+        // termina deitado e FICA no último quadro.
+        // Levantar é SEGURAR a tecla (PlayerCondition): o estado "Levantando" não toca sozinho, o
+        // tempo dele É o parâmetro Ajuda (0 a 1, o progresso do resgate). Soltou a tecla, a Ajuda
+        // volta e a animação volta junto, até ele ficar deitado de novo. Completo (Caido desliga),
+        // volta para Em pé. Sem os clipes, nada muda (o boneco só trava).
+        // (Sem Any State de propósito: ele dispararia de novo a queda quando a Ajuda voltasse a zero.)
+        static void AddFalling(AnimatorStateMachine machine, AnimatorState standing, AnimatorState crouched)
+        {
+            var fall = Clip("Cair");
+            var getUp = Clip("Levantar");
+            if (fall == null || getUp == null) return;
+
+            var falling = machine.AddState("Caindo");
+            falling.motion = fall;
+            var rising = machine.AddState("Levantando");
+            rising.motion = getUp;
+            rising.timeParameterActive = true;
+            rising.timeParameter = RescueParam;
+
+            foreach (var from in new[] { standing, crouched })
+            {
+                var down = from.AddTransition(falling);
+                down.hasExitTime = false;
+                down.hasFixedDuration = true;
+                down.duration = 0.15f;
+                down.AddCondition(AnimatorConditionMode.If, 0, DownParam);
+            }
+
+            // Alguém começou a ajudar. A queda termina DE LADO e o levantar começa DE BRUÇOS:
+            // uma troca longa vira uma rolada suave em vez de um tranco.
+            var up = falling.AddTransition(rising);
+            up.hasExitTime = false;
+            up.hasFixedDuration = true;
+            up.duration = 0.6f;
+            up.AddCondition(AnimatorConditionMode.Greater, 0.01f, RescueParam);
+
+            // Levantou de vez (o host tirou o Caido): volta a andar.
+            var back = rising.AddTransition(standing);
+            back.hasExitTime = false;
+            back.hasFixedDuration = true;
+            back.duration = 0.5f;
+            back.AddCondition(AnimatorConditionMode.IfNot, 0, DownParam);
         }
 
         // Mistura 2D "direcional": cada clipe num ponto (Lado, Frente); o Unity mistura os vizinhos.

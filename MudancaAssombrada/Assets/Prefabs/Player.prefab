@@ -931,8 +931,9 @@ MonoBehaviour:
   staminaDrain: 25
   staminaRegen: 15
   exhaustedUntil: 30
-  pullSpeed: 3
+  pullSpeed: 6
   pullDistance: 1.2
+  pulledMoveMultiplier: 0.3
 --- !u!114 &7989720525728775853
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -992,6 +993,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.PlayerCondition
   ShowTopMostFoldoutHeaderGroup: 1
   cueRange: 15
+  downHitboxPadding: 0.2
+  rescueDuration: 8.4
+  rescueFallBack: 1.5
+  rescueReach: 3.5
 --- !u!114 &7384375665614101427
 MonoBehaviour:
   m_ObjectHideFlags: 0

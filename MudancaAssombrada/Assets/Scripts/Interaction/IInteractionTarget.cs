@@ -32,4 +32,12 @@ namespace MudancaAssombrada
         // O jogador apertou Interagir olhando para cá (só é chamado se a dica estava disponível).
         void Interact(PlayerInteractor player);
     }
+
+    // Um alvo em que é preciso SEGURAR a tecla (ex.: levantar um colega caído).
+    // O PlayerInteractor chama Interact ao apertar e HoldStop quando o jogador solta a tecla,
+    // tira a mira ou fica sem alcançar. Quem conta o tempo é o próprio alvo.
+    public interface IHoldInteractionTarget : IInteractionTarget
+    {
+        void HoldStop(PlayerInteractor player);
+    }
 }

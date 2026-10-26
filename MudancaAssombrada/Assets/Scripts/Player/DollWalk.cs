@@ -129,6 +129,25 @@ namespace MudancaAssombrada
         static readonly int ForwardId = Animator.StringToHash("Frente");   // = AnimationBuilder.ForwardParam
         static readonly int SideId = Animator.StringToHash("Lado");        // = AnimationBuilder.SideParam
         static readonly int CrouchId = Animator.StringToHash("Agachado");  // = AnimationBuilder.CrouchParam
+        static readonly int DownId = Animator.StringToHash("Caido");       // = AnimationBuilder.DownParam
+        static readonly int RescueId = Animator.StringToHash("Ajuda");     // = AnimationBuilder.RescueParam
+        static readonly int GettingUpState = Animator.StringToHash("Levantando");
+        static readonly int FallingState = Animator.StringToHash("Caindo");
+
+        // O boneco ainda está no chão ou se levantando (a animação não acabou)? O PlayerCondition
+        // usa isto para só soltar o jogador quando ele estiver de pé de verdade.
+        // Sem clipes (boneco de blocos), não há animação a esperar: false.
+        public bool IsGettingUp
+        {
+            get
+            {
+                if (clips == null || !clips.isActiveAndEnabled) return false;
+                var now = clips.GetCurrentAnimatorStateInfo(0);
+                var next = clips.GetNextAnimatorStateInfo(0); // durante uma transição
+                return now.shortNameHash == GettingUpState || now.shortNameHash == FallingState
+                    || next.shortNameHash == GettingUpState;
+            }
+        }
 
         // Liga os clipes neste boneco (o CharacterSwitcher chama ao criar o modelo da ficha).
         // Só vale para modelos Humanoid; o boneco de blocos continua com a animação por código.
@@ -223,6 +242,18 @@ namespace MudancaAssombrada
                 clips.SetFloat(ForwardId, local.z, 0.1f, Time.deltaTime);
                 clips.SetFloat(SideId, local.x, 0.1f, Time.deltaTime);
                 clips.SetBool(CrouchId, crouching);
+                // Caído (pego por um fantasma): vem do PlayerCondition, que já vai pela rede.
+                var condition = player != null ? player.Condition : null;
+                clips.SetBool(DownId, condition != null && condition.IsDown);
+                // Progresso do resgate (o colega segurando a tecla): o tempo do clipe Levantar.
+                // Suavizado aqui porque o valor chega pela rede aos degraus.
+                // Já de pé: segura o valor até sair do "Levantando" (senão a pose voltaria ao chão no meio
+                // da troca) e depois zera (senão uma nova queda "pularia" direto para o levantar).
+                bool down = condition != null && condition.IsDown;
+                float shown = clips.GetFloat(RescueId);
+                if (down) shown = Mathf.MoveTowards(shown, condition.RescueProgress, Time.deltaTime);
+                else if (!IsGettingUp) shown = 0f;
+                clips.SetFloat(RescueId, shown);
                 return;
             }
 
