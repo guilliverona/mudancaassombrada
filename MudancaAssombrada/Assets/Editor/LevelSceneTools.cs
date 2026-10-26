@@ -79,6 +79,7 @@ namespace MudancaAssombrada.Editor
         // a pasta de objetivos e o NavMesh. "buildHouse" (opcional) monta o resto antes do bake.
         public static UnityEngine.SceneManagement.Scene NewLevelScene(string scenePath, System.Action buildHouse)
         {
+            string before = StableAssets.Snapshot(scenePath); // para não "sujar" o Git se sair igual
             EnsureSystemsPrefab();
             var scene = EditorSceneManager.NewScene(NewSceneSetup.DefaultGameObjects, NewSceneMode.Single);
 
@@ -119,13 +120,30 @@ namespace MudancaAssombrada.Editor
             surface.collectObjects = CollectObjects.All;
             surface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
             surface.BuildNavMesh();
-            string navPath = scenePath.Replace(".unity", "_NavMesh.asset");
-            AssetDatabase.DeleteAsset(navPath);
-            AssetDatabase.CreateAsset(surface.navMeshData, navPath);
+            SaveNavMesh(surface, scenePath.Replace(".unity", "_NavMesh.asset"));
 
             EditorSceneManager.SaveScene(scene, scenePath);
             EditorTools.FixNetworkObjectIds(scene); // gera os "RGs" dos objetos de rede e salva de novo
+
+            // Recriou uma cena que já existia e saiu igual (só números internos)? Fica a antiga.
+            if (StableAssets.RestoreIfSame(scenePath, before)) scene = EditorSceneManager.OpenScene(scenePath);
             return scene;
+        }
+
+        // Grava o NavMesh no MESMO arquivo de antes, se já existir. Apagar e criar de novo daria a
+        // ele outra identidade (GUID), e a cena, que aponta para ele, pareceria mudada no Git.
+        static void SaveNavMesh(NavMeshSurface surface, string navPath)
+        {
+            var existing = AssetDatabase.LoadAssetAtPath<NavMeshData>(navPath);
+            if (existing == null)
+            {
+                AssetDatabase.CreateAsset(surface.navMeshData, navPath);
+                return;
+            }
+            EditorUtility.CopySerialized(surface.navMeshData, existing);
+            surface.navMeshData = existing;
+            EditorUtility.SetDirty(existing);
+            AssetDatabase.SaveAssets();
         }
 
         public static void SpawnMarker(Transform parent, Vector3 position)
