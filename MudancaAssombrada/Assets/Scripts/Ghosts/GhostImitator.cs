@@ -19,7 +19,7 @@ namespace MudancaAssombrada
 
         [Header("Velocidades")]
         [SerializeField] float approachSpeed = 3.5f; // anda como um jogador, para não chamar atenção
-        [SerializeField] float pullSpeed = 1.2f;     // arrastando a vítima
+        [SerializeField] float pullSpeed = 2.5f;     // arrastando a vítima (mais que andar devagar: pouco tempo para salvar)
         [SerializeField] float fleeSpeed = 5f;
 
         [Header("Ataque")]

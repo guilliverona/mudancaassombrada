@@ -229,7 +229,7 @@ MonoBehaviour:
   lurkTime: 12
   giveUpTime: 40
   approachSpeed: 3.5
-  pullSpeed: 1.2
+  pullSpeed: 2.5
   fleeSpeed: 5
   askDistance: 2
   voiceRange: 6
