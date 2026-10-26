@@ -16,6 +16,7 @@ namespace MudancaAssombrada
         public static readonly List<Renderer> Parts = new();
 
         GameObject copy;
+        PlayerMovement movement; // do dono: diz se o corpo está travado (caído/levantando)
         Transform[] source, target; // os mesmos ossos/partes, na mesma ordem, no original e na cópia
         Renderer[] sourceRenderers, targetRenderers;
         MaterialPropertyBlock block;
@@ -33,6 +34,7 @@ namespace MudancaAssombrada
         void Setup(GameObject clone)
         {
             block = new MaterialPropertyBlock();
+            movement = GetComponentInParent<PlayerMovement>();
             copy = clone;
             copy.SetActive(gameObject.activeInHierarchy);
             copy.name = $"{name} (primeira pessoa)";
@@ -101,6 +103,14 @@ namespace MudancaAssombrada
         void LateUpdate()
         {
             if (copy == null) return;
+
+            // Caindo, caído ou levantando (corpo travado): a câmera fica rente ao chão, colada nos
+            // ombros e braços da cópia. Some até ele estar de pé; o original segue com a sombra,
+            // o espelho e o corpo que os outros jogadores veem.
+            bool show = movement == null || !movement.BodyLocked;
+            if (copy.activeSelf != show) copy.SetActive(show);
+            if (!show) return;
+
             for (int i = 0; i < source.Length && i < target.Length; i++)
             {
                 if (source[i] == null || target[i] == null) continue;

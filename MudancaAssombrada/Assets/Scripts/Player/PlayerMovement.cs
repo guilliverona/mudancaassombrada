@@ -24,6 +24,10 @@ namespace MudancaAssombrada
         [SerializeField] float headToEyes = 0.1f;
         [Tooltip("Quão rápido a câmera acompanha a cabeça da animação (alto = colada, baixo = mais suave).")]
         [SerializeField] float followHeadSpeed = 15f;
+        [Tooltip("Caído/levantando: os olhos nunca ficam abaixo desta altura do chão (metros).")]
+        [SerializeField] float lyingEyeHeight = 0.3f;
+        [Tooltip("Caído/levantando: segue a cabeça mais devagar, para não chacoalhar com a animação.")]
+        [SerializeField] float lyingFollowSpeed = 5f;
 
         [Header("Agachar")]
         [SerializeField] float crouchHeight = 1.2f;
@@ -148,7 +152,17 @@ namespace MudancaAssombrada
                 // vai à frente ao correr). Medido no espaço do Player, para girar junto com ele.
                 Vector3 h = transform.InverseTransformPoint(head.position);
                 Vector3 target = new Vector3(0f, h.y + headToEyes, h.z + forward);
-                cameraPivot.localPosition = Vector3.Lerp(cam, target, followHeadSpeed * Time.deltaTime);
+                float speed = followHeadSpeed;
+                if (BodyLocked)
+                {
+                    // Caindo, caído ou levantando: a cabeça da animação chacoalha e encosta no chão.
+                    // A câmera fica na cabeça (também de lado: x), sem o empurrão para a frente
+                    // (deitada, a cabeça já está à frente do corpo), nunca abaixo de uma altura mínima
+                    // e seguindo mais devagar. A rotação continua só do mouse: o horizonte não roda.
+                    target = new Vector3(h.x, Mathf.Max(h.y + headToEyes, feetY + lyingEyeHeight), h.z);
+                    speed = lyingFollowSpeed;
+                }
+                cameraPivot.localPosition = KeepOutOfWalls(Vector3.Lerp(cam, target, speed * Time.deltaTime));
                 return;
             }
 
@@ -159,7 +173,38 @@ namespace MudancaAssombrada
             // A câmera desce suavemente. Lerp = "ande uma fração do caminho até o alvo" a cada frame.
             cam.y = Mathf.Lerp(cam.y, feetY + eye, crouchTransitionSpeed * Time.deltaTime);
             cam.z = forward;
-            cameraPivot.localPosition = cam;
+            cameraPivot.localPosition = KeepOutOfWalls(cam);
+        }
+
+        // A câmera nunca atravessa paredes. Caído encostado numa parede, a cabeça da animação pode ir
+        // para o outro lado dela, e você enxergaria a sala vizinha.
+        // Ideia: lançar uma bolinha do MEIO do corpo (o CharacterController nunca deixa o meio do corpo
+        // entrar numa parede) até onde a câmera quer ir; bateu em algo no caminho, a câmera para antes.
+        [Tooltip("Raio da \"bolinha\" da câmera contra paredes (metros): um pouco mais que o corte de perto.")]
+        [SerializeField] float cameraRadius = 0.12f;
+        readonly RaycastHit[] cameraHits = new RaycastHit[8];
+
+        Vector3 KeepOutOfWalls(Vector3 local)
+        {
+            // Começa no eixo do corpo, na mesma altura da câmera (dentro da cápsula do colisor).
+            float bottom = feetY + controller.radius, top = feetY + controller.height - controller.radius;
+            Vector3 origin = transform.TransformPoint(new Vector3(0f, Mathf.Clamp(local.y, bottom, Mathf.Max(bottom, top)), 0f));
+            Vector3 wanted = transform.TransformPoint(local);
+            Vector3 path = wanted - origin;
+            float distance = path.magnitude;
+            if (distance < 0.001f) return local;
+
+            int count = Physics.SphereCastNonAlloc(origin, cameraRadius, path / distance, cameraHits, distance,
+                                                   ~0, QueryTriggerInteraction.Ignore);
+            float nearest = distance;
+            for (int i = 0; i < count; i++)
+            {
+                var hit = cameraHits[i];
+                if (hit.collider.transform.IsChildOf(transform)) continue; // o próprio jogador (e o que ele segura)
+                if (hit.distance > 0f && hit.distance < nearest) nearest = hit.distance;
+            }
+            if (nearest >= distance) return local;
+            return transform.InverseTransformPoint(origin + path / distance * nearest);
         }
 
         // O osso da cabeça do modelo animado (o CharacterSwitcher passa ao trocar de personagem).
