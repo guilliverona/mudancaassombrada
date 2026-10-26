@@ -391,6 +391,17 @@ MonoBehaviour:
   swingAngle: 35
   stepsPerMeter: 1.6
   hideBody: 0
+  crouchFrontThigh: 80
+  crouchFrontKnee: 85
+  crouchBackThigh: 10
+  crouchBackKnee: 100
+  crouchLean: 25
+  crouchFrontArm: 35
+  crouchBackArm: 10
+  crouchSpeed: 8
+  crouchWalkBackThigh: 20
+  crouchStepsPerMeter: 0.9
+  crouchStepLift: 0.06
 --- !u!1 &5320532007448000455
 GameObject:
   m_ObjectHideFlags: 0
@@ -907,6 +918,11 @@ MonoBehaviour:
   gravity: -20
   cameraPivot: {fileID: 8801395347483215849}
   mouseSensitivity: 0.1
+  eyeForward: 0.12
+  lookDownForward: 0.22
+  nearClip: 0.05
+  headToEyes: 0.1
+  followHeadSpeed: 15
   crouchHeight: 1.2
   crouchSpeedMultiplier: 0.5
   crouchTransitionSpeed: 8
@@ -1056,6 +1072,7 @@ MonoBehaviour:
   - {fileID: 986871935944656477}
   doll: {fileID: 3734654629748469287}
   modelRoot: {fileID: 6555804717859961630}
+  animations: {fileID: 9100000, guid: b5d4081289659004b97f70f05249ab0e, type: 2}
 --- !u!114 &2055250738567843756
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1105,16 +1122,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 3408781451
+  GlobalObjectIdHash: 0
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 1
+  m_InScenePlaced: 0
   ActiveSceneSynchronization: 0
-  SceneMigrationSynchronization: 0
+  SceneMigrationSynchronization: 1
   SpawnWithObservers: 1
   DontDestroyWithOwner: 0
   AutoObjectParentSync: 1

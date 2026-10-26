@@ -216,6 +216,20 @@ batidas, voz e ataques nunca esperam: são informação e precisam ser instantâ
 Exponha o estado no script que é dono dele (propriedade pública, só leitura) e
 leia na `Hud`. Crie a peça visual no `HudBuilder` (ou direto no prefab HUD).
 
+### Uma animação do jogador
+Os clipes ficam em `Assets/Art/Animations/` (Mixamo: *FBX for Unity*, *Without Skin*, 30 fps, *In Place*
+nos de andar). O `ArtImportSettings` importa essa pasta como **Humanoid**, com o nome do arquivo como
+nome do clipe e em loop (menos `Agachar`), e o `AnimationBuilder` monta o `Jogador.controller`: duas
+misturas 2D pela direção (`Lado` e `Frente`, em m/s, em relação ao boneco), trocadas pelo bool
+`Agachado`. Em pé: andar a 4 e correr a 7,2 m/s para frente, trás, esquerda e direita
+(`Andar`, `AndarTras`, `AndarEsquerda`, `AndarDireita`, e o mesmo com `Correr`); agachado: 2 m/s
+(`AgachadoAndar`, `AgachadoEsquerda`, `AgachadoDireita`). Clipe "para trás" que falta é o da frente
+tocado ao contrário (é assim o agachado para trás). O controller só é criado se faltar (ou se for da
+versão antiga, sem direção); depois é editado no Animator do Unity. Quem
+preenche os parâmetros é o `DollWalk` (em todos os computadores: a posição vem pelo `NetworkTransform`
+e o agachar pela `NetworkVariable` do `NetworkPlayer`). Modelo sem Humanoid e o boneco de blocos
+continuam com a animação por código do `DollWalk`.
+
 ### Um espelho com reflexo
 Use um prefab de `Prefabs/Espelhos` (o `MirrorHouseBuilder` já põe o `MirrorReflection` e troca o
 vidro da moldura, material `MAT_ENV_Espelho`, pelo `Espelho Vidro.mat`, do shader `Espelho`). O

@@ -431,6 +431,8 @@ namespace MudancaAssombrada.Editor
             });
             EditorTools.SetReference(switcher, "doll", body);
             EditorTools.SetReference(switcher, "modelRoot", modelRoot);
+            // Animações de verdade (Mixamo) para os modelos Humanoid das fichas (ver AnimationBuilder).
+            EditorTools.SetReference(switcher, "animations", AnimationBuilder.EnsureController());
 
             // --- Componentes de rede ---
             player.AddComponent<NetworkObject>(); // "este objeto existe na rede"

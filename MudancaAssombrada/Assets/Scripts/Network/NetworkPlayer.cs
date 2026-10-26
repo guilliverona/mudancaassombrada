@@ -49,6 +49,18 @@ namespace MudancaAssombrada
 
         Vector3 spawnPosition;
 
+        // Agachado ou em pé: o DONO escreve (é o teclado dele), todos leem para o boneco agachar
+        // também na tela dos outros (DollWalk).
+        readonly NetworkVariable<bool> crouching = new(
+            false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        public bool IsCrouching => crouching.Value;
+
+        void Update()
+        {
+            if (IsSpawned && IsOwner && Movement != null && crouching.Value != Movement.IsCrouching)
+                crouching.Value = Movement.IsCrouching;
+        }
+
         void Awake()
         {
             Movement = GetComponent<PlayerMovement>();
