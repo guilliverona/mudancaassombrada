@@ -139,8 +139,10 @@ class Part:
                                   matrix=m, calc_uvs=True)
         return self._finish(r["verts"], mat, bone, smooth)
 
-    def box(self, center, size, mat, bone, rot_y=0.0):
+    def box(self, center, size, mat, bone, rot_y=0.0, rot_z=0.0):
+        """rot_y / rot_z: rotação em graus em volta do próprio centro (rachaduras, porta entreaberta)."""
         m = (Matrix.Scale(K, 4) @ Matrix.Translation(center)
+             @ Matrix.Rotation(math.radians(rot_z), 4, "Z")
              @ Matrix.Rotation(math.radians(rot_y), 4, "Y") @ Matrix.Diagonal((*size, 1.0)))
         r = bmesh.ops.create_cube(self.bm, size=1.0, matrix=m, calc_uvs=True)
         return self._finish(r["verts"], mat, bone, False)

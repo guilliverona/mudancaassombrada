@@ -11,6 +11,7 @@ a mesma caixa que o cubo de hoje, então peso, colisão e o "bake" do NavMesh n�
 Origem na base (no chão). Frente para -Y, como os personagens.
 """
 
+import math
 import sys
 from pathlib import Path
 
@@ -35,22 +36,66 @@ MATS = bc.Materials("MAT_PRP", {
     "Aco": ("#8E8794", 0.9, 0.4, 0.0),
     "Farol": ("#FFC98A", 0.0, 0.3, 2.0),
     "Ferrugem": ("#9C4A2E", 0.3, 0.8, 0.0),
+    "MognoVelho": ("#432820", 0.0, 0.85, 0.0),
+    "Lasca": ("#9A6A48", 0.0, 0.95, 0.0),
+    "Ferro": ("#3A3634", 0.7, 0.6, 0.0),
+    "LataoVelho": ("#8C7440", 0.8, 0.6, 0.0),
 })
 
 
 def build_armario(col):
-    """Armário de figurino: 1,0 × 0,6 × 1,5 m, peso 3 no jogo (dois jogadores)."""
+    """Armário de figurino: 1,0 × 0,6 × 1,5 m, peso 3 no jogo (dois jogadores).
+
+    Antigo e maltratado: cornija lascada, pé quebrado calçado com um tijolo, porta direita
+    entreaberta (com uma manga de veludo escapando), puxador faltando e rachaduras.
+    O corpo continua na caixa do prefab; só a porta aberta avança uns 15 cm para a frente.
+    """
     p = bc.Part("SM_PRP_Armario", MATS)
-    p.box((0, 0, 0.78), (0.96, 0.56, 1.38), "Mogno", "root")
-    p.box((0, 0, 1.47), (1.0, 0.6, 0.06), "MognoClaro", "root")      # cornija
-    for x in (-0.44, 0.44):
-        for y in (-0.24, 0.24):
-            p.box((x, y, 0.045), (0.07, 0.07, 0.09), "MognoClaro", "root")  # pés
-    for x in (-0.236, 0.236):
-        p.box((x, -0.283, 0.8), (0.42, 0.012, 1.22), "MognoClaro", "root")  # portas
-    p.box((0, -0.286, 0.8), (0.012, 0.008, 1.3), "Sombra", "root")    # fresta entre as portas
-    for x in (-0.035, 0.035):
-        p.ellipsoid((x, -0.3, 0.82), (0.018,) * 3, "Dourado", "root", seg=10, rings=6)
+    p.box((0, 0, 0.78), (0.96, 0.56, 1.38), "MognoVelho", "root")    # corpo
+
+    # Cornija em degraus, com o canto da frente-esquerda arrancado (madeira crua à mostra).
+    p.box((0.05, 0, 1.475), (0.9, 0.6, 0.05), "Mogno", "root")
+    p.box((-0.45, 0.06, 1.475), (0.1, 0.48, 0.05), "Mogno", "root")
+    p.box((-0.44, -0.25, 1.462), (0.08, 0.06, 0.024), "Lasca", "root")
+    p.box((0.02, 0, 1.44), (0.94, 0.58, 0.03), "MognoClaro", "root")
+    p.box((0.03, -0.27, 1.495), (0.5, 0.04, 0.03), "MognoClaro", "root", rot_y=-1.5)  # frontão torto
+
+    # Pés torneados; o da frente-direita quebrou e está calçado com um tijolo.
+    for x, y in ((-0.44, -0.24), (-0.44, 0.24), (0.44, 0.24)):
+        p.tube((x, y, 0.0), (x, y, 0.09), 0.03, 0.04, "Mogno", "root", seg=10)
+    p.tube((0.44, -0.24, 0.06), (0.44, -0.24, 0.09), 0.033, 0.04, "Mogno", "root", seg=10)
+    p.box((0.44, -0.24, 0.055), (0.05, 0.05, 0.012), "Lasca", "root", rot_y=8)  # ponta quebrada
+    p.box((0.44, -0.235, 0.024), (0.12, 0.07, 0.048), "Ferrugem", "root", rot_y=2)  # tijolo
+
+    # Porta esquerda: fechada, com duas almofadas, uma rachadura e o puxador que restou.
+    p.box((-0.236, -0.283, 0.8), (0.42, 0.012, 1.22), "MognoClaro", "root")
+    for z, h in ((1.1, 0.5), (0.5, 0.55)):
+        p.box((-0.236, -0.29, z), (0.32, 0.006, h), "Mogno", "root")
+    for (x, z, ang, ln) in ((-0.3, 0.98, 70, 0.22), (-0.26, 0.83, 100, 0.12), (-0.33, 0.62, 80, 0.18)):
+        p.box((x, -0.294, z), (0.004, 0.003, ln), "Sombra", "root", rot_y=ang - 90)
+    p.ellipsoid((-0.04, -0.3, 0.82), (0.018,) * 3, "LataoVelho", "root", seg=10, rings=6)
+    p.box((-0.04, -0.291, 0.74), (0.03, 0.004, 0.05), "Ferro", "root")   # espelho da fechadura
+    p.box((-0.04, -0.294, 0.735), (0.006, 0.003, 0.018), "Sombra", "root")
+
+    # Porta direita: entreaberta 20° na dobradiça (escuridão por dentro) e sem puxador.
+    p.box((0.22, -0.2815, 0.8), (0.46, 0.004, 1.24), "Sombra", "root")
+    ang = math.radians(20)
+    hx, hy = 0.446, -0.29
+    cx, cy = hx - 0.21 * math.cos(ang), hy - 0.21 * math.sin(ang)
+    p.box((cx, cy, 0.8), (0.42, 0.012, 1.22), "MognoClaro", "root", rot_z=20)
+    for z, h in ((1.1, 0.5), (0.5, 0.55)):
+        p.box((cx - 0.007 * math.sin(ang), cy - 0.007, z), (0.32, 0.006, h), "Mogno", "root", rot_z=20)
+    fx, fy = hx - 0.4 * math.cos(ang), hy - 0.4 * math.sin(ang)
+    p.ellipsoid((fx, fy - 0.012, 0.82), (0.008,) * 3, "Ferro", "root", seg=6, rings=4)  # parafuso do puxador perdido
+    for z in (0.3, 1.3):
+        p.box((0.47, -0.285, z), (0.02, 0.025, 0.08), "Ferro", "root")   # dobradiças
+    # Manga de veludo do figurino escapando pela fresta.
+    p.polyline([(0.08, -0.29, 0.75), (0.05, -0.33, 0.6), (0.06, -0.34, 0.45), (0.03, -0.335, 0.36)],
+               0.03, "Veludo", "root")
+
+    # Rachadura na lateral direita e uma tábua do fundo solta, torta.
+    p.box((0.481, 0.05, 0.9), (0.003, 0.004, 0.5), "Sombra", "root")
+    p.box((0.1, 0.285, 0.55), (0.2, 0.012, 0.9), "Mogno", "root", rot_y=6)
     return p.to_static(col)
 
 
