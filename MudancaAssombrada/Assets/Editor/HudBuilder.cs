@@ -29,12 +29,12 @@ namespace MudancaAssombrada.Editor
             var timer = UiBuilder.CreateText("Cronômetro", canvas, "Amanhecer em 3:00", HeaderSize);
             timer.font = GameFonts.Title;
             timer.alignment = TextAnchor.UpperLeft;
-            UiBuilder.Place(timer, new Vector2(0, 1), new Vector2(0, 1), new Vector2(Margin, -30), new Vector2(700, 60));
+            UiBuilder.Place(timer, new Vector2(0, 1), new Vector2(0, 1), new Vector2(Margin, -Margin), new Vector2(700, 60));
 
             // Uma linha por objetivo da etapa atual (o GameManager monta o texto).
             var objectives = UiBuilder.CreateText("Objetivos", canvas, "", BodySize);
             objectives.alignment = TextAnchor.UpperLeft;
-            UiBuilder.Place(objectives, new Vector2(0, 1), new Vector2(0, 1), new Vector2(Margin, -90), new Vector2(700, 220));
+            UiBuilder.Place(objectives, new Vector2(0, 1), new Vector2(0, 1), new Vector2(Margin, -Margin - 60), new Vector2(700, 220));
 
             // --- Centro, em cima: o bilhete do Seu Valdemar (some sozinho depois de alguns segundos) ---
             var note = UiBuilder.CreateImage("Bilhete", canvas, PanelColor);
@@ -47,7 +47,7 @@ namespace MudancaAssombrada.Editor
             // --- Canto superior direito: personagens ---
             var character = UiBuilder.CreateText("Personagem", canvas, "", NoteSize);
             character.alignment = TextAnchor.UpperRight;
-            UiBuilder.Place(character, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-Margin, -30), new Vector2(520, 260));
+            UiBuilder.Place(character, new Vector2(1, 1), new Vector2(1, 1), new Vector2(-Margin, -Margin), new Vector2(520, 260));
 
             // --- Centro: mira e dica de interação ---
             var crosshair = UiBuilder.CreateImage("Mira", canvas, TextColor);
