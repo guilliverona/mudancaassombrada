@@ -125,46 +125,106 @@ namespace MudancaAssombrada.Editor
             var connectBackButton = UiBuilder.CreateButton("Voltar", connectPanel);
 
             // --- Painel Sala de Espera ---
-            var lobbyPanel = UiBuilder.CreatePanel("Painel Sala de Espera", canvas);
-            var playerListText = UiBuilder.CreateText("Lista de Jogadores", lobbyPanel, "", Theme.BodySize);
-            playerListText.alignment = TextAnchor.UpperLeft;
-            UiBuilder.SetHeight(playerListText.gameObject, 130);
+            // Duas colunas: à esquerda a sala (jogadores, capítulo, personagens, botões);
+            // à direita o chat. O painel é mais largo que os outros para caber os dois.
+            var lobbyPanel = UiBuilder.CreatePanel("Painel Sala de Espera", canvas, 820, 1320);
+            var columns = CreateRow("Colunas", lobbyPanel, 740);
+            columns.GetComponent<HorizontalLayoutGroup>().spacing = 30;
+            var left = CreateColumn("Sala", columns, 640);
+            var right = CreateColumn("Chat", columns, 550);
 
-            // Capítulo: [◀] A Casa do Espelho [▶]. Só o host navega; os outros só veem.
-            var chapterRow = new GameObject("Capítulo", typeof(RectTransform), typeof(HorizontalLayoutGroup));
-            chapterRow.transform.SetParent(lobbyPanel, false);
-            var rowLayout = chapterRow.GetComponent<HorizontalLayoutGroup>();
-            rowLayout.spacing = 12;
-            rowLayout.childControlWidth = rowLayout.childControlHeight = true;
-            rowLayout.childForceExpandWidth = false;
-            UiBuilder.SetHeight(chapterRow, 60);
-            var chapterPrev = UiBuilder.CreateButton("<", chapterRow.transform);
-            var chapterText = UiBuilder.CreateText("Nome do Capítulo", chapterRow.transform, "", Theme.ButtonSize);
+            var playerListText = UiBuilder.CreateText("Título dos Jogadores", left, "", Theme.BodySize);
+            playerListText.alignment = TextAnchor.MiddleLeft;
+            UiBuilder.SetHeight(playerListText.gameObject, 34);
+
+            // Uma linha por jogador: [nome, personagem, pronto] [Líder] [Expulsar].
+            // Só existe o MODELO aqui; o MainMenu copia uma linha para cada jogador.
+            var playerRows = CreateColumn("Linhas dos Jogadores", left, 0);
+            playerRows.GetComponent<VerticalLayoutGroup>().spacing = 6;
+            UiBuilder.SetHeight(playerRows.gameObject, NetworkSession.MaxPlayers * 48 + (NetworkSession.MaxPlayers - 1) * 6);
+            var playerRowTemplate = CreateRow("Linha (modelo)", playerRows, 48);
+            var rowInfo = UiBuilder.CreateText("Info", playerRowTemplate, "", Theme.NoteSize);
+            rowInfo.alignment = TextAnchor.MiddleLeft;
+            rowInfo.supportRichText = true;
+            SetFlexibleWidth(rowInfo.gameObject);
+            var rowLeader = UiBuilder.CreateButton("Líder", playerRowTemplate);
+            rowLeader.GetComponent<LayoutElement>().preferredWidth = 110;
+            rowLeader.GetComponentInChildren<Text>().fontSize = Theme.BodySize;
+            var rowKick = UiBuilder.CreateButton("Expulsar", playerRowTemplate);
+            rowKick.GetComponent<LayoutElement>().preferredWidth = 130;
+            rowKick.GetComponentInChildren<Text>().fontSize = Theme.BodySize;
+            rowKick.GetComponentInChildren<Text>().color = Theme.DangerColor;
+            playerRowTemplate.gameObject.SetActive(false);
+
+            // Capítulo: [◀] A Casa do Espelho [▶]. Só o líder navega; os outros só veem.
+            var chapterRow = CreateRow("Capítulo", left, 56);
+            var chapterPrev = UiBuilder.CreateButton("<", chapterRow);
+            var chapterText = UiBuilder.CreateText("Nome do Capítulo", chapterRow, "", Theme.ButtonSize);
             chapterText.font = GameFonts.Title;
-            var chapterNext = UiBuilder.CreateButton(">", chapterRow.transform);
+            var chapterNext = UiBuilder.CreateButton(">", chapterRow);
             // Larguras: setas fixas e estreitas; o nome ocupa o resto (flexibleWidth).
             chapterPrev.GetComponent<LayoutElement>().preferredWidth = 60;
             chapterNext.GetComponent<LayoutElement>().preferredWidth = 60;
-            chapterText.GetComponent<LayoutElement>().flexibleWidth = 1;
-            var chapterInfo = UiBuilder.CreateText("Info do Capítulo", lobbyPanel, "", Theme.NoteSize);
+            SetFlexibleWidth(chapterText.gameObject);
+            var chapterInfo = UiBuilder.CreateText("Info do Capítulo", left, "", Theme.NoteSize);
             chapterInfo.color = Theme.MutedColor;
-            UiBuilder.SetHeight(chapterInfo.gameObject, 50);
+            UiBuilder.SetHeight(chapterInfo.gameObject, 48);
 
-            // Um botão por personagem do Elenco: personagem novo no Elenco = botão novo aqui.
+            // Um botão por personagem do Elenco, lado a lado: personagem novo = botão novo aqui.
             var roster = CharacterRoster.Instance;
+            var characterRow = CreateRow("Personagens", left, 56);
             var characterButtons = new Button[roster.Count];
             for (int i = 0; i < characterButtons.Length; i++)
             {
                 var character = roster.Get(i);
-                characterButtons[i] = UiBuilder.CreateButton(character.FullName, lobbyPanel);
+                characterButtons[i] = UiBuilder.CreateButton(character.FullName, characterRow);
+                characterButtons[i].GetComponent<LayoutElement>().flexibleWidth = 1;
+                var label = characterButtons[i].GetComponentInChildren<Text>();
+                label.fontSize = Theme.BodySize;
                 // O nome aparece na cor do personagem, misturada com o cinza para não destoar do resto.
-                characterButtons[i].GetComponentInChildren<Text>().color = Theme.Muted(character.color);
+                label.color = Theme.Muted(character.color);
             }
-            var startButton = UiBuilder.CreateButton("Começar", lobbyPanel);
-            var leaveButton = UiBuilder.CreateButton("Sair da sala", lobbyPanel);
-            var lobbyInfoText = UiBuilder.CreateText("Info", lobbyPanel, "", Theme.NoteSize);
+
+            // [Estou pronto] (convidados) ou [Começar] (líder): só um dos dois aparece.
+            var readyButton = UiBuilder.CreateButton("Estou pronto", left);
+            var startButton = UiBuilder.CreateButton("Começar", left);
+
+            // [Sair da sala] [Sala pública] [Copiar código]
+            var actionsRow = CreateRow("Ações", left, 56);
+            var leaveButton = UiBuilder.CreateButton("Sair da sala", actionsRow);
+            var privacyButton = UiBuilder.CreateButton("Sala pública", actionsRow);
+            var copyCodeButton = UiBuilder.CreateButton("Copiar código", actionsRow);
+            foreach (var b in new[] { leaveButton, privacyButton, copyCodeButton })
+            {
+                b.GetComponent<LayoutElement>().flexibleWidth = 1;
+                b.GetComponentInChildren<Text>().fontSize = Theme.BodySize;
+            }
+
+            var lobbyInfoText = UiBuilder.CreateText("Info", left, "", Theme.NoteSize);
             lobbyInfoText.color = Theme.MutedColor;
-            UiBuilder.SetHeight(lobbyInfoText.gameObject, 50);
+            UiBuilder.SetHeight(lobbyInfoText.gameObject, 48);
+
+            // --- Chat (coluna da direita) ---
+            var chatTitle = UiBuilder.CreateText("Título do Chat", right, "Chat", Theme.BodySize);
+            chatTitle.alignment = TextAnchor.MiddleLeft;
+            UiBuilder.SetHeight(chatTitle.gameObject, 34);
+            var chatBox = UiBuilder.CreateImage("Fundo do Chat", right, Theme.FieldColor);
+            UiBuilder.SetHeight(chatBox.gameObject, 610);
+            chatBox.gameObject.AddComponent<RectMask2D>(); // o que passar da caixa (mensagens antigas) fica escondido
+            var chatText = UiBuilder.CreateText("Mensagens", chatBox.transform, "", Theme.NoteSize);
+            UiBuilder.Stretch(chatText);
+            ((RectTransform)chatText.transform).offsetMin = new Vector2(14, 10);
+            ((RectTransform)chatText.transform).offsetMax = new Vector2(-14, -10);
+            // Ancorado embaixo: as mensagens novas ficam no pé e as antigas sobem (e somem no topo).
+            chatText.alignment = TextAnchor.LowerLeft;
+            chatText.verticalOverflow = VerticalWrapMode.Overflow;
+            chatText.supportRichText = true;
+            var chatRow = CreateRow("Enviar", right, 56);
+            var chatInput = UiBuilder.CreateInput(chatRow, "Mensagem...");
+            chatInput.characterLimit = LobbyManager.ChatMaxLength;
+            SetFlexibleWidth(chatInput.gameObject);
+            var chatSendButton = UiBuilder.CreateButton("Enviar", chatRow);
+            chatSendButton.GetComponent<LayoutElement>().preferredWidth = 130;
 
             // --- Painel Opções (o mesmo usado na pausa) ---
             var options = UiBuilder.CreateOptionsPanel(canvas);
@@ -197,6 +257,14 @@ namespace MudancaAssombrada.Editor
             Set("chapterText", chapterText);
             Set("chapterInfoText", chapterInfo);
             Set("startButton", startButton);
+            Set("readyButton", readyButton);
+            Set("playerRows", playerRows);
+            Set("playerRowTemplate", playerRowTemplate.gameObject);
+            Set("privacyButton", privacyButton);
+            Set("copyCodeButton", copyCodeButton);
+            Set("chatText", chatText);
+            Set("chatInput", chatInput);
+            Set("chatSendButton", chatSendButton);
             Set("leaveButton", leaveButton);
             Set("lobbyInfoText", lobbyInfoText);
             so.ApplyModifiedPropertiesWithoutUndo();
@@ -227,6 +295,27 @@ namespace MudancaAssombrada.Editor
             layout.childForceExpandWidth = false;
             UiBuilder.SetHeight(row, height);
             return row.transform;
+        }
+
+        // Numa linha: este item ocupa a largura que sobrar.
+        static void SetFlexibleWidth(GameObject go)
+        {
+            if (!go.TryGetComponent(out LayoutElement element)) element = go.AddComponent<LayoutElement>();
+            element.flexibleWidth = 1;
+        }
+
+        // Uma coluna (elementos um embaixo do outro) dentro de uma linha. width 0 = sem largura fixa.
+        static Transform CreateColumn(string name, Transform parent, float width)
+        {
+            var column = new GameObject(name, typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(LayoutElement));
+            column.transform.SetParent(parent, false);
+            var layout = column.GetComponent<VerticalLayoutGroup>();
+            layout.spacing = 12;
+            layout.childControlWidth = layout.childControlHeight = true;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
+            if (width > 0) column.GetComponent<LayoutElement>().preferredWidth = width;
+            return column.transform;
         }
 
         // O NetworkManager vira um prefab: o menu cria uma cópia na primeira vez que abre,

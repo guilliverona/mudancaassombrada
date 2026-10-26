@@ -86,6 +86,11 @@ namespace MudancaAssombrada
                 await AuthenticationService.Instance.SignInAnonymouslyAsync();
         }
 
+        // A minha conta nos serviços da Unity ("" se ainda não fez login).
+        public static string MyPlayerId =>
+            UnityServices.State == ServicesInitializationState.Initialized && AuthenticationService.Instance.IsSignedIn
+                ? AuthenticationService.Instance.PlayerId : "";
+
         // ---------- Salas ----------
         // "async" = a função espera a resposta dos servidores da Unity sem travar o jogo.
 
@@ -150,6 +155,28 @@ namespace MudancaAssombrada
                 await host.SavePropertiesAsync();
             }
             catch (Exception e) { Debug.LogException(e); } // não é grave: o ApproveConnection também barra
+        }
+
+        // Só no host: tira um jogador da sala online (expulsão). Sem isso a vaga continuaria
+        // ocupada na lista de salas.
+        public static async void RemoveFromRoom(string playerId)
+        {
+            if (current == null || !current.IsHost || string.IsNullOrEmpty(playerId)) return;
+            try { await current.AsHost().RemovePlayerAsync(playerId); }
+            catch (Exception e) { Debug.LogWarning("Erro ao tirar jogador da sala: " + e.Message); }
+        }
+
+        // Só no host: sala privada some da lista (só entra quem tem o código).
+        public static async void SetRoomPrivate(bool value)
+        {
+            if (current == null || !current.IsHost) return;
+            try
+            {
+                var host = current.AsHost();
+                host.IsPrivate = value;
+                await host.SavePropertiesAsync();
+            }
+            catch (Exception e) { Debug.LogException(e); }
         }
 
         void BeginSession()

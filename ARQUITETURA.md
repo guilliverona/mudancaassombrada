@@ -239,6 +239,16 @@ pouco, só os **2 espelhos mais perto e na tela** refletem (meia resolução, se
 pós-processamento); os outros, e todos no modo cego, mostram o vidro escuro. O campo **Reflected
 Layers** escolhe o que aparece no espelho: é o gancho para pistas que só existem no reflexo.
 
+### Uma regra na sala de espera (líder, pronto, chat...)
+A partida é **só online**: o `NetworkSession` cria/lista/entra em salas pelo pacote Multiplayer
+Services (Lobby = lista de salas e código; Relay = repassa os pacotes, sem abrir porta). A sala de
+espera em si é o `LobbyManager`:
+- **Host x líder:** o host é o servidor (não troca sem derrubar todos). O **líder** manda na sala
+  (capítulo, Começar, expulsar, passar a liderança, sala privada) e pode ser qualquer jogador.
+- Todo pedido é um `Rpc(SendTo.Server)` e o host confere (`FromLeader`) antes de mudar algo.
+- Estado da sala = `NetworkList`/`NetworkVariable`; avisos do sistema e mensagens vão pelo `ChatRpc`.
+- Interface: `MenuSceneBuilder` (peças) + `MainMenu` (o que cada botão faz). Mudou a interface → **Criar Cena Menu**.
+
 ## Menus do editor (Mudança Assombrada)
 
 | Menu | O que faz | Apaga trabalho manual? |
