@@ -13,7 +13,8 @@ namespace MudancaAssombrada.Editor
     //
     //   Em pé:    Parado no meio; andar a 4 m/s e correr a 7,2 m/s para frente, trás, esquerda e direita
     //   Agachado: AgachadoParado no meio; andar agachado a 2 m/s nas quatro direções
-    //             (não há clipe "agachado para trás": é o AgachadoAndar tocado ao contrário)
+    //             (para a esquerda: o AgachadoDireita espelhado; clipe "para trás" que faltar é
+    //             o da frente tocado ao contrário)
     //   Em pé <-> Agachado: pelo parâmetro Agachado (bool)
     //
     // As velocidades são as do PlayerMovement (andar 4, correr x1,8, agachado x0,5). Quem preenche
@@ -40,7 +41,8 @@ namespace MudancaAssombrada.Editor
         {
             "Parado", "Andar", "AndarTras", "AndarEsquerda", "AndarDireita",
             "Correr", "CorrerTras", "CorrerEsquerda", "CorrerDireita",
-            "AgachadoParado", "AgachadoAndar", "AgachadoTras", "AgachadoEsquerda", "AgachadoDireita",
+            "AgachadoParado", "AgachadoAndar", "AgachadoTras", "AgachadoDireita",
+            // AgachadoEsquerda fica de fora: veio girado do Mixamo, usamos o AgachadoDireita espelhado.
         };
 
         [MenuItem("Mudança Assombrada/Criar Animações do Jogador", priority = 23)]
@@ -59,10 +61,13 @@ namespace MudancaAssombrada.Editor
                 // um clipe que ele ainda não usa (ex.: AgachadoTras no lugar do "andar ao contrário").
                 var used = existing.animationClips.Select(c => c.name).ToHashSet();
                 var missing = ClipNames.Where(n => Clip(n) != null && !used.Contains(n)).ToList();
-                if (existing.parameters.Any(p => p.name == SideParam) && missing.Count == 0) return existing;
+                // ...ou se ainda usa um clipe que saiu da lista (ex.: o AgachadoEsquerda girado).
+                var removed = used.Where(n => !ClipNames.Contains(n)).ToList();
+                if (existing.parameters.Any(p => p.name == SideParam) && missing.Count == 0 && removed.Count == 0)
+                    return existing;
                 AssetDatabase.DeleteAsset(ControllerPath);
-                Debug.Log(missing.Count > 0
-                    ? $"Animator dos jogadores refeito com os clipes novos: {string.Join(", ", missing)}"
+                Debug.Log(missing.Count + removed.Count > 0
+                    ? $"Animator dos jogadores refeito (novos: {string.Join(", ", missing)}; retirados: {string.Join(", ", removed)})"
                     : "Animator dos jogadores: versão antiga (sem direção) substituída.");
             }
 
@@ -100,8 +105,12 @@ namespace MudancaAssombrada.Editor
             crouch.AddChild(crouchIdle, Vector2.zero);
             Add(crouch, crouchWalk, new Vector2(0, Crouch));
             Add(crouch, Clip("AgachadoTras"), new Vector2(0, -Crouch), crouchWalk);
-            Add(crouch, Clip("AgachadoEsquerda"), new Vector2(-Crouch, 0), crouchWalk);
-            Add(crouch, Clip("AgachadoDireita"), new Vector2(Crouch, 0), crouchWalk);
+            // Para a esquerda: o AgachadoDireita ESPELHADO. O "Crouched Sneaking Left" do Mixamo vem
+            // girado ~160° (anda para a esquerda, mas de costas) e o boneco virava ao contrário.
+            var crouchRight = Clip("AgachadoDireita");
+            if (crouchRight != null) AddMirrored(crouch, crouchRight, new Vector2(-Crouch, 0));
+            else Add(crouch, null, new Vector2(-Crouch, 0), crouchWalk);
+            Add(crouch, crouchRight, new Vector2(Crouch, 0), crouchWalk);
 
             var machine = controller.layers[0].stateMachine;
             machine.defaultState = standing;
@@ -136,6 +145,15 @@ namespace MudancaAssombrada.Editor
             if (!reversed) return;
             var children = tree.children;
             children[children.Length - 1].timeScale = -1f;
+            tree.children = children;
+        }
+
+        // O mesmo clipe, espelhado (direita vira esquerda). Só funciona em clipes Humanoid.
+        static void AddMirrored(BlendTree tree, AnimationClip clip, Vector2 position)
+        {
+            tree.AddChild(clip, position);
+            var children = tree.children;
+            children[children.Length - 1].mirror = true;
             tree.children = children;
         }
 

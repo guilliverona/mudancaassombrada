@@ -223,8 +223,9 @@ nome do clipe e em loop (menos `Agachar`), e o `AnimationBuilder` monta o `Jogad
 misturas 2D pela direção (`Lado` e `Frente`, em m/s, em relação ao boneco), trocadas pelo bool
 `Agachado`. Em pé: andar a 4 e correr a 7,2 m/s para frente, trás, esquerda e direita
 (`Andar`, `AndarTras`, `AndarEsquerda`, `AndarDireita`, e o mesmo com `Correr`); agachado: 2 m/s
-(`AgachadoAndar`, `AgachadoEsquerda`, `AgachadoDireita`). Clipe "para trás" que falta é o da frente
-tocado ao contrário (é assim o agachado para trás). O controller só é criado se faltar (ou se for da
+(`AgachadoAndar`, `AgachadoTras`, `AgachadoDireita`; a esquerda é o `AgachadoDireita` **espelhado**,
+porque o "Crouched Sneaking Left" do Mixamo vem girado ~160°). Clipe "para trás" que falta é o da
+frente tocado ao contrário. O controller só é criado se faltar (ou se for da
 versão antiga, sem direção); depois é editado no Animator do Unity. Quem
 preenche os parâmetros é o `DollWalk` (em todos os computadores: a posição vem pelo `NetworkTransform`
 e o agachar pela `NetworkVariable` do `NetworkPlayer`). Modelo sem Humanoid e o boneco de blocos
