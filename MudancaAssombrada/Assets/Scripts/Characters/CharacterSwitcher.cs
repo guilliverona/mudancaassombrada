@@ -26,6 +26,8 @@ namespace MudancaAssombrada
         [SerializeField] Renderer[] body; // as partes do boneco de blocos que mudam de cor (a "roupa")
         [SerializeField] GameObject doll; // o boneco de blocos: usado quando a ficha não tem modelo
         [SerializeField] Transform modelRoot; // onde o modelo da ficha nasce (pés no chão)
+        [Tooltip("Animações de verdade para os modelos Humanoid (vazio = animação por código do DollWalk).")]
+        [SerializeField] RuntimeAnimatorController animations;
 
         GameObject currentModel; // o modelo 3D do personagem atual (null = boneco de blocos)
 
@@ -143,12 +145,20 @@ namespace MudancaAssombrada
 
             bool hasModel = character.model != null && modelRoot != null;
             if (doll != null) doll.SetActive(!hasModel);
+            if (IsOwner) movement.FollowHead(null); // até achar a cabeça do modelo novo (abaixo)
             if (!hasModel) return;
 
             currentModel = Instantiate(character.model, modelRoot, false);
             currentModel.name = character.displayName;
             if (!currentModel.TryGetComponent(out DollWalk walk))
                 walk = currentModel.AddComponent<DollWalk>(); // acha os ossos sozinho pelo Humanoid
+            walk.UseClips(animations); // com os clipes do Mixamo, o Animator anima no lugar do código
+
+            // Com animação de verdade, a MINHA câmera segue a cabeça do modelo (não entra no pescoço
+            // quando a cabeça vai à frente, e desce junto ao agachar).
+            var animator = currentModel.GetComponent<Animator>();
+            if (IsOwner && animator != null && animator.enabled && animator.isHuman && animator.runtimeAnimatorController != null)
+                movement.FollowHead(animator.GetBoneTransform(HumanBodyBones.Head));
             // O meu próprio corpo fica invisível para a minha câmera (ver NetworkPlayer).
             if (IsOwner) walk.HideBody();
         }

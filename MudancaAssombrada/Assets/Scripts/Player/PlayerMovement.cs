@@ -20,6 +20,10 @@ namespace MudancaAssombrada
         [Tooltip("Quanto a cabeça avança ao olhar todo para baixo (o pescoço inclina): assim você vê o corpo de fora.")]
         [SerializeField] float lookDownForward = 0.22f;
         [SerializeField] float nearClip = 0.05f; // perto o bastante para ver o peito sem cortar
+        [Tooltip("Do osso da cabeça (na base do crânio) até a altura dos olhos, em metros.")]
+        [SerializeField] float headToEyes = 0.1f;
+        [Tooltip("Quão rápido a câmera acompanha a cabeça da animação (alto = colada, baixo = mais suave).")]
+        [SerializeField] float followHeadSpeed = 15f;
 
         [Header("Agachar")]
         [SerializeField] float crouchHeight = 1.2f;
@@ -125,19 +129,41 @@ namespace MudancaAssombrada
             // Encolhe o collider mantendo os pés no chão.
             ApplyHeight(IsCrouching ? crouched : standHeight);
 
-            // Agachado, os olhos descem na mesma proporção que o corpo,
-            // então cada personagem agacha "do seu tamanho".
-            float eye = IsCrouching ? eyeHeight * (crouched / standHeight) : eyeHeight;
-            // A câmera desce suavemente. Lerp = "ande uma fração do caminho até o alvo" a cada frame.
-            float targetY = feetY + eye;
+        }
+
+        // A câmera vai depois da animação (o Animator mexe nos ossos entre o Update e o LateUpdate).
+        void LateUpdate()
+        {
             Vector3 cam = cameraPivot.localPosition;
-            cam.y = Mathf.Lerp(cam.y, targetY, crouchTransitionSpeed * Time.deltaTime);
             // Para a frente: os olhos estão no rosto, e o rosto avança quando você olha para baixo
             // (pitch positivo = olhando para baixo). Sem isso, a câmera fica dentro do próprio peito.
             float down = Mathf.Clamp01(cameraPitch / 80f);
-            cam.z = eyeForward + lookDownForward * down;
+            float forward = eyeForward + lookDownForward * down;
+
+            if (head != null)
+            {
+                // Com animação de verdade: os olhos ficam onde a CABEÇA está (ela abaixa ao agachar,
+                // vai à frente ao correr). Medido no espaço do Player, para girar junto com ele.
+                Vector3 h = transform.InverseTransformPoint(head.position);
+                Vector3 target = new Vector3(0f, h.y + headToEyes, h.z + forward);
+                cameraPivot.localPosition = Vector3.Lerp(cam, target, followHeadSpeed * Time.deltaTime);
+                return;
+            }
+
+            // Sem modelo animado: agachado, os olhos descem na mesma proporção que o corpo,
+            // então cada personagem agacha "do seu tamanho".
+            float crouched = Mathf.Min(crouchHeight, standHeight);
+            float eye = IsCrouching ? eyeHeight * (crouched / standHeight) : eyeHeight;
+            // A câmera desce suavemente. Lerp = "ande uma fração do caminho até o alvo" a cada frame.
+            cam.y = Mathf.Lerp(cam.y, feetY + eye, crouchTransitionSpeed * Time.deltaTime);
+            cam.z = forward;
             cameraPivot.localPosition = cam;
         }
+
+        // O osso da cabeça do modelo animado (o CharacterSwitcher passa ao trocar de personagem).
+        // null = boneco sem animação: a câmera usa a altura dos olhos da ficha.
+        Transform head;
+        public void FollowHead(Transform headBone) => head = headBone;
 
         void Look()
         {

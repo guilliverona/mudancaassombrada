@@ -55,8 +55,9 @@ namespace MudancaAssombrada
             HideHead();
         }
 
-        // Sem cabeça: no modelo da ficha, o osso Head (e o que vai preso nele: cabelo, óculos,
-        // gorro) encolhe a zero; no boneco de blocos, some a parte "Cabeça".
+        // Sem cabeça: no modelo da ficha, o osso do PESCOÇO (e tudo preso nele: cabeça, cabelo,
+        // óculos, gorro) encolhe a zero, senão a câmera, no rosto, enxerga o pescoço por dentro;
+        // no boneco de blocos, some a parte "Cabeça".
         void HideHead()
         {
             var head = FindHead();
@@ -74,8 +75,13 @@ namespace MudancaAssombrada
             string bone = "Cabeça";
             var animator = GetComponentInChildren<Animator>(true);
             if (animator != null && animator.avatar != null && animator.avatar.isHuman)
+            {
+                // Pescoço se o esqueleto tiver (é opcional no Humanoid); senão, a cabeça.
                 foreach (var b in animator.avatar.humanDescription.human)
                     if (b.humanName == "Head") bone = b.boneName;
+                foreach (var b in animator.avatar.humanDescription.human)
+                    if (b.humanName == "Neck") bone = b.boneName;
+            }
             foreach (var t in target)
                 if (t.name == bone) return t;
             return null;
