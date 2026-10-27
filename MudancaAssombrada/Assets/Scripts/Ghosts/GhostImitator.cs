@@ -119,25 +119,23 @@ namespace MudancaAssombrada
         {
             get
             {
-                if (appeared || appearAt <= 0) return false;
                 NightElapsed(out bool hasClock);
-                return hasClock;
+                return ImitatorRules.AppearancePending(appeared, appearAt, hasClock);
             }
         }
 
-        bool AppearanceDue => AppearancePending && NightElapsed(out _) >= appearAt;
+        bool AppearanceDue => ImitatorRules.AppearanceDue(AppearancePending, NightElapsed(out _), appearAt);
 
         // No espelho: é hora de agir? (Antes da aparição ele não ataca: espera por ela.)
         // Interesse: o tempo de espera acabou, ou alguém arrasta sozinho um móvel de dupla.
-        bool ReadyToAct => AppearanceDue || (!AppearancePending && inside >= minInside && (timer <= 0 || dragSeen >= dragInterest));
+        bool ReadyToAct => ImitatorRules.ReadyToAct(AppearanceDue, AppearancePending, inside, minInside, timer, dragSeen, dragInterest);
 
         // Quanto tempo fica no espelho desta vez: metade no fim da noite, mais se estiver ofendido.
         float NextLurkTime()
         {
-            float t = lurkTime;
             var game = GameManager.Instance;
-            if (game != null && game.IsSpawned && game.NightProgress >= hurryFrom) t *= 0.5f;
-            if (offended) t *= offendedFactor;
+            float progress = game != null && game.IsSpawned ? game.NightProgress : 0f;
+            float t = ImitatorRules.LurkTime(lurkTime, progress, hurryFrom, offended, offendedFactor);
             offended = false;
             return t;
         }
@@ -252,7 +250,7 @@ namespace MudancaAssombrada
                         if (Ghost.Arrived() || timer <= -15f) EnterMirror(targetMirror);
                         break;
                     }
-                    if (!victim.IsSpawned || victim.Condition.IsDown || timer <= 0) { GiveUp(); break; }
+                    if (!victim.IsSpawned || victim.Condition.IsDown || ImitatorRules.GiveUp(timer)) { GiveUp(); break; }
                     if (baited != null) { TickBait(); break; }
                     Ghost.Agent.SetDestination(victim.transform.position);
                     if (Vector3.Distance(transform.position, victim.transform.position) < askDistance)
@@ -278,7 +276,7 @@ namespace MudancaAssombrada
                     // Acabou o tempo: a vítima foi para "dentro do reflexo" e fica caída até alguém
                     // ajudar. Ele tira o disfarce, agradece a plateia e volta para o espelho. (Chegou
                     // antes no espelho? Fica ali segurando até o tempo acabar: a equipe sempre tem os 6 s.)
-                    if (pulled >= pullTime)
+                    if (ImitatorRules.PullDone(pulled, pullTime))
                     {
                         var caught = victim;
                         Release();

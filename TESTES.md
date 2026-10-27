@@ -26,7 +26,7 @@ está no [CLAUDE.md](CLAUDE.md), regra 6. Como rodar os testes também está lá
 | 4. Dados do projeto | — | `DataTests` | 10 | ✅ feito |
 | 5. Peso e dupla | `CarryRules` | `CarryRulesTests` | 17 | ✅ feito (falta 1 bug, abaixo) |
 | 6. Resgate de colega | `RescueRules` | `RescueRulesTests` | 12 | ✅ feito |
-| 7. Imitador: quando age | `ImitatorRules` (nova) | `ImitatorRulesTests` | — | a fazer |
+| 7. Imitador: quando age | `ImitatorRules` | `ImitatorRulesTests` | 11 | ✅ feito |
 | 8. Testes de fumaça | — | `Assets/Tests/PlayMode` | — | depois |
 
 ---
@@ -109,13 +109,16 @@ A `RescueRules` (`Assets/Scripts/Player/`) tem as contas; o `PlayerCondition` (n
 - Quem ajuda precisa estar na partida, de pé (livre) e a até 3,5 m (no limite ainda vale).
 - A equipe inteira caída = derrota; um de pé = a partida segue; sem jogadores, ninguém perdeu.
 
-## 7. Imitador: quando ele age
+## 7. Imitador: quando ele age ✅
 
-Separar do `GhostImitator` as decisões de tempo (`ReadyToAct`, `NextLurkTime`):
-- Antes da aparição programada (45 s de noite), não ataca: espera por ela.
+A `ImitatorRules` (`Assets/Scripts/Ghosts/`) tem as decisões de tempo; o `GhostImitator` junta o
+relógio e os segundos no espelho e pergunta a ela (`ReadyToAct`, `NextLurkTime`, desistir, puxar).
+- Antes da aparição programada (45 s de noite), não ataca: espera por ela. Sem relógio ou já
+  aparecido: sem aparição. A aparição não espera o mínimo no espelho.
 - Depois: sai do espelho quando o tempo de espera acaba **ou** quando alguém arrasta sozinho um
   móvel de dupla por 2,5 s; nunca antes de 5 s dentro do espelho.
-- Fim da noite (depois de 75%): espera metade; ofendido (não apontaram na reverência): espera o dobro.
+- Espera normal 12 s. Fim da noite (a partir de 75%): metade; ofendido (não apontaram na reverência):
+  o dobro; as duas juntas se somam.
 - Disfarçado há 40 s sem chegar na vítima: desiste e volta para um espelho.
 - Puxando a vítima: 6 s para os colegas salvarem.
 
@@ -133,5 +136,5 @@ Poucos e simples, para pegar o que quebra "por fora" das regras:
 1. **Parte 3** (reforço): pequena, aproveita o que já existe.
 2. **Parte 4** (dados): barata e pega erro de Inspector, que hoje só aparece no Play.
 3. ~~**Parte 5** (peso e dupla)~~ ✅
-4. ~~**Parte 6** (resgate)~~ ✅ e **parte 7** (Imitador). Antes, o bug do `PickUpRpc` da parte 5.
+4. ~~**Partes 6 e 7** (resgate e Imitador)~~ ✅. Falta o bug do `PickUpRpc` da parte 5.
 5. **Parte 8** (fumaça) quando o time quiser rodar os testes num CI.
