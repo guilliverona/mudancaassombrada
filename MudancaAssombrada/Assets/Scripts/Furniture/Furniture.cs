@@ -15,6 +15,14 @@ namespace MudancaAssombrada
     //  - Soltou: a posse volta para o host.
     // Nos outros computadores o Rigidbody fica "kinematic" (sem física própria) e só copia
     // a posição que chega pela rede. Quem faz essa troca é o componente NetworkRigidbody.
+    //
+    // MÓVEL PESADO: cada um LEVANTA sozinho até força + 1 (CharacterDefinition.LiftLimit): Cida e
+    // Tiago até 2, o Marcelo até 4. Mais pesado, quem pega é a primeira ponta (o dono) e um colega pode
+    // "Segurar a outra ponta" (o ajudante); a dupla levanta até a soma dos dois limites.
+    // Faltou gente? Dá para pegar, mas só ARRASTANDO: no chão, devagar e fazendo barulho.
+    // (Num móvel que a pessoa levanta mas sente o peso, a outra ponta também vale: a dupla anda mais rápido.)
+    // O Imitador disfarçado pode fingir que segura a outra ponta (a ponta FALSA): o nome do colega
+    // aparece, mas ele não vale nada. O móvel continua arrastando, sem o "toc" do apoio (as pistas).
     [RequireComponent(typeof(Rigidbody))]
     public class Furniture : NetworkBehaviour, IInteractionTarget
     {
@@ -24,20 +32,40 @@ namespace MudancaAssombrada
         public static IReadOnlyList<Furniture> All => all;
 
         // 1 = leve (cadeira), 3 = pesado (armário). A força do personagem divide isto.
+        // Mais de 2 = pesado demais para a Cida ou o Tiago sozinhos (o Marcelo levanta até 4).
         [SerializeField, Range(1f, 5f)] float weight = 1f;
+
+        [Header("Arrastar e dupla")]
+        [SerializeField] float dragNoiseRange = 10f;   // arrastar sozinho se ouve longe
+        [SerializeField] float dragNoiseEvery = 1.2f;  // um "rasgo" no chão a cada tantos segundos andando
+        [SerializeField] float helperReach = 3.5f;     // ajudante mais longe que isto solta a ponta
+
+        public const ulong NoHelper = ulong.MaxValue;
 
         // Todos precisam saber se o móvel está sendo carregado: o caminhão só conta móvel SOLTO,
         // e ninguém pode pegar um móvel que já está na mão de outro.
         readonly NetworkVariable<bool> isHeld = new(
             false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        // Quem segura a OUTRA ponta (o ClientId do colega). NoHelper = ninguém.
+        readonly NetworkVariable<ulong> helper = new(
+            NoHelper, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        // A ponta FALSA: o personagem que a cópia está fingindo ser (-1 = nenhuma).
+        readonly NetworkVariable<int> fakeHelper = new(
+            -1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
         public float Weight => weight;
+        // Pesado demais para quem tem força 1: na escada, a carga anda mais devagar e range.
+        public bool IsBulky => weight > 2f;
         public Rigidbody Body { get; private set; }
         public bool IsHeld => isHeld.Value;
+        public ulong HelperClientId => helper.Value;
+        public bool HasFakeHelper => fakeHelper.Value >= 0;
         public float NoiseMultiplier { get; set; } = 1f; // < 1 = batidas mais silenciosas
 
         Vector3 startPosition;
         Quaternion startRotation;
+        Vector3 lastNoisePosition;
+        float nextDragNoise;
 
         void Awake()
         {
@@ -49,9 +77,72 @@ namespace MudancaAssombrada
         void OnEnable() => all.Add(this);
         void OnDisable() => all.Remove(this);
 
+        public override void OnNetworkSpawn() => helper.OnValueChanged += OnHelperChanged;
+        public override void OnNetworkDespawn() => helper.OnValueChanged -= OnHelperChanged;
+
+        // ---------- Quem está carregando (todos os computadores sabem) ----------
+
+        // O jogador que segura a primeira ponta (o dono do móvel). null = solto.
+        public NetworkPlayer Holder => isHeld.Value ? PlayerOf(OwnerClientId) : null;
+        public NetworkPlayer Helper => helper.Value != NoHelper ? PlayerOf(helper.Value) : null;
+
+        static NetworkPlayer PlayerOf(ulong clientId)
+        {
+            foreach (var p in NetworkPlayer.All)
+                if (p.OwnerClientId == clientId) return p;
+            return null;
+        }
+
+        static float LimitOf(NetworkPlayer p) => p != null ? p.Character.Current.LiftLimit : 0f;
+        static float StrengthOf(NetworkPlayer p) => p != null ? p.Character.Current.strength : 0f;
+
+        // Dá para levantar? A soma do que cada ponta levanta sozinha tem que vencer o peso.
+        // A ponta falsa vale ZERO: é a mentira da isca. Senão, quem segura só arrasta.
+        public bool CanLift => LimitOf(Holder) + LimitOf(Helper) >= weight;
+        // Quem segura sente o peso (é mais pesado que a força dele)? Então cabe alguém na outra ponta.
+        bool HolderFeelsWeight => weight > StrengthOf(Holder);
+        // A força somada de quem segura (divide o peso). A ponta falsa não ajuda em nada.
+        public float CrewStrength => Mathf.Max(0.1f, StrengthOf(Holder) + StrengthOf(Helper));
+        // A dupla anda no passo do mais lento.
+        public float CrewSpeed
+        {
+            get
+            {
+                NetworkPlayer a = Holder, b = Helper;
+                if (a == null && b == null) return 1f;
+                if (a == null || b == null) return (a != null ? a : b).Character.Current.speed;
+                return Mathf.Min(a.Character.Current.speed, b.Character.Current.speed);
+            }
+        }
+
+        // Quem está na outra ponta, como quem carrega vê: o colega, o "colega" falso ou ninguém.
+        public string OtherEndName
+        {
+            get
+            {
+                var h = Helper;
+                if (h != null) return h.Character.Current.displayName;
+                var roster = CharacterRoster.Instance;
+                if (HasFakeHelper && roster != null && roster.IsValid(fakeHelper.Value)) return roster.Get(fakeHelper.Value).displayName;
+                return null;
+            }
+        }
+
+        // O móvel que este jogador está segurando pela primeira ponta (no host: para a isca do Imitador).
+        public static Furniture HeldBy(ulong clientId)
+        {
+            foreach (var f in all)
+                if (f.IsSpawned && f.IsHeld && f.OwnerClientId == clientId) return f;
+            return null;
+        }
+
+        // ---------- Só no host ----------
+
         // Só no host (chamado pelo GameManager ao reiniciar): devolve o móvel ao lugar inicial.
         public void ServerReset()
         {
+            helper.Value = NoHelper;
+            fakeHelper.Value = -1;
             if (isHeld.Value)
             {
                 isHeld.Value = false;
@@ -65,18 +156,78 @@ namespace MudancaAssombrada
             GetComponent<NetworkTransform>().Teleport(startPosition, startRotation, transform.localScale);
         }
 
-        // Mirando o móvel: "Pegar Armário" (ou "Ocupado", apagado, se alguém já está carregando).
+        // O Imitador disfarçado "segura a outra ponta" (characterIndex = quem ele copia; -1 = largou).
+        public void ServerSetFakeHelper(int characterIndex)
+        {
+            if (!IsServer) return;
+            if (characterIndex >= 0 && (!isHeld.Value || helper.Value != NoHelper)) return; // ponta ocupada
+            fakeHelper.Value = characterIndex;
+        }
+
+        void Update()
+        {
+            if (!IsSpawned) return;
+            if (IsServer) ServerCheckHelper();
+            if (IsOwner) DragNoise();
+        }
+
+        // O ajudante caiu, foi puxado, saiu da partida ou se afastou: a ponta fica livre.
+        void ServerCheckHelper()
+        {
+            if (helper.Value == NoHelper) return;
+            var h = Helper;
+            bool ok = isHeld.Value && h != null && h.Condition != null && h.Condition.IsFree
+                      && Vector3.Distance(h.transform.position, transform.position) <= helperReach;
+            if (!ok) helper.Value = NoHelper;
+        }
+
+        // Arrastando (faltou gente): o dono faz o barulho, que a rede leva aos outros (SoundRelay).
+        void DragNoise()
+        {
+            if (!isHeld.Value || CanLift) { lastNoisePosition = transform.position; return; }
+            if (Time.time < nextDragNoise) return;
+            float moved = Vector3.Distance(transform.position, lastNoisePosition);
+            if (moved < 0.3f) return; // parado não faz barulho
+            lastNoisePosition = transform.position;
+            nextDragNoise = Time.time + dragNoiseEvery;
+            EchoSystem.Emit(new SoundEvent(transform.position, dragNoiseRange * NoiseMultiplier, 0.9f, SoundType.Carry, gameObject));
+        }
+
+        // Um colega de verdade pegou a outra ponta: o "toc" do apoio, em todos os computadores
+        // (cada um recebe a mudança da NetworkVariable e faz o som no seu). A ponta falsa NÃO faz.
+        void OnHelperChanged(ulong previous, ulong current)
+        {
+            if (current == NoHelper) return;
+            EchoSystem.EmitLocal(new SoundEvent(transform.position, 8f, 0.4f, SoundType.Carry, gameObject));
+        }
+
+        // ---------- Interação ----------
+
+        // Mirando o móvel: "Pegar Armário", "Arrastar...", "Segurar a outra ponta" ou "Ocupado".
         public InteractionPrompt PromptFor(PlayerInteractor player)
         {
             if (player.Carrier == null) return InteractionPrompt.None;
-            if (IsHeld || player.Carrier.IsWaiting) return new InteractionPrompt("Ocupado", false);
+            if (player.Carrier.IsWaiting) return new InteractionPrompt("Ocupado", false);
+            if (IsHeld)
+            {
+                bool free = HolderFeelsWeight && helper.Value == NoHelper && !HasFakeHelper;
+                return free ? new InteractionPrompt($"Segurar a outra ponta ({name})", true) : new InteractionPrompt("Ocupado", false);
+            }
+            if (player.Character.LiftLimit < weight)
+                return new InteractionPrompt($"Arrastar {name} (pesado: chame alguém para a outra ponta)", true);
             return new InteractionPrompt($"Pegar {name}", true);
         }
 
-        public void Interact(PlayerInteractor player) => player.Carrier.TryPickUp(this);
+        public void Interact(PlayerInteractor player)
+        {
+            if (IsHeld) player.Carrier.TryHelp(this);
+            else player.Carrier.TryPickUp(this);
+        }
 
         public void RequestPickUp() => PickUpRpc();
         public void RequestDrop() => DropRpc();
+        public void RequestHelp() => HelpRpc(true);
+        public void RequestLeaveHelp() => HelpRpc(false);
 
         // RpcParams traz informações sobre a chamada, como QUEM pediu (SenderClientId).
         [Rpc(SendTo.Server)]
@@ -94,7 +245,21 @@ namespace MudancaAssombrada
             // Só quem está segurando pode soltar (evita um cliente "arrancar" o móvel de outro).
             if (OwnerClientId != rpcParams.Receive.SenderClientId) return;
             isHeld.Value = false;
+            helper.Value = NoHelper; // soltou a primeira ponta: a outra cai junto
+            fakeHelper.Value = -1;
             NetworkObject.RemoveOwnership(); // devolve a posse para o host
+        }
+
+        [Rpc(SendTo.Server)]
+        void HelpRpc(bool holding, RpcParams rpcParams = default)
+        {
+            ulong sender = rpcParams.Receive.SenderClientId;
+            if (holding)
+            {
+                if (isHeld.Value && HolderFeelsWeight && sender != OwnerClientId && helper.Value == NoHelper && fakeHelper.Value < 0)
+                    helper.Value = sender;
+            }
+            else if (helper.Value == sender) helper.Value = NoHelper;
         }
 
         // Chamado pela Unity quando este objeto bate em algo.

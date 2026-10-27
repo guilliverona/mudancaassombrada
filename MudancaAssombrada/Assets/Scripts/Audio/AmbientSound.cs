@@ -39,9 +39,12 @@ namespace MudancaAssombrada
             if (playOnStart) source.Play();
         }
 
+        // Cama e ritmo abaixam quando o fantasma age (BedGain); TODO som de ambiente (clima e âncoras)
+        // obedece ao diretor de som (o vácuo: a casa se cala quando o perigo chega).
         void Update()
         {
-            if (ducks && source != null) source.volume = baseVolume * GameAudio.BedGain;
+            if (source == null) return;
+            source.volume = baseVolume * (ducks ? GameAudio.BedGain : 1f) * SoundDirector.AmbienceGain;
         }
 
         // Ligar e desligar por código (ex.: a caixinha de música que o Tiago desliga).

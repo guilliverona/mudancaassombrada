@@ -20,6 +20,8 @@ namespace MudancaAssombrada
         public static InputAction Sprint { get; private set; }
         public static InputAction Tap { get; private set; }      // bengala da Cida
         public static InputAction Whistle { get; private set; }  // apito do Marcelo
+        public static InputAction Flashlight { get; private set; } // lanterna (quem pegou uma no caminhão)
+        public static InputAction Fork { get; private set; }       // diapasão da Cida
         public static InputAction Pause { get; private set; }
         public static InputAction Restart { get; private set; }
         public static InputAction[] SelectCharacter { get; private set; } // teclas 1, 2, 3... (troca de personagem para testes)
@@ -65,6 +67,8 @@ namespace MudancaAssombrada
             Sprint = Button(map, "Correr", "<Keyboard>/leftShift", "<Gamepad>/leftStickPress");
             Tap = Button(map, "Bengala", "<Keyboard>/space", "<Gamepad>/buttonSouth");
             Whistle = Button(map, "Apito", "<Keyboard>/f", "<Gamepad>/buttonNorth");
+            Flashlight = Button(map, "Lanterna", "<Keyboard>/l", "<Gamepad>/dpad/up");
+            Fork = Button(map, "Diapasão", "<Keyboard>/q", "<Gamepad>/rightShoulder");
             Pause = Button(map, "Pausa", "<Keyboard>/escape", "<Gamepad>/start");
             Restart = Button(map, "Reiniciar", "<Keyboard>/r", "<Gamepad>/select");
 

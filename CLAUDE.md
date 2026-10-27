@@ -30,6 +30,7 @@ achá-los e as regras de trabalho. Ver "Como manter este arquivo" no fim.
 | Padrão visual da interface (cores do `Theme`, fontes, HUD) | [DESIGN.md](DESIGN.md) |
 | Modelos 3D: pipeline Blender → Unity, regras de modelagem, nomes, orçamento, o que já tem modelo | [ART_BIBLE.md](ART_BIBLE.md) |
 | O que já foi feito, o que vem a seguir, decisões em aberto | [PLANEJAMENTO.md](PLANEJAMENTO.md) |
+| Level design da Fase 1: briefing com os números do jogo, para projetar fora do código | [LEVEL_DESIGN_FASE1_BRIEFING.md](LEVEL_DESIGN_FASE1_BRIEFING.md) |
 | Os designs completos (fichas com vistas, cabeça e mãos, cenários) | Art Bible completo (link no ART_BIBLE.md) |
 
 **Antes de começar qualquer tarefa:** ler a parte do documento que trata do assunto e a tabela
@@ -135,6 +136,11 @@ tudo passa pelos serviços da Unity (Lobby + Relay), então precisa de internet.
   todos os `fileID`. Mesmo assim, conferir o diff antes de propor commit.
 - **Lados nos desenhos:** em várias fichas do Art Bible, o texto diz "direito" e o desenho mostra o
   lado esquerdo (bengala da Cida, lápis e bolsa do Tiago). Os modelos seguem o desenho.
+- **NavMesh do fantasma (raio 0,5 m, altura 2 m):** vão com menos de 1 m ele não atravessa; a colisão
+  de cima da porta precisa de folga (10 cm acima do vão; no 1º andar o arredondamento fecha); pé de
+  escada estreito isola (usar `NavMeshLink`). Conferir rotas com `NavMesh.CalculatePath` num script temporário.
+- **Luz ambiente:** trocar `RenderSettings.ambientLight` não basta no URP; sem `DynamicGI.UpdateEnvironment()`
+  a cena fica com o azul padrão do céu (a `NightLighting` já faz).
 - **Art Bible offline:** o PDF não abre aqui (falta o poppler). O `.html` salvo é um pacote: cada página
   vem comprimida (gzip + base64) no `__bundler/manifest`, e as tabelas ficam no `renderVals()` do template.
 - **PowerShell:** dentro de aspas duplas, `$nome_texto` vira variável; usar aspas simples ou

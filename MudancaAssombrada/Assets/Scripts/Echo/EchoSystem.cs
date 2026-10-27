@@ -11,6 +11,10 @@ namespace MudancaAssombrada
     public class EchoSystem : MonoBehaviour
     {
         const int MaxPulses = 8; // precisa ser igual ao MAX_PULSES do Echo.shader
+        // O diapasão (SoundType.Tuning) não é um estalo: a onda anda devagar e fica "cantando" uns
+        // 4 s, e cada superfície responde com o seu timbre (SurfaceTag) enquanto ela passa.
+        const float TuningSpeed = 2f;
+        const float TuningMaxRadius = 8f;
 
         [SerializeField] Shader echoShader;
         [SerializeField] float waveSpeed = 7f;      // metros por segundo
@@ -27,8 +31,24 @@ namespace MudancaAssombrada
         struct Pulse
         {
             public Vector3 origin;
-            public float radius, maxRadius, intensity;
+            public float radius, maxRadius, intensity, speed;
+            public bool tuning;
         }
+
+        // Ruído em volta de quem está jogando neste computador (0 = silêncio, 1 = colado numa fonte
+        // ligada). Encolhe as ondas (bengala: 12 m → 4 m), engrossa a borda e encurta a vida delas.
+        public static float NoiseLevel { get; private set; }
+
+        // Objetos com timbre: o material de eco de cada um e o timbre aplicado por último
+        // (o espelho muda de "vidro" para "vidro rachado" quando o Imitador entra nele).
+        struct Tagged
+        {
+            public SurfaceTag tag;
+            public Material[] materials;
+            public SurfaceType applied;
+        }
+        readonly List<Tagged> tagged = new();
+        static readonly int TimbreId = Shader.PropertyToID("_Timbre");
 
         readonly Pulse[] pulses = new Pulse[MaxPulses];
         readonly Vector4[] pulseData = new Vector4[MaxPulses];
@@ -85,32 +105,59 @@ namespace MudancaAssombrada
             SoundEmitted?.Invoke(sound);
 
             if (Instance == null || !sound.Is(Instance.visibleSounds)) return;
-            Instance.pulses[Instance.nextSlot] = new Pulse { origin = sound.Position, maxRadius = sound.Range, intensity = sound.Intensity };
+            // Num lugar barulhento a onda vai menos longe (só no desenho: a regra do fantasma não muda).
+            float range = sound.Range * Mathf.Lerp(1f, 1f / 3f, NoiseLevel);
+            bool tuning = sound.Is(SoundType.Tuning);
+            Instance.pulses[Instance.nextSlot] = new Pulse
+            {
+                origin = sound.Position,
+                maxRadius = tuning ? Mathf.Min(range, TuningMaxRadius) : range,
+                intensity = sound.Intensity,
+                speed = tuning ? TuningSpeed : Instance.waveSpeed,
+                tuning = tuning,
+            };
             Instance.nextSlot = (Instance.nextSlot + 1) % MaxPulses; // % = resto da divisão: 7 -> 0
         }
 
         void Update()
         {
+            // O ruído é medido onde está a câmera de quem joga aqui (a Cida, quando é ela).
+            var cam = Camera.main;
+            NoiseLevel = cam != null ? NoiseSource.LevelAt(cam.transform.position) : 0f;
+
             for (int i = 0; i < MaxPulses; i++)
             {
                 ref Pulse p = ref pulses[i]; // "ref" = mexer no original, não numa cópia
                 if (p.intensity > 0)
                 {
-                    p.radius += waveSpeed * Time.deltaTime;
+                    p.radius += p.speed * Time.deltaTime;
                     if (p.radius >= p.maxRadius) p.intensity = 0; // a onda morreu
                 }
 
-                // A onda enfraquece conforme se espalha.
-                float fade = p.intensity > 0 ? p.intensity * (1f - p.radius / p.maxRadius) : 0f;
+                // A onda enfraquece conforme se espalha (e mais rápido no meio do barulho).
+                float fade = p.intensity > 0 ? p.intensity * (1f - p.radius / p.maxRadius) * (1f - NoiseLevel * 0.5f) : 0f;
                 pulseData[i] = new Vector4(p.origin.x, p.origin.y, p.origin.z, p.radius);
-                settingsData[i] = new Vector4(fade, 0, 0, 0);
+                // y = é do diapasão? z = velocidade (o shader calcula há quanto tempo a onda passou).
+                settingsData[i] = new Vector4(fade, p.tuning ? 1f : 0f, p.speed, 0);
             }
 
             // Envia tudo para a placa de vídeo. Todos os materiais Echo leem isto.
             Shader.SetGlobalVectorArray(PulsesId, pulseData);
             Shader.SetGlobalVectorArray(SettingsId, settingsData);
             Shader.SetGlobalColor(ColorId, echoColor);
-            Shader.SetGlobalFloat(RingWidthId, ringWidth);
+            Shader.SetGlobalFloat(RingWidthId, ringWidth * (1f + NoiseLevel * 2f));
+
+            // Timbres que mudam sozinhos (o espelho com o Imitador dentro).
+            for (int i = 0; i < tagged.Count; i++)
+            {
+                var t = tagged[i];
+                if (t.tag == null) continue;
+                var now = t.tag.Current;
+                if (now == t.applied) continue;
+                foreach (var m in t.materials) m.SetFloat(TimbreId, (float)now);
+                t.applied = now;
+                tagged[i] = t;
+            }
         }
 
         // Quem decide se a tela fica cega agora é o CharacterSwitcher (pela ficha do personagem).
@@ -136,6 +183,7 @@ namespace MudancaAssombrada
                 foreach (var pair in originalMaterials)
                     if (pair.Key != null) pair.Key.sharedMaterials = pair.Value;
                 originalMaterials.Clear();
+                tagged.Clear();
             }
         }
 
@@ -150,6 +198,8 @@ namespace MudancaAssombrada
                 if (originalMaterials.ContainsKey(r)) continue; // já está escuro
 
                 originalMaterials[r] = r.sharedMaterials;
+                var tag = r.GetComponentInParent<SurfaceTag>();
+                var timbre = tag != null ? tag.Current : SurfaceType.Default;
                 var echoMats = new Material[r.sharedMaterials.Length];
                 for (int i = 0; i < echoMats.Length; i++)
                 {
@@ -158,8 +208,10 @@ namespace MudancaAssombrada
                     // Copia a cor original (se tiver) para o objeto manter um "tom".
                     if (original != null && original.HasProperty(BaseColorId))
                         echoMats[i].SetColor(BaseColorId, original.GetColor(BaseColorId));
+                    echoMats[i].SetFloat(TimbreId, (float)timbre); // do que é feito (para o diapasão)
                 }
                 r.sharedMaterials = echoMats;
+                if (tag != null) tagged.Add(new Tagged { tag = tag, materials = echoMats, applied = timbre });
             }
         }
     }

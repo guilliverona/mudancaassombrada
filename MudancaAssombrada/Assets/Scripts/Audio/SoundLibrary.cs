@@ -47,9 +47,37 @@ namespace MudancaAssombrada
             [Tooltip("Espera o contratempo do relógio (HouseClock) para tocar. Só para sons que se repetem " +
                      "sozinhos e podem atrasar meio segundo (respiração, sussurro).")]
             public bool onBeat;
+            [Tooltip("Só para AMEAÇA. Ligado: é um acontecimento (captura, desmascarar) e toca sempre, cortando " +
+                     "as ameaças de ambiente. Desligado: é clima (sussurro, acorde do piano) e só toca quando " +
+                     "não há outra ameaça soando nem acabou de soar (o respiro do GameAudio).")]
+            public bool important;
 
-            // Sorteia uma das variações.
-            public AudioClip RandomClip() => clips[UnityEngine.Random.Range(0, clips.Length)];
+            // O BARALHO (só durante o jogo, não vai para o asset): a ordem embaralhada das variações e
+            // quantas já saíram. Todas tocam antes de alguma repetir, e a última de uma rodada nunca
+            // abre a seguinte (nada de "minha fama... minha fama...").
+            [NonSerialized] int[] deck;
+            [NonSerialized] int dealt;
+
+            // Tira a próxima variação do baralho.
+            public AudioClip RandomClip()
+            {
+                if (clips.Length <= 1) return clips.Length == 1 ? clips[0] : null;
+                if (deck == null || deck.Length != clips.Length) { deck = new int[clips.Length]; dealt = clips.Length; for (int i = 0; i < deck.Length; i++) deck[i] = i; }
+                if (dealt >= deck.Length) Shuffle();
+                return clips[deck[dealt++]];
+            }
+
+            void Shuffle()
+            {
+                int last = deck[^1]; // a última da rodada que acabou
+                for (int i = deck.Length - 1; i > 0; i--) // Fisher-Yates: todo arranjo com a mesma chance
+                {
+                    int j = UnityEngine.Random.Range(0, i + 1);
+                    (deck[i], deck[j]) = (deck[j], deck[i]);
+                }
+                if (deck[0] == last) (deck[0], deck[^1]) = (deck[^1], deck[0]);
+                dealt = 0;
+            }
         }
 
         [Tooltip("O som de cada tipo quando a fonte não tem um SoundVoice dizendo outro.")]

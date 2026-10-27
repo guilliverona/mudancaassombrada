@@ -19,7 +19,10 @@ namespace MudancaAssombrada
     //   - no tempo: sons marcados com 'onBeat' esperam o contratempo do relógio (HouseClock);
     //   - abaixar a cama: enquanto toca um som de AMEAÇA, a cama e o ritmo descem (BedGain),
     //     como o "ducking" de um rádio quando o locutor fala;
-    //   - a própria respiração soa mais baixa: ela é pista para os OUTROS, não para quem respira.
+    //   - a própria respiração soa mais baixa: ela é pista para os OUTROS, não para quem respira;
+    //   - UMA AMEAÇA POR VEZ, com respiro: uma ameaça de clima (sussurro, acorde do piano) só toca se
+    //     nenhuma outra está soando e já passou o respiro desde a última. Um acontecimento ('important':
+    //     captura, desmascarar) toca sempre e corta as de clima. Susto colado em susto não assusta: cansa.
     //
     // Para tocar um som que não é evento de jogo:  GameAudio.Play("livro_caindo", posição)
     // e na interface (sem posição):                GameAudio.PlayUi(SoundLibrary.UiClick)
@@ -29,6 +32,7 @@ namespace MudancaAssombrada
         const float DuckedGain = 0.45f;      // cama e ritmo durante uma ameaça (uns -7 dB)
         const float DuckSpeed = 3f;          // quão rápido abaixa e volta (por segundo)
         const float OwnBreathVolume = 0.5f;  // a minha respiração, no meu ouvido
+        const float ThreatRest = 6f;         // segundos de respiro depois de uma ameaça, antes de outra de clima
 
         static GameAudio instance;
 
@@ -50,6 +54,8 @@ namespace MudancaAssombrada
         readonly Dictionary<string, float> lastPlayed = new(); // id -> Time.time da última vez
         readonly List<Pending> pending = new();
         float duckUntil;
+        readonly Dictionary<AudioSource, SoundLibrary.Entry> threats = new(); // ameaças soando agora
+        float threatEnds; // quando a última ameaça termina de soar
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.BeforeSceneLoad)]
         static void Create()
@@ -144,11 +150,35 @@ namespace MudancaAssombrada
         void PlayAt(string id, Vector3 position, float volume)
         {
             var entry = library.Get(id);
-            if (entry == null || !Allow(entry)) return; // sem arquivo ou cedo demais: silêncio, sem erro
+            if (entry == null || !ThreatSlot(entry) || !Allow(entry)) return; // sem arquivo, sem vez ou cedo demais: silêncio, sem erro
 
             float wait = entry.onBeat ? HouseClock.DelayToOffBeat() : 0f;
             if (wait > 0.01f) pending.Add(new Pending { entry = entry, position = position, volume = volume, time = Time.time + wait });
             else Voice(entry, position, volume);
+        }
+
+        // A vez das ameaças. Acontecimento: sempre, e cala as de clima que estiverem soando.
+        // Clima: só com a casa livre de ameaça e depois do respiro.
+        bool ThreatSlot(SoundLibrary.Entry entry)
+        {
+            if (entry.layer != SoundLayer.Threat) return true;
+            CleanThreats();
+            if (entry.important)
+            {
+                foreach (var pair in threats)
+                    if (!pair.Value.important) pair.Key.Stop();
+                return true;
+            }
+            return threats.Count == 0 && Time.unscaledTime >= threatEnds + ThreatRest;
+        }
+
+        void CleanThreats()
+        {
+            if (threats.Count == 0) return;
+            var done = new List<AudioSource>();
+            foreach (var pair in threats)
+                if (!pair.Key.isPlaying) done.Add(pair.Key);
+            foreach (var s in done) threats.Remove(s);
         }
 
         // Intervalo mínimo: marca a hora e diz se pode tocar.
@@ -178,7 +208,13 @@ namespace MudancaAssombrada
             source.maxDistance = entry.maxDistance;
             source.Play();
 
-            if (entry.layer == SoundLayer.Threat) Duck(source.clip.length);
+            threats.Remove(source); // a caixa pode ter sido reaproveitada
+            if (entry.layer == SoundLayer.Threat)
+            {
+                Duck(source.clip.length);
+                threats[source] = entry;
+                threatEnds = Mathf.Max(threatEnds, Time.unscaledTime + source.clip.length / Mathf.Max(0.1f, source.pitch));
+            }
         }
     }
 }

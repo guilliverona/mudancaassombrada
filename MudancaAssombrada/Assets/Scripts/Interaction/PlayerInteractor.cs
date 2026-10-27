@@ -62,7 +62,7 @@ namespace MudancaAssombrada
                 return;
             }
 
-            if (Carrier != null && Carrier.IsHolding)
+            if (Carrier != null && Carrier.HasLoad)
             {
                 StopHolding();
                 target = null;

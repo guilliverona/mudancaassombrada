@@ -37,6 +37,7 @@ namespace MudancaAssombrada
 
         Light sun;
         Color sky; // a cor do céu agora
+        float appliedAmbient = -1f; // o brilho da luz ambiente da última vez que a sonda foi recalculada
 
         // O URP avisa "vou desenhar esta câmera" ANTES de cada desenho. Pintar o fundo nessa hora
         // pega até a câmera do jogador que acabou de nascer, já no primeiro quadro (sem isso,
@@ -77,7 +78,16 @@ namespace MudancaAssombrada
                 sun.transform.rotation = Quaternion.Slerp(Quaternion.Euler(moonAngles), Quaternion.Euler(sunAngles), t);
             }
 
-            RenderSettings.ambientLight = Color.Lerp(nightAmbient, dawnAmbient, t);
+            Color ambient = Color.Lerp(nightAmbient, dawnAmbient, t);
+            RenderSettings.ambientLight = ambient;
+            // Trocar a cor não basta: o URP ilumina pela "sonda de ambiente", calculada uma vez. Sem
+            // recalcular, a cena ficava com a luz azulada padrão do céu (nada era escuro de verdade).
+            // Recalcula só quando a cor muda o suficiente para se notar (é barato, mas não é de graça).
+            if (Mathf.Abs(ambient.grayscale - appliedAmbient) > 0.002f || appliedAmbient < 0f)
+            {
+                appliedAmbient = ambient.grayscale;
+                DynamicGI.UpdateEnvironment();
+            }
             sky = Color.Lerp(nightSky, dawnSky, t);
             RenderSettings.fogColor = sky;
             RenderSettings.fogDensity = Mathf.Lerp(nightFogDensity, dawnFogDensity, t);

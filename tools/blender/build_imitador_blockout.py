@@ -19,6 +19,8 @@ import math
 import sys
 from pathlib import Path
 
+import bpy
+
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from mathutils import Vector  # noqa: E402
@@ -112,19 +114,26 @@ def build_body(arm, col):
     return p.to_object(col, arm)
 
 
-def build_mask(arm, col):
-    """Máscara de porcelana (comédia) sobre um vazio, e a cartola com fita vinho."""
-    p = bc.Part("SK_GHO_Imitador_Mascara", MATS)
+def build_mask(arm, col, tragic=False):
+    """Máscara de porcelana sobre um vazio, e a cartola com fita vinho.
+
+    tragic=True monta a TRAGÉDIA com as mesmas primitivas, na mesma ordem (mesmos vértices):
+    só mudam as posições. Ela vira o blendshape "Tragedia" da máscara de comédia (main).
+    """
+    p = bc.Part("SK_GHO_Imitador_Mascara" + ("_Tragedia" if tragic else ""), MATS)
     p.ellipsoid(MASK_C, (0.15, 0.06, 0.2), "Porcelana", "Head", seg=24, rings=14)
     for s in (1, -1):
-        p.ellipsoid(MASK_C + Vector((0.055 * s, -0.052, 0.04)), (0.025, 0.012, 0.03), "Olho", "Head", seg=12, rings=6)
+        eye_z = 0.025 if tragic else 0.04                 # tragédia: olhos caídos
+        p.ellipsoid(MASK_C + Vector((0.055 * s, -0.052, eye_z)), (0.025, 0.012, 0.03), "Olho", "Head", seg=12, rings=6)
         p.ellipsoid(MASK_C + Vector((0.095 * s, -0.04, -0.03)), (0.03, 0.01, 0.02), "Bochecha", "Head", seg=10, rings=5)
-        # sobrancelhas pintadas (arco)
-        p.polyline([MASK_C + Vector((0.025 * s, -0.056, 0.09)), MASK_C + Vector((0.06 * s, -0.056, 0.105)),
-                    MASK_C + Vector((0.095 * s, -0.05, 0.09))], 0.005, "Boca", "Head", seg=5)
-    # sorriso largo (cantos para cima)
-    smile = [MASK_C + Vector((math.cos(a) * 0.085, -0.056, -0.07 + math.sin(a) * 0.045))
-             for a in [math.radians(190 + i * 20) for i in range(9)]]
+        # sobrancelhas pintadas: arco na comédia; na tragédia, a ponta de dentro sobe (aflição)
+        brow = ((0.025, 0.09), (0.06, 0.105), (0.095, 0.09)) if not tragic else ((0.025, 0.12), (0.06, 0.1), (0.095, 0.075))
+        p.polyline([MASK_C + Vector((x * s, -0.056 + (0.006 if x > 0.09 else 0), z)) for x, z in brow],
+                   0.005, "Boca", "Head", seg=5)
+    # boca: sorriso largo (cantos para cima) ou, na tragédia, o mesmo arco virado (cantos para baixo)
+    start, center_z = (10, -0.11) if tragic else (190, -0.07)
+    smile = [MASK_C + Vector((math.cos(a) * 0.085, -0.056, center_z + math.sin(a) * 0.045))
+             for a in [math.radians(start + i * 20) for i in range(9)]]
     p.polyline(smile, 0.01, "Boca", "Head", seg=6)
     # cartola pequena, inclinada para trás
     top = MASK_C + Vector((0.0, 0.01, 0.2))
@@ -135,11 +144,23 @@ def build_mask(arm, col):
     return p.to_object(col, arm)
 
 
+def add_tragedy_shape(mask, tragedy):
+    """Copia as posições da máscara de tragédia como o blendshape "Tragedia" (0 = comédia, 100 = tragédia).
+    O Unity lê o blendshape no SkinnedMeshRenderer: o GhostVisual gira a máscara ao ser desmascarado."""
+    assert len(mask.data.vertices) == len(tragedy.data.vertices), "comédia e tragédia precisam da mesma malha"
+    mask.shape_key_add(name="Basis", from_mix=False)
+    key = mask.shape_key_add(name="Tragedia", from_mix=False)
+    for i, v in enumerate(tragedy.data.vertices):
+        key.data[i].co = v.co
+    bpy.data.objects.remove(tragedy)
+
+
 def main():
     scene, cols = bc.new_scene("Imitador", kind="Ghosts")
     arm = build_rig(cols["Rig"])
     body = build_body(arm, cols["Geo"])
     mask = build_mask(arm, cols["Geo"])
+    add_tragedy_shape(mask, build_mask(arm, cols["Geo"], tragic=True))
 
     soc = cols["Sockets"]
     bc.add_socket("SOC_Hand_L", soc, arm, "LeftHand", (0.48, -0.02, 0.3))

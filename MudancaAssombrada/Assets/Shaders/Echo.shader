@@ -2,11 +2,19 @@
 // Um shader é um programa que roda NA PLACA DE VÍDEO, uma vez para cada pixel da tela.
 // A pergunta que ele responde é: "de que cor fica este pixel?"
 // Resposta aqui: preto, a não ser que uma onda de som esteja passando por ele.
+//
+// Dois tipos de onda:
+//   - a comum (passos, bengala, batidas): um anel que mostra a FORMA das coisas;
+//   - a do diapasão: anda devagar e cada superfície "canta" com o seu TIMBRE (_Timbre, vem do
+//     SurfaceTag): madeira curta e quente, vidro fria e longa, metal aguda, tecido quase nada,
+//     pessoa estremece... e a cópia do Imitador não responde.
+// E um brilho que não depende de onda: o espelho com o Imitador dentro "respira" (timbre 3).
 Shader "MudancaAssombrada/Echo"
 {
     Properties
     {
         _BaseColor ("Cor do objeto", Color) = (1, 1, 1, 1)
+        _Timbre ("Timbre (SurfaceType)", Float) = 0
     }
 
     SubShader
@@ -40,14 +48,29 @@ Shader "MudancaAssombrada/Echo"
             // Propriedades do material (uma por objeto).
             CBUFFER_START(UnityPerMaterial)
                 half4 _BaseColor;
+                float _Timbre;
             CBUFFER_END
 
             // Propriedades GLOBAIS: o script EchoSystem.cs preenche estas variáveis
             // uma vez por frame, e TODOS os materiais com este shader leem os mesmos valores.
             float4 _EchoPulses[MAX_PULSES];   // xyz = origem da onda, w = raio atual
-            float4 _EchoSettings[MAX_PULSES]; // x = intensidade (0 = onda desligada)
+            float4 _EchoSettings[MAX_PULSES]; // x = intensidade (0 = desligada), y = 1 se diapasão, z = velocidade
             half4  _EchoColor;
             float  _EchoRingWidth;
+
+            // O timbre de cada material: cor, espessura do anel, quanto tempo "canta" e quanto responde.
+            //   0 padrão · 1 madeira · 2 vidro · 3 vidro rachado · 4 metal · 5 tecido · 6 pessoa · 7 cópia
+            void Timbre(float t, out float3 color, out float width, out float duration, out float gain)
+            {
+                color = float3(0.55, 0.8, 1.0); width = 1.0; duration = 0.4; gain = 0.6;      // padrão
+                if (t > 0.5 && t < 1.5) { color = float3(0.45, 0.55, 1.0); width = 2.0; duration = 0.8; gain = 1.0; } // madeira
+                if (t > 1.5 && t < 2.5) { color = float3(0.6, 1.0, 1.0);   width = 0.5; duration = 2.5; gain = 1.1; } // vidro
+                if (t > 2.5 && t < 3.5) { color = float3(0.35, 0.6, 0.55); width = 1.2; duration = 1.2; gain = 1.3; } // rachado
+                if (t > 3.5 && t < 4.5) { color = float3(1.0, 1.0, 1.0);   width = 0.4; duration = 1.8; gain = 1.0; } // metal
+                if (t > 4.5 && t < 5.5) { color = float3(0.5, 0.6, 0.8);   width = 1.5; duration = 0.3; gain = 0.15; } // tecido
+                if (t > 5.5 && t < 6.5) { color = float3(0.85, 0.95, 1.0); width = 1.0; duration = 0.35; gain = 1.4; } // pessoa
+                if (t > 6.5)            { color = float3(0, 0, 0);         width = 1.0; duration = 0.0; gain = 0.0; } // a cópia: nada
+            }
 
             // VERTEX SHADER: roda uma vez por vértice. Só converte posições.
             Varyings vert(Attributes input)
@@ -73,23 +96,45 @@ Shader "MudancaAssombrada/Echo"
                     float radius  = _EchoPulses[i].w;
                     float dist    = distance(input.positionWS, origin);
 
-                    // Anel: brilha forte quando o pixel está bem na "frente" da onda.
-                    // abs(dist - radius) = quão longe o pixel está da borda da onda.
-                    float ring = 1 - saturate(abs(dist - radius) / _EchoRingWidth);
-
-                    // Rastro: o que a onda já passou continua visível, apagando aos poucos.
-                    float trail = dist < radius ? saturate(1 - (radius - dist) / 3.0) * 0.25 : 0;
-
                     // Faces viradas para o som "refletem" mais (como o eco de verdade).
                     float3 toOrigin = normalize(origin - input.positionWS);
                     float facing = saturate(dot(normalize(input.normalWS), toOrigin)) * 0.6 + 0.4;
 
-                    light += (ring + trail) * intensity * facing;
+                    if (_EchoSettings[i].y > 0.5)
+                    {
+                        // DIAPASÃO: o anel passa devagar e a superfície continua cantando um pouco.
+                        float3 color; float width; float duration; float gain;
+                        Timbre(_Timbre, color, width, duration, gain);
+                        float ring = 1 - saturate(abs(dist - radius) / (_EchoRingWidth * width));
+                        float since = (radius - dist) / max(_EchoSettings[i].z, 0.01); // segundos desde que a onda passou
+                        float sing = dist < radius ? saturate(1 - since / max(duration, 0.01)) : 0;
+                        // Vidro rachado não canta limpo: treme, "bate-estaca".
+                        if (_Timbre > 2.5 && _Timbre < 3.5) sing *= step(0, sin(_Time.y * 38));
+                        light += color * (ring + sing * 0.8) * intensity * gain * facing;
+                        continue;
+                    }
+
+                    // Anel: brilha forte quando o pixel está bem na "frente" da onda.
+                    // abs(dist - radius) = quão longe o pixel está da borda da onda.
+                    float ringNormal = 1 - saturate(abs(dist - radius) / _EchoRingWidth);
+
+                    // Rastro: o que a onda já passou continua visível, apagando aos poucos.
+                    float trail = dist < radius ? saturate(1 - (radius - dist) / 3.0) * 0.25 : 0;
+
+                    light += _EchoColor.rgb * (ringNormal + trail) * intensity * facing;
+                }
+
+                // O espelho com o Imitador DENTRO respira um brilho fraco esverdeado, mesmo sem onda
+                // nenhuma. Só a Cida vê (só a tela dela usa este shader); quem enxerga vê um espelho comum.
+                if (_Timbre > 2.5 && _Timbre < 3.5)
+                {
+                    float breath = 0.5 + 0.5 * sin(_Time.y * 1.4 + input.positionWS.y * 2.5);
+                    light += float3(0.35, 0.6, 0.55) * (0.04 + 0.08 * breath);
                 }
 
                 // Um leve toque da cor original, para distinguir armário de parede.
                 half3 tint = lerp(half3(1, 1, 1), _BaseColor.rgb, 0.35);
-                return half4(_EchoColor.rgb * tint * light, 1);
+                return half4(tint * light, 1);
             }
             ENDHLSL
         }

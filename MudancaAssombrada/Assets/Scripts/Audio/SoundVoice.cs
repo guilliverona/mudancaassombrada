@@ -32,6 +32,7 @@ namespace MudancaAssombrada
     // Quem não tem este componente usa os padrões da SoundLibrary.
     //
     // Não muda nada na regra do jogo (alcance, quem ouve): só o que sai na caixa de som.
+    // Som VAZIO = mudo: o evento continua no eco e na vibração, mas não toca nada (o pulso das fontes de ruído).
     // Funciona em rede sem nada a mais: o SoundEvent já chega com a fonte (Source) em todo computador.
     public class SoundVoice : MonoBehaviour
     {

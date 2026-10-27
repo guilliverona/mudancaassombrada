@@ -38,6 +38,7 @@ namespace MudancaAssombrada
         VibrationVision vibration;
         CaneTapper cane;
         Whistle whistle;
+        TuningFork fork;
         PlayerMovement movement;
         FurnitureCarrier carrier;
 
@@ -59,6 +60,7 @@ namespace MudancaAssombrada
             vibration = GetComponent<VibrationVision>();
             cane = GetComponent<CaneTapper>();
             whistle = GetComponent<Whistle>();
+            fork = GetComponent<TuningFork>();
             movement = GetComponent<PlayerMovement>();
             carrier = GetComponent<FurnitureCarrier>();
         }
@@ -177,6 +179,7 @@ namespace MudancaAssombrada
             cane.CanTap = c.canTap;
             vibration.enabled = c.vibrationVision;
             whistle.enabled = c.whistle;
+            if (fork != null) fork.enabled = c.tuningFork;
 
             carrier.Strength = c.strength;
             carrier.CarryNoise = c.carryNoise;

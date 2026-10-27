@@ -186,9 +186,11 @@ namespace MudancaAssombrada
             foreach (var g in Ghost.All) g.ServerReset();
             foreach (var i in Interactable.All) i.ServerReset();
             foreach (var o in Objective.All) o.ServerReset();
+            foreach (var l in FlashlightPickup.All) l.ServerReset(); // lanternas e pilhas de volta ao lugar
             foreach (var p in NetworkPlayer.All)
             {
                 if (p.Condition != null) p.Condition.ServerReset(); // todo mundo de pé de novo
+                if (p.TryGetComponent(out Flashlight flashlight)) flashlight.ServerReset(); // e de mãos vazias
                 p.ResetPositionRpc();
             }
 
