@@ -1,4 +1,7 @@
+using System.Collections.Generic;
+using System.Linq;
 using UnityEditor;
+using UnityEngine;
 
 namespace MudancaAssombrada.Editor
 {
@@ -40,6 +43,21 @@ namespace MudancaAssombrada.Editor
                 importer.importAnimation = true;
                 importer.animationType = ModelImporterAnimationType.Human;
                 importer.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
+                // Clipe feito no Blender sobre um personagem nosso: lê com o avatar DELE.
+                string clip = System.IO.Path.GetFileNameWithoutExtension(assetPath);
+                if (OwnRigClips.TryGetValue(clip, out var source))
+                {
+                    var avatar = AssetDatabase.LoadAllAssetsAtPath(source).OfType<Avatar>().FirstOrDefault();
+                    if (avatar != null)
+                    {
+                        importer.avatarSetup = ModelImporterAvatarSetup.CopyFromOther;
+                        importer.sourceAvatar = avatar;
+                        // Mesma conversão de eixos do modelo (feito pelo mesmo export_fbx), senão
+                        // os ossos do clipe não batem com os do avatar e a pose sai torta.
+                        importer.bakeAxisConversion = true;
+                    }
+                    else UnityEngine.Debug.LogWarning($"{clip}: o modelo {source} ainda não tem avatar; importe ele antes.");
+                }
                 return;
             }
 
@@ -58,6 +76,15 @@ namespace MudancaAssombrada.Editor
         }
 
         bool IsAnimation => assetPath.StartsWith(ArtFolder + "Animations/");
+
+        // Clipes gerados pelos scripts de tools/blender sobre o rig de um personagem nosso (ex.: a
+        // pega da bengala, no rig da Cida). O FBX só tem o esqueleto, e JÁ na pose: "criar o avatar
+        // deste modelo" tomaria a própria pose como repouso e o clipe não mexeria em nada. Então
+        // eles usam o avatar do personagem de onde vieram (Copy From Other Avatar).
+        static readonly Dictionary<string, string> OwnRigClips = new()
+        {
+            { "PegaBengala", "Assets/Art/Characters/Cida/SK_CHR_Cida.fbx" },
+        };
 
         // Clipes que tocam uma vez só (transições): o resto fica em loop.
         // O "Cair" para no último quadro: é a pose de caído, até alguém ajudar.
