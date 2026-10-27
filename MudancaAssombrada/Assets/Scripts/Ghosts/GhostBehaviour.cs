@@ -47,7 +47,7 @@ namespace MudancaAssombrada
         // A fase reiniciou: o Ghost já voltou para casa, o comportamento recomeça do zero.
         public virtual void ServerReset() => ServerStart();
 
-        // Um jogador apontou para o fantasma disfarçado: foi desmascarado. (Todos ficam sabendo.)
+        // Um jogador apontou para o fantasma disfarçado (ou na reverência): foi desmascarado.
         public virtual void ServerUnmasked() { }
 
         // O fantasma acabou de derrubar este jogador (ele ficou caído). (Todos ficam sabendo.)

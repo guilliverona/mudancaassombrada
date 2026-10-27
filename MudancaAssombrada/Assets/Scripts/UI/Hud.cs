@@ -143,10 +143,16 @@ namespace MudancaAssombrada
             }
 
             UpdateStamina(player.Movement);
-            // Caído, a dica do centro vira o aviso (apagado: não há o que apertar).
-            bool down = player.Condition != null && player.Condition.IsDown;
-            UpdateHint(down ? new InteractionPrompt("Você caiu! Espere um colega te ajudar.", false)
-                     : player.Interactor != null ? player.Interactor.Prompt : InteractionPrompt.None);
+            // Caído ou sendo puxado, a dica do centro vira o aviso (apagado: não há o que apertar).
+            // Puxado, a contagem: quantos segundos faltam para o espelho levar.
+            var condition = player.Condition;
+            InteractionPrompt prompt = player.Interactor != null ? player.Interactor.Prompt : InteractionPrompt.None;
+            if (condition != null && condition.IsDown) prompt = new InteractionPrompt("Você caiu! Espere um colega te ajudar.", false);
+            else if (condition != null && condition.IsPulled && !prompt.Visible)
+                prompt = new InteractionPrompt(condition.IsAnchored
+                    ? "Seguraram você! Aguente firme..."
+                    : $"Puxado para o espelho! {Mathf.CeilToInt(condition.PullLeft)} s: alguém precisa te segurar ou apontar o falso", false);
+            UpdateHint(prompt);
             UpdateCharacter(player.Character);
             UpdateCues(player.Cues);
         }
@@ -179,8 +185,19 @@ namespace MudancaAssombrada
             sb.Clear();
             sb.Append("Você: <b>").Append(me.FullName).Append("</b>");
             // As teclas das habilidades vêm do GameInput: se a tecla mudar lá, a dica muda sozinha.
-            if (me.canTap) sb.Append("\n[").Append(GameInput.KeyLabel(GameInput.Tap)).Append("] Bengala");
+            if (me.canTap) sb.Append("\n[").Append(GameInput.KeyLabel(GameInput.Tap)).Append("] Bengala (segure: chamar)");
+            if (me.tuningFork && switcher.TryGetComponent(out TuningFork fork))
+                sb.Append("\n[").Append(GameInput.KeyLabel(GameInput.Fork)).Append("] Diapasão")
+                  .Append(fork.Ready01 < 1f ? Colored($" {Mathf.CeilToInt((1f - fork.Ready01) * 8f)}s", Theme.MutedColor) : "");
             if (me.whistle) sb.Append("\n[").Append(GameInput.KeyLabel(GameInput.Whistle)).Append("] Apito");
+            // A lanterna só aparece depois de pegar uma no caminhão; a carga fica vermelha quando falha.
+            if (switcher.TryGetComponent(out Flashlight flashlight) && flashlight.Has)
+            {
+                int charge = Mathf.CeilToInt(flashlight.Charge01 * 100f);
+                Color color = flashlight.Charge01 < 0.2f ? Theme.DangerColor : flashlight.IsOn ? Theme.HighlightColor : Theme.MutedColor;
+                sb.Append("\n[").Append(GameInput.KeyLabel(GameInput.Flashlight)).Append("] Lanterna ")
+                  .Append(Colored($"{charge}%{(flashlight.IsOn ? "" : " (desligada)")}", color));
+            }
 
             // Trocar de personagem no meio da partida é só para TESTES (no roteiro, cada jogador
             // é um personagem fixo). Por isso a lista só aparece no editor / build de desenvolvimento.

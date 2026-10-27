@@ -40,6 +40,20 @@ MATS = bc.Materials("MAT_PRP", {
     "Fita": ("#E9DFC8", 0.0, 0.5, 0.0),
     "Carimbo": ("#C8463C", 0.0, 0.8, 0.0),
     "Petroleo": ("#3F5A5E", 0.2, 0.55, 0.0),
+    "Ferro": ("#6E6A72", 1.0, 0.45, 0.0),
+    "Louca": ("#E6E2D6", 0.0, 0.3, 0.0),
+    "MadeiraManequim": ("#B08A62", 0.0, 0.6, 0.0),  # madeira clara e lisa: lê "falso" mesmo sem textura
+    "Lencol": ("#A9A396", 0.0, 0.95, 0.0),         # lençol encardido sobre os móveis abandonados
+    "LencolSombra": ("#8C8679", 0.0, 0.95, 0.0),
+    "Teia": ("#8E8E96", 0.0, 0.9, 0.0),
+    "Reboco": ("#6A6460", 0.0, 0.95, 0.0),          # caliça do teto que caiu
+    "PapelVinho": ("#5A1E2A", 0.0, 0.9, 0.0),
+    "PapelVelho": ("#7A6A4E", 0.0, 0.9, 0.0),       # o papel de parede mais antigo, por baixo
+    "VidroQuebrado": ("#1E2A3A", 0.6, 0.1, 0.0),
+    "Papel": ("#D8D0BC", 0.0, 0.9, 0.0),
+    "Cera": ("#E6DCC4", 0.0, 0.6, 0.0),
+    "Plastico": ("#2A2A30", 0.0, 0.5, 0.0),
+    "Lente": ("#FFE8B0", 0.0, 0.2, 1.5),
     # lombadas de livro (variam por prateleira, todas dessaturadas: o escuro é o padrão)
     "Livro1": ("#6E3A2A", 0.0, 0.8, 0.0),
     "Livro2": ("#3F5A5E", 0.0, 0.8, 0.0),
@@ -264,6 +278,269 @@ def build_relogio(col):
     return p.to_static(col)
 
 
+# ---------- Casa do Espelho (LEVEL_DESIGN_FASE1.md §9): cenário e a arara ----------
+
+def build_manequim(name, variant, col):
+    """Manequim de figurino (0,45 × 0,30 × 1,75 m), fixo. No eco lê igual ao Imitador: sem passos e
+    sem respiração (a pegadinha da fase). Três roupas: A vestido de veludo, B casaca, C o COLETE
+    DA EMPRESA (a piada: alguém vestiu o manequim com o uniforme)."""
+    p = bc.Part(f"SM_PRP_{name}", MATS)
+    p.tube((0, 0, 0.0), (0, 0, 0.04), 0.18, 0.17, "Preto", "root", seg=16)          # base
+    p.tube((0, 0, 0.04), (0, 0, 0.82), 0.015, 0.015, "Latao", "root", seg=8)        # haste
+    p.ellipsoid((0, 0, 0.9), (0.16, 0.1, 0.1), "MadeiraManequim", "root", seg=14, rings=8)  # quadril
+    p.ellipsoid((0, 0, 1.22), (0.18, 0.11, 0.28), "MadeiraManequim", "root", seg=16, rings=10)  # tronco
+    p.tube((0, 0, 1.48), (0, 0, 1.56), 0.04, 0.035, "MadeiraManequim", "root", seg=10)  # pescoço
+    p.ellipsoid((0, 0, 1.65), (0.085, 0.095, 0.11), "MadeiraManequim", "root", seg=14, rings=8)  # cabeça
+    if variant == "A":
+        p.tube((0, 0, 1.02), (0, 0, 0.42), 0.17, 0.3, "Veludo", "root", seg=18)     # saia
+        p.ellipsoid((0, 0, 1.22), (0.19, 0.12, 0.25), "Veludo", "root", seg=16, rings=10)
+        p.ellipsoid((0, -0.11, 1.32), (0.05, 0.01, 0.05), "Dourado", "root", seg=8, rings=4)  # broche
+    elif variant == "B":
+        p.ellipsoid((0, 0, 1.2), (0.21, 0.13, 0.3), "Tecido", "root", seg=16, rings=10)  # casaca
+        p.box((0, 0.02, 0.86), (0.36, 0.2, 0.3), "Tecido", "root")                    # aba
+        p.tube((0, 0, 1.74), (0, 0, 1.9), 0.06, 0.06, "Preto", "root", seg=12)          # cartola
+        p.tube((0, 0, 1.73), (0, 0, 1.75), 0.11, 0.11, "Preto", "root", seg=14)
+    else:
+        p.ellipsoid((0, 0, 1.18), (0.2, 0.125, 0.24), "Petroleo", "root", seg=16, rings=10)  # colete
+        p.box((-0.07, -0.12, 1.26), (0.08, 0.01, 0.05), "Carimbo", "root")           # logo da empresa
+        p.ellipsoid((0, 0, 1.72), (0.095, 0.1, 0.05), "Petroleo", "root", seg=12, rings=6)  # boné
+        p.box((0, -0.1, 1.71), (0.12, 0.08, 0.015), "Petroleo", "root")             # aba do boné
+    return p.to_static(col)
+
+
+def build_gramofone(col):
+    """Gramofone (0,5 × 0,5 × 0,8 m) na Sala de Ensaio: a 1ª fonte de ruído. A corneta aponta
+    para a frente e para cima."""
+    p = bc.Part("SM_PRP_Gramofone", MATS)
+    p.box((0, 0.05, 0.08), (0.4, 0.36, 0.16), "Mogno", "root")                     # caixa
+    p.box((0, 0.05, 0.165), (0.42, 0.38, 0.01), "Dourado", "root")
+    p.tube((0, 0.05, 0.17), (0, 0.05, 0.185), 0.15, 0.15, "Preto", "root", seg=20)  # disco
+    p.tube((0, 0.05, 0.185), (0, 0.05, 0.19), 0.04, 0.04, "Carimbo", "root", seg=12)  # selo
+    p.tube((0.14, 0.18, 0.17), (0.14, 0.18, 0.3), 0.015, 0.015, "Latao", "root", seg=8)  # base do braço
+    p.tube((0.14, 0.18, 0.3), (0.04, 0.0, 0.32), 0.012, 0.012, "Latao", "root", seg=8)   # braço
+    p.tube((0.14, 0.18, 0.3), (0.0, -0.08, 0.5), 0.02, 0.035, "Latao", "root", seg=10)   # pescoço da corneta
+    p.tube((0.0, -0.08, 0.5), (0.0, -0.2, 0.78), 0.035, 0.24, "Latao", "root", seg=18, caps=False)  # corneta
+    p.ellipsoid((0.21, 0.05, 0.08), (0.01, 0.03, 0.03), "Latao", "root", seg=8, rings=4)  # manivela
+    return p.to_static(col)
+
+
+def build_retrato(name, h, col):
+    """Retrato da Dona Herondina (galeria do hall): moldura dourada e o busto em cores escuras.
+    Proporção 3:4. Origem no meio da base, encostado na parede (olha para -Y)."""
+    p = bc.Part(f"SM_PRP_{name}", MATS)
+    w = h * 0.75
+    b = max(0.04, h * 0.08)
+    p.box((0, 0.0, h / 2), (w - b, 0.02, h - b), "Sombra", "root")                 # tela
+    for x in (-(w - b) / 2, (w - b) / 2):
+        p.box((x, -0.005, h / 2), (b, 0.04, h), "Dourado", "root")
+    for z in (b / 2, h - b / 2):
+        p.box((0, -0.005, z), (w, 0.04, b), "Dourado", "root")
+    p.ellipsoid((0, -0.012, h * 0.3), (w * 0.3, 0.005, h * 0.18), "Veludo", "root", seg=14, rings=6)  # busto
+    p.ellipsoid((0, -0.014, h * 0.56), (w * 0.13, 0.005, h * 0.12), "Marfim", "root", seg=14, rings=6)  # rosto
+    p.ellipsoid((0, -0.013, h * 0.66), (w * 0.17, 0.005, h * 0.08), "Preto", "root", seg=12, rings=6)  # coque
+    return p.to_static(col)
+
+
+def build_lustre(col):
+    """Lustre de cristal (0,6 × 0,6 × 0,7 m) da Sala de Jantar: âncora sonora (tilinta).
+    Origem na BASE (a gota de baixo); pendura com o topo da corrente no forro."""
+    p = bc.Part("SM_PRP_Lustre", MATS)
+    p.tube((0, 0, 0.45), (0, 0, 0.7), 0.008, 0.008, "Latao", "root", seg=6)      # corrente
+    p.ellipsoid((0, 0, 0.36), (0.07, 0.07, 0.11), "Latao", "root", seg=12, rings=8)  # corpo
+    for i in range(6):
+        a = math.radians(i * 60)
+        x, y = math.cos(a) * 0.27, math.sin(a) * 0.27
+        p.tube((0, 0, 0.33), (x, y, 0.3), 0.009, 0.009, "Latao", "root", seg=6)  # braço
+        p.tube((x, y, 0.3), (x, y, 0.36), 0.025, 0.02, "Latao", "root", seg=8)  # copinho
+        p.ellipsoid((x, y, 0.39), (0.015, 0.015, 0.03), "Lampada", "root", seg=8, rings=5)  # vela
+        p.ellipsoid((x, y, 0.24), (0.018, 0.018, 0.04), "Espelho", "root", seg=8, rings=5)  # cristal
+    p.ellipsoid((0, 0, 0.12), (0.035, 0.035, 0.08), "Espelho", "root", seg=10, rings=6)  # gota
+    p.ellipsoid((0, 0, 0.04), (0.018, 0.018, 0.04), "Espelho", "root", seg=8, rings=5)
+    return p.to_static(col)
+
+
+def build_torneira(col):
+    """Pia da Copa com a torneira que pinga (0,6 × 0,45 × 1,05 m): âncora sonora pequena e regular.
+    O Art Bible lista só a torneira; sem a pia ela flutuaria na parede."""
+    p = bc.Part("SM_PRP_Torneira", MATS)
+    p.box((0, 0, 0.4), (0.6, 0.45, 0.8), "Madeira", "root")                       # armário
+    for x in (-0.15, 0.15):
+        p.box((x, -0.226, 0.42), (0.26, 0.01, 0.6), "MadeiraVelha", "root")       # portinhas
+    p.box((0, 0, 0.83), (0.62, 0.47, 0.06), "Louca", "root")                     # tampo
+    p.box((0, -0.02, 0.85), (0.44, 0.3, 0.03), "Sombra", "root")                # cuba
+    p.tube((0, 0.18, 0.86), (0, 0.18, 1.02), 0.015, 0.015, "Latao", "root", seg=8)
+    p.tube((0, 0.18, 1.02), (0, 0.04, 0.98), 0.013, 0.011, "Latao", "root", seg=8)  # bico
+    for x in (-0.08, 0.08):
+        p.ellipsoid((x, 0.18, 0.95), (0.025, 0.025, 0.012), "Latao", "root", seg=8, rings=4)  # registros
+    p.ellipsoid((0, 0.04, 0.95), (0.006, 0.006, 0.01), "Espelho", "root", seg=6, rings=4)  # a gota
+    return p.to_static(col)
+
+
+def build_arara(col):
+    """Arara de figurino (1,4 × 0,5 × 1,7 m, 20 kg, 1 pessoa): carregável, e os cabides de metal
+    são a âncora sonora do Camarim Grande."""
+    p = bc.Part("SM_PRP_AraraFigurino", MATS)
+    for x in (-0.66, 0.66):
+        p.tube((x, 0, 0.04), (x, 0, 1.66), 0.018, 0.018, "Ferro", "root", seg=8)  # colunas
+        p.box((x, 0, 0.025), (0.06, 0.5, 0.04), "Ferro", "root")                 # pés
+        for y in (-0.22, 0.22):
+            p.ellipsoid((x, y, 0.02), (0.025, 0.025, 0.02), "Preto", "root", seg=8, rings=4)  # rodinhas
+    p.tube((-0.7, 0, 1.66), (0.7, 0, 1.66), 0.016, 0.016, "Ferro", "root", seg=8)  # barra
+    clothes = ["Veludo", "Tecido", "TecidoGasto", "Marfim", "Veludo", "Tecido", "Petroleo"]
+    for i, mat in enumerate(clothes):
+        x = -0.5 + i * (1.0 / (len(clothes) - 1))
+        p.tube((x, 0, 1.66), (x, 0, 1.58), 0.004, 0.004, "Ferro", "root", seg=4)  # gancho
+        p.box((x, 0, 1.56), (0.02, 0.36, 0.03), "Ferro", "root")                  # cabide
+        drop = 0.75 + (i * 7 % 4) * 0.08
+        p.box((x, 0, 1.55 - drop / 2), (0.05, 0.42, drop), mat, "root")           # roupa
+    return p.to_static(col)
+
+
+# ---------- Lanterna e pilhas (a luz que a equipe precisa gerir) ----------
+
+def build_lanterna(col):
+    """Lanterna de mão (0,12 × 0,12 × 0,25 m), 3200 K. Deitada (o corpo corre em -Y = a frente):
+    é como ela fica no caminhão. Origem no meio da base."""
+    p = bc.Part("SM_PRP_Lanterna", MATS)
+    p.tube((0, 0.12, 0.045), (0, -0.06, 0.045), 0.032, 0.032, "Plastico", "root", seg=14)   # cabo
+    p.tube((0, -0.06, 0.045), (0, -0.12, 0.06), 0.034, 0.055, "Latao", "root", seg=16)      # cabeça
+    p.tube((0, -0.12, 0.06), (0, -0.125, 0.06), 0.05, 0.05, "Lente", "root", seg=16)        # lente
+    p.box((0, 0.02, 0.08), (0.02, 0.03, 0.012), "Carimbo", "root")                         # botão
+    p.tube((0, 0.12, 0.045), (0, 0.13, 0.045), 0.028, 0.028, "Latao", "root", seg=12)       # tampa das pilhas
+    return p.to_static(col)
+
+
+def build_pilhas(col):
+    """Pilhas (um pacotinho com 4, 0,14 × 0,08 × 0,06 m): recarregam a lanterna."""
+    p = bc.Part("SM_PRP_Pilhas", MATS)
+    p.box((0, 0, 0.005), (0.14, 0.08, 0.01), "Papelao", "root")
+    for i in range(4):
+        x = -0.045 + i * 0.03
+        p.tube((x, -0.03, 0.03), (x, 0.03, 0.03), 0.013, 0.013, "Petroleo" if i % 2 else "Carimbo", "root", seg=10)
+        p.tube((x, 0.03, 0.03), (x, 0.036, 0.03), 0.005, 0.005, "Latao", "root", seg=6)
+    return p.to_static(col)
+
+
+# ---------- Abandono (a casa ficou fechada décadas: lençóis, teias, caliça, tábuas) ----------
+
+def build_movel_coberto(name, kind, col):
+    """Móvel coberto por um lençol encardido. A = poltrona (0,9 × 0,85 × 1,0); B = cômoda alta
+    (1,1 × 0,55 × 1,5). Formas moles por baixo do pano e a barra caindo até o chão."""
+    p = bc.Part(f"SM_PRP_{name}", MATS)
+    if kind == "A":
+        p.ellipsoid((0, 0.05, 0.42), (0.46, 0.42, 0.3), "Lencol", "root", seg=18, rings=10)     # assento
+        p.ellipsoid((0, 0.3, 0.75), (0.44, 0.16, 0.32), "Lencol", "root", seg=16, rings=10)     # encosto
+        for x in (-0.38, 0.38):
+            p.ellipsoid((x, 0.05, 0.6), (0.11, 0.38, 0.14), "LencolSombra", "root", seg=12, rings=8)  # braços
+        p.tube((0, 0.05, 0.36), (0, 0.05, 0.0), 0.46, 0.5, "Lencol", "root", seg=20, caps=False)  # barra
+    else:
+        p.box((0, 0, 0.72), (1.06, 0.52, 1.44), "Lencol", "root")
+        p.ellipsoid((0, 0, 1.44), (0.56, 0.3, 0.06), "Lencol", "root", seg=16, rings=6)          # tampo mole
+        for x in (-0.3, 0.12, 0.42):
+            p.box((x, -0.27, 0.6), (0.06, 0.02, 1.15), "LencolSombra", "root", rot_y=4 if x > 0 else -3)  # dobras
+        p.box((0.2, -0.3, 0.06), (0.5, 0.12, 0.04), "Lencol", "root", rot_y=0)                    # ponta no chão
+    return p.to_static(col)
+
+
+def build_teia(col):
+    """Teia de aranha para canto de parede com teto (0,6 × 0,6 m): raios saindo do canto e anéis.
+    Fica no plano XZ (encostada numa parede, olhando para -Y); o canto é a origem, a teia desce e
+    vai para +X."""
+    p = bc.Part("SM_PRP_Teia", MATS)
+    for i in range(6):
+        a = math.radians(i * 18)  # de 0° (no teto) a 90° (na parede)
+        length = 0.6
+        p.box((math.cos(a) * length / 2, 0, -math.sin(a) * length / 2), (length, 0.004, 0.004), "Teia", "root",
+              rot_y=math.degrees(a))
+    for r in (0.15, 0.28, 0.42, 0.55):
+        for i in range(5):
+            a0, a1 = math.radians(i * 18), math.radians((i + 1) * 18)
+            x0, z0 = math.cos(a0) * r, -math.sin(a0) * r
+            x1, z1 = math.cos(a1) * r * 0.92, -math.sin(a1) * r * 0.92  # o fio cede no meio
+            seg = math.hypot(x1 - x0, z1 - z0)
+            ang = math.degrees(math.atan2(-(z1 - z0), x1 - x0))
+            p.box(((x0 + x1) / 2, 0, (z0 + z1) / 2), (seg, 0.003, 0.003), "Teia", "root", rot_y=ang)
+    return p.to_static(col)
+
+
+def build_entulho(col):
+    """Monte de entulho (1,2 × 1,0 × 0,45 m): tábuas quebradas e caliça que caiu do forro."""
+    p = bc.Part("SM_PRP_Entulho", MATS)
+    for i, (x, y, rot, length) in enumerate([(-0.3, -0.1, 18, 1.0), (0.15, 0.1, -25, 0.9), (0.0, -0.25, 8, 0.7),
+                                               (0.35, 0.25, 40, 0.6), (-0.2, 0.3, -12, 0.8)]):
+        p.box((x, y, 0.05 + i * 0.045), (length, 0.12, 0.03), "MadeiraVelha" if i % 2 else "Madeira", "root", rot_y=rot * 0.3)
+    for x, y, s in [(0.3, -0.2, 0.14), (-0.4, 0.15, 0.1), (0.05, 0.2, 0.18), (0.45, 0.35, 0.08), (-0.1, -0.35, 0.12),
+                    (0.2, 0.0, 0.22), (-0.35, -0.3, 0.09)]:
+        p.ellipsoid((x, y, s * 0.5), (s, s * 0.8, s * 0.55), "Reboco", "root", seg=8, rings=5)
+    return p.to_static(col)
+
+
+def build_janela_tabuada(col):
+    """Janela fechada com tábuas (1,0 × 1,4 m), vista de dentro: moldura, vidro quebrado e três
+    tábuas pregadas tortas. Origem no meio da base (no peitoril), encostada na parede (olha para -Y)."""
+    p = bc.Part("SM_PRP_JanelaTabuada", MATS)
+    w, h = 1.0, 1.4
+    p.box((0, 0.01, h / 2), (w - 0.1, 0.01, h - 0.1), "VidroQuebrado", "root")
+    for x in (-w / 2 + 0.04, w / 2 - 0.04):
+        p.box((x, 0, h / 2), (0.08, 0.08, h), "MadeiraVelha", "root")
+    for z in (0.04, h - 0.04, h / 2):
+        p.box((0, 0, z), (w, 0.08, 0.06 if z == h / 2 else 0.08), "MadeiraVelha", "root")
+    p.box((0, -0.06, -0.02), (w + 0.12, 0.14, 0.05), "Mogno", "root")                       # peitoril
+    for z, rot in ((0.35, 8), (0.75, -5), (1.1, 12)):
+        p.box((0, -0.06, z), (w + 0.2, 0.025, 0.16), "Madeira", "root", rot_y=rot)            # tábuas
+        for x in (-0.5, 0.5):
+            p.ellipsoid((x, -0.075, z + x * math.tan(math.radians(-rot)) * 0.0), (0.012,) * 3, "Ferro", "root", seg=6, rings=3)
+    return p.to_static(col)
+
+
+def build_papel_descascando(col):
+    """Papel de parede descascando (1,0 × 1,2 m): tiras vinho soltas, caídas para a frente, e o papel
+    velho aparecendo por baixo. Encosta na parede (olha para -Y), origem no meio da base."""
+    p = bc.Part("SM_PRP_PapelDescascando", MATS)
+    p.box((0, 0.0, 0.6), (0.9, 0.004, 1.1), "PapelVelho", "root")
+    for i, (x, length, curl) in enumerate([(-0.35, 0.8, 14), (-0.12, 1.1, 22), (0.1, 0.6, 9), (0.32, 0.95, 28)]):
+        p.box((x, -0.02 - curl * 0.003, 1.2 - length / 2), (0.2, 0.006, length), "PapelVinho", "root")
+        # a ponta de baixo enrola para a frente
+        p.box((x, -0.06 - curl * 0.004, 1.2 - length + 0.05), (0.2, 0.08, 0.006), "PapelVinho", "root")
+    return p.to_static(col)
+
+
+def build_bau(col):
+    """Baú velho de viagem da companhia (0,9 × 0,5 × 0,55 m): tampa curva, cintas de ferro e uma
+    etiqueta "TABORDA & CIA"."""
+    p = bc.Part("SM_PRP_Bau", MATS)
+    p.box((0, 0, 0.22), (0.9, 0.5, 0.44), "MadeiraVelha", "root")
+    p.tube((-0.45, 0, 0.44), (0.45, 0, 0.44), 0.25, 0.25, "MadeiraVelha", "root", seg=16, squash_y=1.0)
+    p.cut_below(p.tube((-0.452, 0, 0.44), (0.452, 0, 0.44), 0.252, 0.252, "Ferro", "root", seg=16), 0.44)
+    for x in (-0.3, 0.3):
+        p.box((x, 0, 0.22), (0.05, 0.51, 0.45), "Ferro", "root")
+    p.box((0, -0.255, 0.42), (0.08, 0.02, 0.08), "Latao", "root")                           # fecho
+    p.box((-0.16, -0.252, 0.18), (0.22, 0.004, 0.1), "Papel", "root")                      # etiqueta
+    return p.to_static(col)
+
+
+def build_papeis_chao(col):
+    """Papéis espalhados no chão (1,0 × 1,0 m): falas de peça, cartas e uma partitura de revista."""
+    p = bc.Part("SM_PRP_PapeisChao", MATS)
+    for i in range(9):
+        x = -0.4 + (i * 37 % 9) * 0.1
+        y = -0.4 + (i * 53 % 9) * 0.1
+        p.box((x, y, 0.002 + i * 0.0015), (0.21, 0.3, 0.002), "Papel" if i % 3 else "PapelVelho", "root", rot_y=0)
+    return p.to_static(col)
+
+
+def build_velas(col):
+    """Velas derretidas no chão (0,4 × 0,4 × 0,25 m): alguém acendeu na frente do espelho.
+    As chamas são de material que brilha (a luz de verdade vem do prefab)."""
+    p = bc.Part("SM_PRP_Velas", MATS)
+    p.ellipsoid((0, 0, 0.005), (0.2, 0.18, 0.01), "Cera", "root", seg=14, rings=4)         # cera escorrida
+    for x, y, h in [(-0.08, 0.03, 0.22), (0.06, -0.05, 0.14), (0.11, 0.08, 0.09), (-0.03, -0.1, 0.05), (0.0, 0.12, 0.17)]:
+        p.tube((x, y, 0.0), (x, y, h), 0.022, 0.02, "Cera", "root", seg=10)
+        if h > 0.06:
+            p.ellipsoid((x, y, h + 0.02), (0.01, 0.01, 0.022), "Lampada", "root", seg=8, rings=5)
+    return p.to_static(col)
+
+
 # (nome, construtor, altura, enquadramento das prévias, meio do objeto em Y)
 PROPS = [
     ("Penteadeira", build_penteadeira, 1.6, 1.8, 0.0),
@@ -276,6 +553,27 @@ PROPS = [
     ("PilhaLivros", build_pilha_livros, 0.75, 0.9, 0.0),
     ("LuminariaVerde", build_luminaria, 0.45, 0.6, 0.0),
     ("RelogioPendulo", build_relogio, 2.18, 2.4, 0.0),
+    ("ManequimA", lambda c: build_manequim("ManequimA", "A", c), 1.75, 2.0, 0.0),
+    ("ManequimB", lambda c: build_manequim("ManequimB", "B", c), 1.9, 2.1, 0.0),
+    ("ManequimC", lambda c: build_manequim("ManequimC", "C", c), 1.77, 2.0, 0.0),
+    ("Gramofone", build_gramofone, 0.8, 1.0, 0.0),
+    ("RetratoP", lambda c: build_retrato("RetratoP", 0.4, c), 0.4, 0.55, 0.0),
+    ("RetratoM", lambda c: build_retrato("RetratoM", 0.7, c), 0.7, 0.85, 0.0),
+    ("RetratoG", lambda c: build_retrato("RetratoG", 1.1, c), 1.1, 1.25, 0.0),
+    ("Lustre", build_lustre, 0.7, 0.85, 0.0),
+    ("Torneira", build_torneira, 1.05, 1.2, 0.0),
+    ("AraraFigurino", build_arara, 1.7, 1.9, 0.0),
+    ("Lanterna", build_lanterna, 0.12, 0.35, 0.0),
+    ("Pilhas", build_pilhas, 0.06, 0.2, 0.0),
+    ("MovelCobertoA", lambda c: build_movel_coberto("MovelCobertoA", "A", c), 1.07, 1.2, 0.0),
+    ("MovelCobertoB", lambda c: build_movel_coberto("MovelCobertoB", "B", c), 1.5, 1.7, 0.0),
+    ("Teia", build_teia, 0.6, 0.8, 0.0),
+    ("Entulho", build_entulho, 0.45, 1.3, 0.0),
+    ("JanelaTabuada", build_janela_tabuada, 1.4, 1.6, 0.0),
+    ("PapelDescascando", build_papel_descascando, 1.2, 1.4, 0.0),
+    ("Bau", build_bau, 0.7, 1.0, 0.0),
+    ("PapeisChao", build_papeis_chao, 0.05, 1.1, 0.0),
+    ("Velas", build_velas, 0.25, 0.45, 0.0),
 ]
 
 

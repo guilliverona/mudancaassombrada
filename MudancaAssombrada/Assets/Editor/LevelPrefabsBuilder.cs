@@ -78,7 +78,7 @@ namespace MudancaAssombrada.Editor
 
             Build(WallPath, recreateAll, BuildWall);
             Build(TruckPath, recreateAll, BuildTruck);
-            Build(WardrobePath, recreateAll, () => BuildFurniture("Armário", new Vector3(1f, 1.5f, 0.6f), 3f, new Color(0.45f, 0.3f, 0.2f)));
+            Build(WardrobePath, recreateAll, () => BuildFurniture("Armário", new Vector3(1f, 1.5f, 0.6f), 3.5f,new Color(0.45f, 0.3f, 0.2f)));
             Build(ChairPath, recreateAll, () => BuildFurniture("Cadeira", new Vector3(0.5f, 0.6f, 0.5f), 1f, new Color(0.8f, 0.6f, 0.4f)));
             Build(BoxPath, recreateAll, () => BuildFurniture("Caixa", new Vector3(0.5f, 0.5f, 0.5f), 1.5f, new Color(0.7f, 0.55f, 0.35f)));
             Build(GhostPath, recreateAll, BuildGhost);
@@ -422,6 +422,26 @@ namespace MudancaAssombrada.Editor
             var whistle = player.AddComponent<Whistle>();
             var switcher = player.AddComponent<CharacterSwitcher>();
             player.AddComponent<Breathing>(); // a Cida ouve quem respira (o Imitador não respira)
+            var fork = player.AddComponent<TuningFork>();  // o diapasão da Cida (tecla Q)
+            player.AddComponent<CaneCall>();               // a chamada da bengala (segurar 2 s), em rede
+            // No diapasão, uma pessoa de verdade "estremece" (a cópia do Imitador não responde).
+            var so = new SerializedObject(player.AddComponent<SurfaceTag>());
+            so.FindProperty("type").enumValueIndex = (int)SurfaceType.Person;
+            so.ApplyModifiedPropertiesWithoutUndo();
+
+            // Lanterna: um spot quente (3200 K) preso na câmera, desligado até pegar uma no caminhão.
+            var beamGo = new GameObject("Luz da Lanterna", typeof(Light));
+            beamGo.transform.SetParent(camGo.transform, false);
+            beamGo.transform.localPosition = new Vector3(0.15f, -0.15f, 0.1f); // na mão, um pouco abaixo dos olhos
+            var beam = beamGo.GetComponent<Light>();
+            beam.type = LightType.Spot;
+            beam.spotAngle = 55f;
+            beam.innerSpotAngle = 25f;
+            beam.range = 18f;
+            beam.intensity = 6f; // forte o bastante para a casa escura: é ela que mostra o caminho
+            beam.color = new Color(1f, 0.86f, 0.68f);
+            beam.shadows = LightShadows.Soft;
+            EditorTools.SetReference(player.AddComponent<Flashlight>(), "beam", beam);
             player.AddComponent<NavMeshModifier>().ignoreFromBuild = true;
 
             EditorTools.SetReference(movement, "cameraPivot", camGo.transform);
@@ -447,7 +467,7 @@ namespace MudancaAssombrada.Editor
 
             var netPlayer = player.AddComponent<NetworkPlayer>();
             // O CharacterSwitcher NÃO entra: ele precisa rodar em todos para pintar a cor de cada boneco.
-            EditorTools.SetReferences(netPlayer, "ownerOnly", new Object[] { movement, carrier, interactor, cues, cane, vibration, whistle });
+            EditorTools.SetReferences(netPlayer, "ownerOnly", new Object[] { movement, carrier, interactor, cues, cane, vibration, whistle, fork });
 
             EditorTools.SavePrefab(player, PlayerPath);
         }

@@ -18,7 +18,13 @@ MonoBehaviour:
   featuredCharacter: {fileID: 11400000, guid: 55b5bdf07a83526418b2cd1e958e075f, type: 2}
   sceneName: CasaDoEspelho
   alwaysUnlocked: 0
-  nightDuration: 180
+  nightDuration: 300
   payment: 100
-  openingNote: "Casa de uma fam\xEDlia de atores. Muitos espelhos. Se algu\xE9m pedir ajuda com o arm\xE1rio, confiram se \xE9 mesmo algu\xE9m da equipe."
-  ratingComments: []
+  openingNote: "TRANSPORTES DESCANSO ETERNO LTDA.\nORDEM DE SERVI\xC7O N\xBA 014 \u2014 CASAR\xC3O TABORDA\n\nCasa de fam\xEDlia de teatro. Cuidado com os espelhos: s\xE3o muitos e s\xE3o velhos.\nSe algu\xE9m da equipe pedir ajuda com um m\xF3vel, confiram se a pessoa respira.\n\nTem um cartaz antigo no camarim do fundo. Esse vem junto.\nN\xE3o est\xE1 na lista. Vem junto.\n\nN\xE3o arranhem o piano.\n\u2014 V."
+  ratingComments:
+  - character: {fileID: 11400000, guid: 55b5bdf07a83526418b2cd1e958e075f, type: 2}
+    comment: "A senhora ouviu o que ningu\xE9m ouviu. J\xE1 trabalhei com gente assim. \u2014 V."
+  - character: {fileID: 11400000, guid: 49bb43518040df840994844787a29a06, type: 2}
+    comment: "O senhor leu uma coisa que n\xE3o era para ler. Tudo bem. \u2014 V."
+  - character: {fileID: 11400000, guid: 195a3f422f1a6514d989dca40baf593b, type: 2}
+    comment: "Obrigado por n\xE3o deixar ningu\xE9m segurar a outra ponta sozinho. \u2014 V."

@@ -19,6 +19,8 @@ GameObject:
   - component: {fileID: 8718764170064370064}
   - component: {fileID: 7010748190215698494}
   - component: {fileID: 8437028114553080730}
+  - component: {fileID: 4973003398065273281}
+  - component: {fileID: 5363353212968269544}
   m_Layer: 0
   m_Name: Fantasma Imitador
   m_TagString: Untagged
@@ -214,6 +216,9 @@ MonoBehaviour:
   investigateLean: 8
   huntLean: 18
   fleeLean: -8
+  performLean: -4
+  bowLean: 40
+  bowHatTilt: 35
 --- !u!114 &8718764170064370064
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -228,11 +233,23 @@ MonoBehaviour:
   m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.GhostImitator
   lurkTime: 12
   giveUpTime: 40
+  hurryFrom: 0.75
+  hopEvery: {x: 18, y: 32}
+  emergeDelay: 3
+  dragInterest: 2.5
+  minInside: 5
+  appearAt: 45
+  stage: {fileID: 0}
+  performSpeed: 1.2
+  bowTime: 2
+  offendedFactor: 2
   approachSpeed: 3.5
   pullSpeed: 2.5
   fleeSpeed: 5
   askDistance: 2
   voiceRange: 6
+  pullTime: 6
+  baitTime: 4
 --- !u!114 &7010748190215698494
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -260,22 +277,120 @@ MonoBehaviour:
   m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.GhostSounds
   transitions:
   - anyFrom: 0
-    from: 4
-    to: 0
-    sound: captura
+    from: 8
+    to: 9
+    sound: imitador_fala_sai
+    delay: 0
+    skipChance: 0.5
+    everywhere: 1
+  - anyFrom: 0
+    from: 8
+    to: 6
+    sound: imitador_fala_cena
+    delay: 0.5
+    skipChance: 0
+    everywhere: 0
+  - anyFrom: 0
+    from: 8
+    to: 6
+    sound: imitador_fala_cena
+    delay: 6
+    skipChance: 0
+    everywhere: 0
   - anyFrom: 1
     from: 0
+    to: 7
+    sound: imitador_reverencia
+    delay: 0
+    skipChance: 0
+    everywhere: 0
+  - anyFrom: 0
+    from: 6
+    to: 7
+    sound: imitador_fala_obrigado
+    delay: 0.6
+    skipChance: 0
+    everywhere: 0
+  - anyFrom: 0
+    from: 4
+    to: 7
+    sound: captura
+    delay: 0
+    skipChance: 0
+    everywhere: 0
+  - anyFrom: 0
+    from: 4
+    to: 7
+    sound: imitador_fala_captura
+    delay: 1
+    skipChance: 0
+    everywhere: 0
+  - anyFrom: 0
+    from: 3
     to: 5
-    sound: espelho_rachando
+    sound: imitador_fala_desmascarado
+    delay: 0
+    skipChance: 0
+    everywhere: 0
+  - anyFrom: 0
+    from: 4
+    to: 5
+    sound: imitador_fala_desmascarado
+    delay: 0
+    skipChance: 0
+    everywhere: 0
+  - anyFrom: 0
+    from: 7
+    to: 5
+    sound: imitador_fala_ofendido
+    delay: 0
+    skipChance: 0
+    everywhere: 0
   loops:
-  - state: 0
-    sound: imitador_sussurro
-    repeatEvery: 9
-    volume: 0.6
+  - state: 8
+    sound: imitador_fala
+    repeatEvery: 36
+    volume: 0.55
+    everywhere: 1
+    firstDelay: 30
+    finaleEvery: 23
   - state: 4
     sound: espelho_puxando
     repeatEvery: 0
     volume: 1
+    everywhere: 0
+    firstDelay: 0
+    finaleEvery: 0
+--- !u!114 &4973003398065273281
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6172741386073746404}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c768296c92b036418d0e99e9c6a9f5f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.SurfaceTag
+  type: 7
+--- !u!114 &5363353212968269544
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6172741386073746404}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9fcebe6ed0cbbfe4d9607bdefd3bb81b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.SoundVoice
+  choices:
+  - type: 4
+    sound: 
+    loudSound: 
+    loudFrom: 0
 --- !u!1001 &7034756412412253087
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -365,3 +480,14 @@ MonoBehaviour:
   swingAngle: 35
   stepsPerMeter: 1.6
   hideBody: 0
+  crouchFrontThigh: 80
+  crouchFrontKnee: 85
+  crouchBackThigh: 10
+  crouchBackKnee: 100
+  crouchLean: 25
+  crouchFrontArm: 35
+  crouchBackArm: 10
+  crouchSpeed: 8
+  crouchWalkBackThigh: 20
+  crouchStepsPerMeter: 0.9
+  crouchStepLift: 0.06

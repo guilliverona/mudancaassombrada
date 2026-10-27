@@ -18,7 +18,7 @@ Como os designs do Art Bible viram jogo, em fases. Cada fase diz **o que entra**
 |---|---|---|---|
 | 1 | Bibliotecário, móveis e caminhão com modelo | arte + builder | **feita** |
 | 2 | Fundação de código para os fantasmas e personagens | código | **feita** (falta testar no Unity) |
-| 3 | Capítulo 1 — Casa do Espelho + Imitador | cena + arte + mecânica | **feita** (falta testar no Unity) |
+| 3 | Capítulo 1 — Casa do Espelho + Imitador | cena + arte + mecânica | **em revisão**: [LEVEL_DESIGN_FASE1.md](LEVEL_DESIGN_FASE1.md), lotes 1 a 4 de 5 feitos (casa de dois andares, lanterna, as mecânicas da Cida, o Imitador completo e carregar em dupla no jogo todo: cada um levanta sozinho até a própria força (Cida 1, Tiago 1,5, Marcelo 3; armário 3,5), arrastar sozinho, a isca da outra ponta, 6 s para soltar, escada); lote 4 não testado com Play |
 | 4 | Capítulo 2 — Conservatório + Maestrina | cena + arte + mecânica | a fazer |
 | 5 | Capítulo 3 — Biblioteca do Silêncio | cena + arte + mecânica | depende de decisão |
 | 6 | Seu Valdemar, relíquias e o final (Inquilino + Sobrado) | cena + arte + mecânica | a fazer |
@@ -103,6 +103,9 @@ entrarem sem mexer no jogador.
    (o `Mirror` virou um tipo) e `Room`. Menus **Nova Fase (cena vazia)** e **Usar Sistemas da Fase
    na cena aberta**. O rascunho da Casa do Espelho agora é montado por cima da fase vazia.
 6. ⬜ **Ferramentas de teste** no editor (estado do fantasma, atalhos de depuração).
+7. ⬜ **Arrastar gasta estamina.** **Decidido:** quem pega um móvel mais pesado que a própria força
+   só arrasta (já feito: bem devagar, mais devagar quanto mais pesado) e, depois, arrastar vai
+   cansar (a estamina do `PlayerMovement`).
 
 **Pronta quando:** pegar móvel, usar objeto e apontar funcionam como antes; o Tiago não recebe as
 falas do Imitador, a Cida não recebe o que só se vê, e os dois veem as legendas certas em rede.

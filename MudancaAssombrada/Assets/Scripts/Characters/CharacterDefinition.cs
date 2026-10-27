@@ -35,8 +35,13 @@ namespace MudancaAssombrada
 
         [Header("Atributos (1 = normal)")]
         [Min(0.1f)] public float speed = 1f;
-        [Tooltip("Divide o peso dos móveis. 3 = o armário (peso 3) parece uma cadeira.")]
+        [Tooltip("Divide o peso dos móveis, e é o peso mais pesado que ele levanta sozinho (o resto, arrasta).")]
         [Min(0.1f)] public float strength = 1f;
+
+        // O peso mais pesado que ele LEVANTA sozinho: a própria força. Cida 1, Tiago 1,5, Marcelo 3.
+        // Mais pesado que isso, sozinho só arrasta: precisa de alguém na outra ponta, e a dupla levanta
+        // até a soma das duas forças (Furniture.CanLift). Cida + Tiago = 2,5; o armário (3,5) pede o Marcelo.
+        public float LiftLimit => strength;
         [Tooltip("Barulho dos móveis batendo enquanto ele carrega.")]
         [Range(0f, 2f)] public float carryNoise = 1f;
         [Tooltip("Alcance do som dos passos.")]
@@ -53,6 +58,8 @@ namespace MudancaAssombrada
         public bool vibrationVision;
         [Tooltip("Apito: um som alto para atrair o fantasma.")]
         public bool whistle;
+        [Tooltip("Diapasão: no eco, cada superfície responde com o seu material; a cópia não responde.")]
+        public bool tuningFork;
 
         // Por onde este personagem percebe os acontecimentos do jogo (GameCue).
         // Vem das caixinhas acima: ninguém precisa marcar duas vezes.

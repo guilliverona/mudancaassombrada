@@ -614,6 +614,103 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
+--- !u!1 &6667932067768949486
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 5711073865599313838}
+  - component: {fileID: 254650978594259842}
+  m_Layer: 0
+  m_Name: Luz da Lanterna
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &5711073865599313838
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6667932067768949486}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0.15, y: -0.15, z: 0.1}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 8801395347483215849}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!108 &254650978594259842
+Light:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6667932067768949486}
+  m_Enabled: 1
+  serializedVersion: 13
+  m_Type: 0
+  m_Color: {r: 1, g: 0.86, b: 0.68, a: 1}
+  m_Intensity: 6
+  m_Range: 18
+  m_SpotAngle: 55
+  m_InnerSpotAngle: 25
+  m_CookieSize2D: {x: 0.5, y: 0.5}
+  m_Shadows:
+    m_Type: 2
+    m_Resolution: -1
+    m_CustomResolution: -1
+    m_Strength: 1
+    m_Bias: 0.05
+    m_NormalBias: 0.4
+    m_NearPlane: 0.2
+    m_CullingMatrixOverride:
+      e00: 1
+      e01: 0
+      e02: 0
+      e03: 0
+      e10: 0
+      e11: 1
+      e12: 0
+      e13: 0
+      e20: 0
+      e21: 0
+      e22: 1
+      e23: 0
+      e30: 0
+      e31: 0
+      e32: 0
+      e33: 1
+    m_UseCullingMatrixOverride: 0
+  m_Cookie: {fileID: 0}
+  m_DrawHalo: 0
+  m_Flare: {fileID: 0}
+  m_RenderMode: 0
+  m_CullingMask:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_RenderingLayerMask: 1
+  m_Lightmapping: 4
+  m_LightShadowCasterMode: 0
+  m_AreaSize: {x: 1, y: 1}
+  m_BounceIntensity: 1
+  m_ColorTemperature: 6570
+  m_UseColorTemperature: 0
+  m_BoundingSphereOverride: {x: 0, y: 0, z: 0, w: 0}
+  m_UseBoundingSphereOverride: 0
+  m_UseViewFrustumForShadowCasterCull: 1
+  m_ForceVisible: 0
+  m_ShapeRadius: 0.025
+  m_ShadowAngle: 0
+  m_LightUnit: 1
+  m_LuxAtDistance: 1
+  m_EnableSpotReflector: 1
 --- !u!1 &6720934738416770375
 GameObject:
   m_ObjectHideFlags: 0
@@ -675,7 +772,8 @@ Transform:
   m_LocalPosition: {x: 0, y: 0.6, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
-  m_Children: []
+  m_Children:
+  - {fileID: 5711073865599313838}
   m_Father: {fileID: 6475203449890191418}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!20 &2576609307100874873
@@ -848,6 +946,10 @@ GameObject:
   - component: {fileID: 468701515564093837}
   - component: {fileID: 5501792552295832919}
   - component: {fileID: 2055250738567843756}
+  - component: {fileID: 4332664602266559773}
+  - component: {fileID: 1531006138930205923}
+  - component: {fileID: 8846661384662322400}
+  - component: {fileID: 62019349352528400}
   - component: {fileID: 4339543430742910769}
   - component: {fileID: 4202566152706859166}
   - component: {fileID: 2332331131135969243}
@@ -936,6 +1038,7 @@ MonoBehaviour:
   pullSpeed: 6
   pullDistance: 1.2
   pulledMoveMultiplier: 0.3
+  stairsAngle: 15
   cameraRadius: 0.12
 --- !u!114 &7989720525728775853
 MonoBehaviour:
@@ -954,6 +1057,10 @@ MonoBehaviour:
   holdDistance: 1.8
   followStrength: 12
   requestTimeout: 1
+  dragSpeed: 0.35
+  stairsSlowdown: 1.5
+  stairStepEvery: 0.7
+  stairStepRange: 9
 --- !u!114 &3022898349990388413
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1000,6 +1107,7 @@ MonoBehaviour:
   rescueDuration: 8.4
   rescueFallBack: 1.5
   rescueReach: 3.5
+  anchorDuration: 1.5
 --- !u!114 &7384375665614101427
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1027,6 +1135,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.CaneTapper
   tapRange: 12
   tapCooldown: 0.6
+  callHoldSeconds: 2
   stepDistance: 1.2
   stepRange: 2.5
   crouchStepRange: 1
@@ -1046,7 +1155,7 @@ MonoBehaviour:
   ringLifetime: 2.5
   weakColor: {r: 1, g: 0.85, b: 0.3, a: 1}
   strongColor: {r: 1, g: 0.2, b: 0.3, a: 1}
-  visibleSounds: 121
+  visibleSounds: 377
 --- !u!114 &468701515564093837
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1098,6 +1207,67 @@ MonoBehaviour:
   intensity: 0.2
   mouthHeight: 0.6
   runMultiplier: 2
+--- !u!114 &4332664602266559773
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7645197041336742590}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 907bd88e2571df54cbcdeef04090e9ba, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.TuningFork
+  range: 15
+  cooldown: 8
+  mirrorRange: 8
+  waveSpeed: 2
+--- !u!114 &1531006138930205923
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7645197041336742590}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: eb42c3900ef94c1498da8654cefeb1d2, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.CaneCall
+  ShowTopMostFoldoutHeaderGroup: 1
+  range: 20
+  markerSeconds: 6
+  markerColor: {r: 0.55, g: 0.75, b: 1, a: 1}
+--- !u!114 &8846661384662322400
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7645197041336742590}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c768296c92b036418d0e99e9c6a9f5f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.SurfaceTag
+  type: 6
+--- !u!114 &62019349352528400
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7645197041336742590}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d1b75e98d7ec2724aa09a074d18d67eb, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.Flashlight
+  ShowTopMostFoldoutHeaderGroup: 1
+  beam: {fileID: 254650978594259842}
+  batterySeconds: 100
+  flickerBelow: 0.2
 --- !u!114 &4339543430742910769
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1130,16 +1300,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 0
+  GlobalObjectIdHash: 59810418
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 0
+  m_InScenePlaced: 1
   ActiveSceneSynchronization: 0
-  SceneMigrationSynchronization: 1
+  SceneMigrationSynchronization: 0
   SpawnWithObservers: 1
   DontDestroyWithOwner: 0
   AutoObjectParentSync: 1
@@ -1212,6 +1382,7 @@ MonoBehaviour:
   - {fileID: 1565150017572927767}
   - {fileID: 7360231509683667312}
   - {fileID: 468701515564093837}
+  - {fileID: 4332664602266559773}
 --- !u!1 &7980821049937391386
 GameObject:
   m_ObjectHideFlags: 0
