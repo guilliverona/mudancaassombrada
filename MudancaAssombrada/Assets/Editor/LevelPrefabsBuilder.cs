@@ -381,6 +381,8 @@ namespace MudancaAssombrada.Editor
 
         // ---------- Player ----------
 
+        const float PlayerFieldOfView = 55f;
+
         static void BuildPlayer()
         {
             var player = new GameObject("Player");
@@ -402,6 +404,9 @@ namespace MudancaAssombrada.Editor
             camGo.transform.localPosition = new Vector3(0, 0.6f, 0);
             var cam = camGo.GetComponent<Camera>();
             cam.nearClipPlane = 0.05f;
+            // Campo de visão VERTICAL (graus). 55 ≈ 85° na horizontal em 16:9: um pouco mais fechado
+            // que o padrão (60), para o escuro e os cantos da casa esconderem mais coisa.
+            cam.fieldOfView = PlayerFieldOfView;
             // Nasce com fundo escuro (e não com o céu azul padrão): quem pinta o céu é a NightLighting.
             cam.clearFlags = CameraClearFlags.SolidColor;
             cam.backgroundColor = Color.black;

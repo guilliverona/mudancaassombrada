@@ -809,7 +809,7 @@ Camera:
     height: 1
   near clip plane: 0.05
   far clip plane: 1000
-  field of view: 60
+  field of view: 55
   orthographic: 0
   orthographic size: 5
   m_Depth: 0
@@ -1025,6 +1025,8 @@ MonoBehaviour:
   nearClip: 0.05
   headToEyes: 0.1
   followHeadSpeed: 15
+  lyingEyeHeight: 0.3
+  lyingFollowSpeed: 5
   crouchHeight: 1.2
   crouchSpeedMultiplier: 0.5
   crouchTransitionSpeed: 8
@@ -1037,6 +1039,7 @@ MonoBehaviour:
   pullDistance: 1.2
   pulledMoveMultiplier: 0.3
   stairsAngle: 15
+  cameraRadius: 0.12
 --- !u!114 &7989720525728775853
 MonoBehaviour:
   m_ObjectHideFlags: 0
