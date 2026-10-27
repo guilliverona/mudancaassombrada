@@ -34,6 +34,45 @@ namespace MudancaAssombrada
             set => PlayerPrefs.SetInt(FullscreenKey, value ? 1 : 0);
         }
 
+        // --- Vídeo (as escolhas são índices das listas do VideoRules) ---
+
+        const string QualityKey = "qualidade";
+        const string AntialiasingKey = "antialiasing";
+        const string RenderScaleKey = "escalaRender";
+        const string VSyncKey = "vsync";
+        const string FpsKey = "limiteFps";
+
+        public static int Quality
+        {
+            get => VideoRules.ClampIndex(PlayerPrefs.GetInt(QualityKey, VideoRules.DefaultQuality), VideoRules.QualityNames.Length, VideoRules.DefaultQuality);
+            set => PlayerPrefs.SetInt(QualityKey, value);
+        }
+
+        public static int Antialiasing
+        {
+            get => VideoRules.ClampIndex(PlayerPrefs.GetInt(AntialiasingKey, VideoRules.DefaultAa), VideoRules.AaNames.Length, VideoRules.DefaultAa);
+            set => PlayerPrefs.SetInt(AntialiasingKey, value);
+        }
+
+        // 1 = resolução cheia; abaixo disso liga o STP (ver VideoRules).
+        public static float RenderScale
+        {
+            get => VideoRules.ClampRenderScale(PlayerPrefs.GetFloat(RenderScaleKey, 1f));
+            set => PlayerPrefs.SetFloat(RenderScaleKey, VideoRules.ClampRenderScale(value));
+        }
+
+        public static bool VSync
+        {
+            get => PlayerPrefs.GetInt(VSyncKey, 1) == 1;
+            set => PlayerPrefs.SetInt(VSyncKey, value ? 1 : 0);
+        }
+
+        public static int FpsLimit
+        {
+            get => VideoRules.ClampIndex(PlayerPrefs.GetInt(FpsKey, VideoRules.DefaultFps), VideoRules.FpsNames.Length, VideoRules.DefaultFps);
+            set => PlayerPrefs.SetInt(FpsKey, value);
+        }
+
         public static string PlayerName
         {
             get => PlayerPrefs.GetString(NameKey, "Carregador");
@@ -51,6 +90,7 @@ namespace MudancaAssombrada
         {
             Screen.fullScreen = Fullscreen;
             AudioListener.volume = Muted ? 0f : Volume;
+            VideoSettings.Apply();
         }
     }
 }
