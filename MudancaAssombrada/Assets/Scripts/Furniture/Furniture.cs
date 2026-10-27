@@ -238,9 +238,11 @@ namespace MudancaAssombrada
         [Rpc(SendTo.Server)]
         void PickUpRpc(RpcParams rpcParams = default)
         {
-            if (isHeld.Value) return; // dois jogadores pegaram ao mesmo tempo: o primeiro leva
-            isHeld.Value = true;
+            // Dois jogadores pegaram ao mesmo tempo: o primeiro leva. E quem já está com as mãos
+            // ocupadas em outro móvel não pega este (o cliente confere, mas quem decide é o host).
             ulong sender = rpcParams.Receive.SenderClientId;
+            if (!CarryRules.CanAcceptPickUp(isHeld.Value, BusyElsewhere(sender))) return;
+            isHeld.Value = true;
             if (sender != OwnerClientId) NetworkObject.ChangeOwnership(sender); // o host já é dono
         }
 

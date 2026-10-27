@@ -98,6 +98,21 @@ namespace MudancaAssombrada.Tests
             Assert.IsFalse(CarryRules.CanAcceptHelper(true, true, false, false, sender: 2, owner: 1, senderBusyElsewhere: true));
         }
 
+        [Test]
+        public void Host_EntregaMovelSolto_AQuemEstaDeMaosLivres()
+        {
+            Assert.IsTrue(CarryRules.CanAcceptPickUp(isHeld: false, senderBusyElsewhere: false));
+            Assert.IsFalse(CarryRules.CanAcceptPickUp(isHeld: true, senderBusyElsewhere: false), "dois pegaram: o primeiro leva");
+        }
+
+        [Test]
+        public void Host_RecusaPegarQuemJaCarregaOuAjudaOutroMovel()
+        {
+            // Bug: só o TryPickUp do cliente impedia. Pedir a outra ponta e, antes da resposta,
+            // pegar outro móvel deixava a pessoa com dois móveis.
+            Assert.IsFalse(CarryRules.CanAcceptPickUp(isHeld: false, senderBusyElsewhere: true));
+        }
+
         // --- Velocidade ---
 
         [Test]

@@ -24,7 +24,7 @@ está no [CLAUDE.md](CLAUDE.md), regra 6. Como rodar os testes também está lá
 | 2. Partida e objetivos | `MatchRules`, `HouseClock.OffBeatDelay` | `MatchRulesTests` | 18 | ✅ feito |
 | 3. Reforço dos testes já feitos | — | os mesmos | +22 | ✅ feito (falta 1 item, abaixo) |
 | 4. Dados do projeto | — | `DataTests` | 10 | ✅ feito |
-| 5. Peso e dupla | `CarryRules` | `CarryRulesTests` | 17 | ✅ feito (falta 1 bug, abaixo) |
+| 5. Peso e dupla | `CarryRules` | `CarryRulesTests` | 19 | ✅ feito |
 | 6. Resgate de colega | `RescueRules` | `RescueRulesTests` | 12 | ✅ feito |
 | 7. Imitador: quando age | `ImitatorRules` | `ImitatorRulesTests` | 11 | ✅ feito |
 | 8. Testes de fumaça | — | `Assets/Tests/PlayMode` | — | depois |
@@ -95,9 +95,9 @@ Marcelo 3; cadeira 1, caixa 1,5, caixa G 2, penteadeira 2,5, armário 3,5).
 - **Bug corrigido:** o host (`HelpRpc`) aceitava como ajudante quem já carregava ou ajudava em outro
   móvel; agora `CarryRules.CanAcceptHelper` recebe "mãos ocupadas em outro móvel" e recusa.
 - O comentário do topo do `Furniture.cs` agora diz "a própria força", e o `IsBulky` foi reexplicado.
-- **Falta (bug achado depois):** o `PickUpRpc` tem o mesmo furo: o host entrega o móvel a quem já
-  carrega ou ajuda em outro (só o `TryPickUp` do cliente impede). Corrigir igual ao `HelpRpc`: uma
-  regra na `CarryRules` com o "mãos ocupadas" (`BusyElsewhere`) e um teste que falha primeiro.
+- **Bug corrigido (achado depois):** o `PickUpRpc` tinha o mesmo furo: o host entregava o móvel a quem
+  já carregava ou ajudava em outro (só o `TryPickUp` do cliente impedia). Agora `CarryRules.CanAcceptPickUp`
+  recebe o "mãos ocupadas" (`BusyElsewhere`) e recusa.
 
 ## 6. Resgate de colega ✅
 
@@ -136,5 +136,5 @@ Poucos e simples, para pegar o que quebra "por fora" das regras:
 1. **Parte 3** (reforço): pequena, aproveita o que já existe.
 2. **Parte 4** (dados): barata e pega erro de Inspector, que hoje só aparece no Play.
 3. ~~**Parte 5** (peso e dupla)~~ ✅
-4. ~~**Partes 6 e 7** (resgate e Imitador)~~ ✅. Falta o bug do `PickUpRpc` da parte 5.
+4. ~~**Partes 6 e 7** (resgate e Imitador)~~ ✅
 5. **Parte 8** (fumaça) quando o time quiser rodar os testes num CI.

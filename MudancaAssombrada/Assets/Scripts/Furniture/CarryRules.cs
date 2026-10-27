@@ -51,6 +51,11 @@ namespace MudancaAssombrada
                                            ulong sender, ulong owner, bool senderBusyElsewhere) =>
             isHeld && sender != owner && !senderBusyElsewhere && HelpOffered(holderFeelsWeight, hasHelper, hasFakeHelper);
 
+        // No HOST: entregar este móvel a quem pediu? Só se estiver solto (dois pedidos: o primeiro leva)
+        // e quem pediu não estiver com as mãos ocupadas em OUTRO móvel.
+        public static bool CanAcceptPickUp(bool isHeld, bool senderBusyElsewhere) =>
+            !isHeld && !senderBusyElsewhere;
+
         // Multiplicador de velocidade de quem carrega.
         //  - Arrastando (faltou gente): dragSpeed ÷ peso sentido.
         //  - Levantando: o passo da dupla (relativo à minha velocidade) ÷ peso sentido.
