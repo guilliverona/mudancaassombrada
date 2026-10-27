@@ -15,7 +15,8 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
-from mathutils import Vector  # noqa: E402
+import bpy  # noqa: E402
+from mathutils import Matrix, Vector  # noqa: E402
 
 import blockout_common as bc  # noqa: E402
 
@@ -41,7 +42,20 @@ MATS = bc.Materials("MAT_CHR_Cida", {
     "Boca": ("#7A3E3A", 0.0, 0.6, 0.0),
     "Sobrancelha": ("#8E8794", 0.0, 0.8, 0.0),
     "Borracha": ("#1C1A22", 0.0, 0.8, 0.0),
+    "Unha": ("#F0CDB0", 0.0, 0.4, 0.0),
 })
+
+# Ficha "Dona Cida — mão direita": mão de 15 cm (punho até a ponta do médio), palma de 8,5 cm,
+# nós dos dedos marcados (mão de 63 anos que trabalhou com piano). Aliança e relógio dourado
+# são parte da malha (props de skin), não malhas extras.
+HAND = {
+    "length": 0.15, "middle": 0.50, "knuckles": 0.085, "wrist": 0.074, "thick": 0.024,
+    "radius": {"Thumb": 0.0098, "Index": 0.0080, "Middle": 0.0084, "Ring": 0.0080, "Little": 0.0070},
+    "ratio": {"Index": 0.92, "Middle": 1.0, "Ring": 0.94, "Little": 0.76},
+    "drop": {"Ring": 0.002, "Little": 0.007},
+    "splay": {"Index": 2, "Middle": 0, "Ring": 2, "Little": 5},
+    "thumb_len": 0.056, "knuckle_bulge": 0.10,
+}
 
 ARMS = {
     "Left": ((0.03, 0, 0.83), (0.153, 0, 0.813), (0.22, -0.01, 0.70), (0.207, -0.03, 0.593), (0.21, -0.035, 0.53)),
@@ -66,7 +80,9 @@ def build_rig(col):
     for name, (x, y) in {"skirt_F": (0, -0.12), "skirt_B": (0, 0.12),
                          "skirt_L": (0.15, 0), "skirt_R": (-0.15, 0)}.items():
         bones.append((name, (x * 0.8, y * 0.8, 0.53), (x * 1.25, y * 1.25, 0.12), "Hips", False))
-    return bc.build_armature("RIG_CHR_Cida", col, bones)
+    arm = bc.build_armature("RIG_CHR_Cida", col, bones)
+    bc.add_finger_bones(arm, ARMS, {side: HAND for side in ARMS})
+    return arm
 
 
 def build_body(arm, col):
@@ -109,7 +125,13 @@ def build_body(arm, col):
         wr, el = Vector(wr), Vector(el)
         cuff_dir = (wr - el).normalized()
         p.tube(wr - cuff_dir * 0.03, wr, 0.046, 0.046, "Cardiga", f"{side}LowerArm", seg=12)
-        p.ellipsoid(wr + cuff_dir * 0.04, (0.034, 0.026, 0.042), "Pele", f"{side}Hand", seg=12, rings=8)
+        p.hand(side, ARMS[side], HAND, "Pele", nail="Unha")
+    # aliança no anelar esquerdo, no meio da falange proximal (presa a esse osso)
+    ring = bc.hand_chains("Left", ARMS["Left"], HAND)["Ring"]
+    mid = ring[0].lerp(ring[1], 0.45)
+    along = (ring[1] - ring[0]).normalized() * 0.0018
+    r = HAND["radius"]["Ring"] * 1.12
+    p.tube(mid - along, mid + along, r, r, "Metal", "LeftRingProximal", seg=10)
     watch = Vector(ARMS["Right"][3]) + Vector((0, 0, -0.006))
     p.tube(watch + Vector((0, 0, 0.007)), watch - Vector((0, 0, 0.007)), 0.04, 0.04, "Metal", "RightHand", seg=12)
 
@@ -183,21 +205,108 @@ def build_glasses(arm, col):
     return p.to_object(col, arm)
 
 
-def build_cane(col, socket):
-    """Bengala como prop separado, origem no ponto de pega (convenção de props)."""
-    p = bc.Part("SM_PRP_Bengala", MATS)
-    top = Vector((0.21, -0.035, 0.607))
-    tip = Vector((0.253, -0.06, 0.0))
-    p0, c, p2 = top, Vector((0.205, -0.035, 0.68)), Vector((0.16, -0.035, 0.653))
-    crook = [(1 - t) ** 2 * p0 + 2 * (1 - t) * t * c + t ** 2 * p2 for t in [i / 6 for i in range(7)]]
-    p.polyline(crook, 0.01, "Bengala", "cane", seg=10)
+# ---------------------------------------------------------------- pega da bengala
+# Pose-chave "pega da bengala" da ficha de mãos: a mão esquerda fecha em volta da bengala em pé,
+# com o antebraço à frente e o polegar para cima (assim o "furo" do punho fica na vertical; com o
+# braço caído ele fica deitado e a bengala não passa). A pose vira o clipe
+# Animations/PegaBengala.fbx (camada "Bengala" do Animator: só braço e dedos esquerdos) e a
+# bengala é modelada NESSA pose, então cai certinha dentro do punho.
+HOLD_UPPER = Vector((0.25, -0.35, -1.0))   # braço: para baixo, um pouco à frente e para fora
+HOLD_FORE = Vector((0.08, -1.0, -0.45))    # antebraço (e mão): à frente, um pouco para baixo
+HOLD_CURL = {"Proximal": 80, "Intermediate": 90, "Distal": 45}   # graus; +X fecha na palma
+THUMB_CURL = {"Proximal": 25, "Intermediate": 35, "Distal": 25}
+GRIP_FINGERS = ("Index", "Middle", "Ring", "Little")
+
+
+def pose_hold(arm):
+    """Põe o braço esquerdo na pega (pose, não muda o rig)."""
+    pb = arm.pose.bones
+    inward = Vector((-1, 0, 0))   # a palma esquerda olha para o corpo, em repouso e na pega
+
+    def orient(name, direction):
+        # Aponta o osso em "direction" mantendo a palma para dentro (sem torcer o braço).
+        bpy.context.view_layer.update()
+        b = pb[name]
+        palm_local = b.bone.matrix_local.to_3x3().normalized().inverted() @ inward
+        palm_local.y = 0
+        palm_local.normalize()
+        y = direction.normalized()
+        z = (inward - y * inward.dot(y)).normalized()
+        world = Matrix((y.cross(z), y, z)).transposed()
+        local = Matrix((Vector((0, 1, 0)).cross(palm_local), Vector((0, 1, 0)), palm_local)).transposed()
+        m = (world @ local.inverted()).to_4x4()
+        m.translation = b.head
+        b.matrix = m
+
+    orient("LeftUpperArm", HOLD_UPPER)
+    orient("LeftLowerArm", HOLD_FORE)
+    orient("LeftHand", HOLD_FORE)
+    for finger in GRIP_FINGERS + ("Thumb",):
+        curl = THUMB_CURL if finger == "Thumb" else HOLD_CURL
+        for part, deg in curl.items():
+            b = pb[f"Left{finger}{part}"]
+            b.rotation_mode = "XYZ"
+            b.rotation_euler = (math.radians(deg), 0, 0)
+    bpy.context.view_layer.update()
+
+
+def clear_pose(arm):
+    for b in arm.pose.bones:
+        b.matrix_basis = Matrix.Identity(4)
+    bpy.context.view_layer.update()
+
+
+def build_cane(col, socket, arm):
+    """Bengala como prop separado, origem no ponto de pega (convenção de props).
+
+    Calculada com o braço na pega: em pé, passando pelo meio do punho fechado, até o chão.
+    """
+    pose_hold(arm)
+    pb = arm.pose.bones
+    # meio do punho: entre o nó de cada dedo e a ponta da falange média (que volta para a palma)
+    center = sum(((pb[f"Left{f}Proximal"].head + pb[f"Left{f}Intermediate"].tail) / 2
+                  for f in GRIP_FINGERS), Vector()) / len(GRIP_FINGERS)
+    top = center + Vector((0, 0, 0.035))
+    tip = Vector((center.x, center.y, 0.0))
+    p0, c, p2 = top, top + Vector((0, 0, 0.075)), top + Vector((0, -0.048, 0.048))   # gancho para a frente
+    world = [(1 - t) ** 2 * p0 + 2 * (1 - t) * t * c + t ** 2 * p2 for t in [i / 6 for i in range(7)]]
     band_z = d(0, 440)[1]
     band = top + (tip - top) * ((top.z - band_z) / (top.z - tip.z))
     ferrule = tip + (top - tip).normalized() * 0.02
-    p.tube(top, band, 0.01, 0.01, "Bengala", "cane", seg=10)
-    p.tube(band, ferrule, 0.0105, 0.0105, "BengalaFaixa", "cane", seg=10)
-    p.tube(ferrule, tip, 0.011, 0.011, "Borracha", "cane", seg=10)
-    return p.to_prop(col, socket, GRIP), tip
+
+    # A bengala anda com o socket da mão: guarda os pontos no espaço do socket NA PEGA
+    # (to_prop desconta o GRIP, então soma de volta).
+    to_socket = socket.matrix_world.inverted()
+    local = lambda v: to_socket @ v + Vector(GRIP)
+    p = bc.Part("SM_PRP_Bengala", MATS)
+    p.polyline([local(v) for v in world], 0.01, "Bengala", "cane", seg=10)
+    p.tube(local(top), local(band), 0.01, 0.01, "Bengala", "cane", seg=10)
+    p.tube(local(band), local(ferrule), 0.0105, 0.0105, "BengalaFaixa", "cane", seg=10)
+    p.tube(local(ferrule), local(tip), 0.011, 0.011, "Borracha", "cane", seg=10)
+    tip_local = to_socket @ tip
+    clear_pose(arm)
+    print("PEGA centro", tuple(round(x, 3) for x in center), "ponta", tuple(round(x, 3) for x in tip))
+    return p.to_prop(col, socket, GRIP), tip_local
+
+
+def export_hold_clip(arm):
+    """A pega como clipe (dois quadros iguais), só o esqueleto: Assets/Art/Animations/PegaBengala.fbx."""
+    pose_hold(arm)
+    arm.animation_data_create()
+    action = bpy.data.actions.new("PegaBengala")
+    arm.animation_data.action = action
+    for frame in (1, 30):
+        for b in arm.pose.bones:
+            b.keyframe_insert("location", frame=frame)
+            b.keyframe_insert("rotation_quaternion" if b.rotation_mode == "QUATERNION" else "rotation_euler", frame=frame)
+    bpy.context.scene.frame_start, bpy.context.scene.frame_end = 1, 30
+    # Um vazio ao lado do esqueleto: sozinho na raiz, o Unity "achata" o RIG_CHR_Cida e a
+    # hierarquia deixa de bater com a do modelo (o clipe usa o avatar da Cida, ver ArtImportSettings).
+    keep = bpy.data.objects.new("Clip", None)
+    bpy.context.scene.collection.objects.link(keep)
+    bc.export_fbx(bc.UNITY_ROOT / "Animations" / "PegaBengala.fbx", animation=True)
+    bpy.data.objects.remove(keep)
+    print("SAVED", bc.UNITY_ROOT / "Animations" / "PegaBengala.fbx")
 
 
 def main():
@@ -211,11 +320,14 @@ def main():
     soc_l = bc.add_socket("SOC_Hand_L", cols["Sockets"], arm, "LeftHand", GRIP)
     bc.add_socket("SOC_Hand_R", cols["Sockets"], arm, "RightHand", (-0.2, -0.01, 0.515))
     bc.add_socket("SOC_Bun", cols["Sockets"], arm, "bun_jiggle", (0.0, 0.05, d(0, 46)[1]))
-    cane, tip = build_cane(cols["Props"], soc_l)
-    bc.add_child_empty("SOC_CaneTip", cols["Sockets"], cane, tip - Vector(GRIP))
+    cane, tip = build_cane(cols["Props"], soc_l, arm)
+    bc.add_child_empty("SOC_CaneTip", cols["Sockets"], cane, tip)
 
     bc.report_tris((body, hair, glasses, cane))
-    bc.finish(scene, cols, "Cida", HEIGHT)
+    # o FBX sai em repouso; as prévias (e o .blend) já mostram a Cida segurando a bengala
+    bc.finish(scene, cols, "Cida", HEIGHT, before_previews=lambda: pose_hold(arm))
+    clear_pose(arm)
+    export_hold_clip(arm)
 
 
 if __name__ == "__main__":

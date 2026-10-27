@@ -165,9 +165,103 @@ namespace MudancaAssombrada
             animator.applyRootMotion = false; // quem anda é o CharacterController, não a animação
             animator.enabled = true;
             clips = animator;
+            caneLayer = animator.GetLayerIndex(CaneLayerName); // -1 = controller sem a camada (versão antiga)
+            CollectHandBones(animator);
             // Os clipes foram acertados para um corpo de tamanho 1 (AnimationBuilder.NaturalSpeed):
             // perna mais curta (a Cida) precisa de passos mais rápidos para andar o mesmo tanto.
             stepPace = 1f / Mathf.Max(animator.humanScale, 0.1f);
+        }
+
+        // Segura a bengala (ficha: canTap)? Liga a camada "Bengala" do Animator: braço e dedos
+        // esquerdos na pega, o resto do corpo segue andando. Quem diz é o CharacterSwitcher.
+        public bool HoldsCane { get; set; }
+        const string CaneLayerName = "Bengala"; // = AnimationBuilder.CaneLayer
+        int caneLayer = -1;
+        float caneWeight;
+
+        // Mãos fora do chão (caído e levantando). Os clipes Cair/Levantar apoiam a palma pensando
+        // num corpo médio: a mão grande do Marcelo (26 cm, com luva) entrava até 22 cm no chão.
+        // Depois da animação (LateUpdate), se o ponto mais baixo da mão fica abaixo do chão, um IK
+        // de dois ossos dobra o ombro e o cotovelo para subir a mão o que falta, sem girar a mão.
+        // (O IK do Animator não serve: no meio do Levantar o "alvo" dele não coincide com a mão.)
+        [Tooltip("Sobe a mão quando ela entraria no chão durante a queda e o levantar.")]
+        [SerializeField] bool keepHandsAboveFloor = true;
+        Transform[] handBones = new Transform[2], upperArms = new Transform[2], lowerArms = new Transform[2];
+        Transform[][] handJoints = new Transform[2][]; // juntas dos dedos de cada mão
+        float[] handClearance = new float[2];          // "espessura" abaixo das juntas (dedo, luva)
+
+        void CollectHandBones(Animator animator)
+        {
+            var hands = new[] { HumanBodyBones.LeftHand, HumanBodyBones.RightHand };
+            for (int s = 0; s < 2; s++)
+            {
+                handBones[s] = animator.GetBoneTransform(hands[s]);
+                upperArms[s] = animator.GetBoneTransform(s == 0 ? HumanBodyBones.LeftUpperArm : HumanBodyBones.RightUpperArm);
+                lowerArms[s] = animator.GetBoneTransform(s == 0 ? HumanBodyBones.LeftLowerArm : HumanBodyBones.RightLowerArm);
+                var joints = new System.Collections.Generic.List<Transform>();
+                // os ossos dos dedos vêm logo depois da mão no enum: polegar, indicador... (3 cada)
+                int first = s == 0 ? (int)HumanBodyBones.LeftThumbProximal : (int)HumanBodyBones.RightThumbProximal;
+                for (int i = 0; i < 15; i++)
+                {
+                    var b = animator.GetBoneTransform((HumanBodyBones)(first + i));
+                    if (b != null) joints.Add(b);
+                }
+                handJoints[s] = joints.ToArray();
+                // Espessura: 20% do comprimento da palma (fichas: dedo de 1 a 1,4 cm de raio, luva +1,5 cm).
+                var middle = animator.GetBoneTransform(s == 0 ? HumanBodyBones.LeftMiddleProximal : HumanBodyBones.RightMiddleProximal);
+                handClearance[s] = handBones[s] != null && middle != null
+                    ? Vector3.Distance(handBones[s].position, middle.position) * 0.2f : 0.02f;
+            }
+        }
+
+        // Depois da animação: o Animator reescreve o braço a cada quadro, então aqui sempre partimos
+        // da pose "crua" do clipe (sem acumular a correção do quadro anterior).
+        void LateUpdate()
+        {
+            if (clips == null || !keepHandsAboveFloor || !IsGettingUp) return; // só caindo, deitado ou levantando
+            float floor = transform.position.y; // os pés do jogador: o chão onde ele está
+            for (int s = 0; s < 2; s++)
+            {
+                if (handBones[s] == null || upperArms[s] == null || lowerArms[s] == null) continue;
+                float low = handBones[s].position.y;
+                var joints = handJoints[s];
+                for (int i = 0; i < joints.Length; i++)
+                {
+                    low = Mathf.Min(low, joints[i].position.y);
+                    // a ponta do dedo: a falange distal continua na direção da média
+                    if (i % 3 == 2)
+                        low = Mathf.Min(low, (joints[i].position + (joints[i].position - joints[i - 1].position) * 0.9f).y);
+                }
+                float lift = HandPoseRules.FloorLift(low, floor, handClearance[s]);
+                if (lift > 0f) LiftHand(upperArms[s], lowerArms[s], handBones[s], lift);
+            }
+        }
+
+        // IK de dois ossos (ombro e cotovelo) para levar a mão "lift" metros para cima, no mesmo
+        // plano em que o braço já dobra. A mão mantém a rotação que tinha (os dedos não giram).
+        static void LiftHand(Transform upper, Transform lower, Transform hand, float lift)
+        {
+            Vector3 a = upper.position, b = lower.position, c = hand.position;
+            Vector3 t = c + Vector3.up * lift;
+            Quaternion handRotation = hand.rotation;
+            float ab = (b - a).magnitude, bc = (c - b).magnitude;
+            float at = Mathf.Clamp((t - a).magnitude, 0.01f, ab + bc - 0.001f);
+
+            // ângulos atuais e os que fecham o triângulo ombro-cotovelo-alvo (lei dos cossenos)
+            float acAb0 = Vector3.Angle(c - a, b - a), baBc0 = Vector3.Angle(a - b, c - b), acAt0 = Vector3.Angle(c - a, t - a);
+            float acAb1 = Mathf.Acos(Mathf.Clamp((bc * bc - ab * ab - at * at) / (-2f * ab * at), -1f, 1f)) * Mathf.Rad2Deg;
+            float baBc1 = Mathf.Acos(Mathf.Clamp((at * at - ab * ab - bc * bc) / (-2f * ab * bc), -1f, 1f)) * Mathf.Rad2Deg;
+
+            Vector3 bend = Vector3.Cross(c - a, b - a);
+            if (bend.sqrMagnitude < 1e-8f) bend = Vector3.Cross(c - a, Vector3.up); // braço reto: dobra para cima
+            bend.Normalize();
+            Vector3 toTarget = Vector3.Cross(c - a, t - a);
+
+            lower.rotation = Quaternion.AngleAxis(baBc1 - baBc0, bend) * lower.rotation;
+            upper.rotation = Quaternion.AngleAxis(acAb1 - acAb0, bend) * upper.rotation;
+            if (toTarget.sqrMagnitude > 1e-8f)
+                upper.rotation = Quaternion.AngleAxis(acAt0, toTarget.normalized) * upper.rotation;
+            hand.rotation = handRotation;
         }
 
         float stepPace = 1f; // quanto os clipes de andar aceleram por causa do tamanho do personagem
@@ -260,6 +354,13 @@ namespace MudancaAssombrada
                 if (down) shown = Mathf.MoveTowards(shown, condition.RescueProgress, Time.deltaTime);
                 else if (!IsGettingUp) shown = 0f;
                 clips.SetFloat(RescueId, shown);
+                // Pega da bengala: solta ao cair (a queda e o levantar usam o corpo inteiro).
+                if (caneLayer >= 0)
+                {
+                    float target = HandPoseRules.CaneWeight(HoldsCane, down, IsGettingUp);
+                    caneWeight = HandPoseRules.Smooth(caneWeight, target, 4f, Time.deltaTime);
+                    clips.SetLayerWeight(caneLayer, caneWeight);
+                }
                 // Ritmo dos passos pelo tamanho do corpo, só andando: parado, caindo ou levantando,
                 // os clipes tocam no tempo original (senão a Cida respiraria e cairia acelerada).
                 float moving = down || IsGettingUp ? 0f
