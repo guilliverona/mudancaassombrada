@@ -21,6 +21,8 @@ namespace MudancaAssombrada
         Cane = 1 << 4,      // bengala batendo no chão
         Whistle = 1 << 5,   // apito
         Music = 1 << 6,     // instrumentos, caixinha de música
+        Tuning = 1 << 7,    // diapasão da Cida: no eco, cada superfície responde com o seu timbre
+        Carry = 1 << 8,     // móvel na mão: o apoio da dupla (fraco) e o arrastar sozinho (forte)
         Everything = ~0,
     }
 

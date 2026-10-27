@@ -10,6 +10,9 @@ namespace MudancaAssombrada
         [SerializeField] float tapRange = 12f;
         [SerializeField] float tapCooldown = 0.6f; // evita "metralhar" o botão
 
+        [Tooltip("Segurar a bengala este tempo faz a CHAMADA (CaneCall): três batidas e um marcador.")]
+        [SerializeField] float callHoldSeconds = 2f;
+
         [Header("Passos")]
         [SerializeField] float stepDistance = 1.2f; // um passo a cada 1.2m andados
         [SerializeField] float stepRange = 2.5f;
@@ -22,15 +25,21 @@ namespace MudancaAssombrada
         public float StepVolume { get; set; } = 1f;
 
         PlayerMovement movement;
+        CaneCall call;
         float nextTapTime;
         float walked;
         Vector3 lastPosition;
+        float holdStart = -1f; // quando começou a segurar a bengala (-1 = não está segurando)
 
         void Start()
         {
             lastPosition = transform.position;
             movement = GetComponent<PlayerMovement>();
+            call = GetComponent<CaneCall>();
         }
+
+        // A ponta da bengala bate no chão, um pouco à frente dos pés.
+        Vector3 Tip => transform.position + transform.forward * 0.6f + Vector3.down * 0.9f;
 
         void Update()
         {
@@ -38,9 +47,21 @@ namespace MudancaAssombrada
             if (CanTap && !PauseMenu.IsOpen && GameInput.Tap.WasPressedThisFrame() && Time.time >= nextTapTime)
             {
                 nextTapTime = Time.time + tapCooldown;
-                // A ponta da bengala bate no chão, um pouco à frente dos pés.
-                Vector3 tip = transform.position + transform.forward * 0.6f + Vector3.down * 0.9f;
-                EchoSystem.Emit(new SoundEvent(tip, tapRange, 1f, SoundType.Cane, gameObject));
+                // 0,9 e não 1: intensidade 1 é a chamada (o som de três batidas, ver SoundLibrary).
+                EchoSystem.Emit(new SoundEvent(Tip, tapRange, 0.9f, SoundType.Cane, gameObject));
+                holdStart = Time.time;
+            }
+
+            // Continuou segurando: vira a CHAMADA (uma vez por aperto).
+            if (holdStart >= 0f)
+            {
+                if (!GameInput.Tap.IsPressed() || !CanTap) holdStart = -1f;
+                else if (Time.time - holdStart >= callHoldSeconds)
+                {
+                    holdStart = -1f;
+                    nextTapTime = Time.time + tapCooldown;
+                    if (call != null) call.Call(Tip);
+                }
             }
 
             // Soma quanto andou no chão (ignora o eixo Y).
@@ -59,7 +80,15 @@ namespace MudancaAssombrada
                 if (movement.IsCrouching) { range = crouchStepRange; intensity = 0.25f; }
                 else if (movement.IsRunning) { range = runStepRange; intensity = 0.9f; }
                 Vector3 feet = transform.position + Vector3.down * 0.9f;
-                EchoSystem.Emit(new SoundEvent(feet, range * StepVolume, intensity, SoundType.Footstep, gameObject));
+                range *= StepVolume;
+                // Tábua solta: o passo RANGE (alto e longe), seja quem for, até agachado.
+                float creak = CreakyFloor.RangeAt(feet);
+                if (creak > 0f)
+                {
+                    range = Mathf.Max(range, creak);
+                    intensity = Mathf.Max(intensity, 0.85f); // forte = o som de madeira rangendo
+                }
+                EchoSystem.Emit(new SoundEvent(feet, range, intensity, SoundType.Footstep, gameObject));
             }
         }
     }
