@@ -13,7 +13,6 @@ namespace MudancaAssombrada
         const string VolumeKey = "volume";
         const string FullscreenKey = "telaCheia";
         const string NameKey = "nome";
-        const string AddressKey = "ipDoHost";
 
         // Multiplicador da sensibilidade do mouse: 1 = padrão, 0.5 = metade, 2 = dobro.
         public static float MouseSensitivity
@@ -39,13 +38,6 @@ namespace MudancaAssombrada
         {
             get => PlayerPrefs.GetString(NameKey, "Carregador");
             set => PlayerPrefs.SetString(NameKey, value);
-        }
-
-        // O último IP digitado, para não precisar digitar de novo toda vez.
-        public static string HostAddress
-        {
-            get => PlayerPrefs.GetString(AddressKey, "127.0.0.1");
-            set => PlayerPrefs.SetString(AddressKey, value);
         }
 
         // Grava no disco agora (senão a Unity só grava ao fechar o jogo, e um travamento perderia tudo).

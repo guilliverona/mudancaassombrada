@@ -108,7 +108,8 @@ e devem ser abertas e comparadas com o Art Bible.
   temporário `Assets/Editor/Temp*.cs`, rodar em batch e **apagar** depois (com o `.meta`).
 
 **Testar em rede:** Multiplayer Play Mode (Window › Multiplayer › Multiplayer Play Mode, Player 2):
-host numa janela, cliente na outra (IP 127.0.0.1). O jogo começa pela cena **Menu**.
+uma janela cria a sala, a outra entra pela lista de salas ou pelo código. Não existe mais LAN:
+tudo passa pelos serviços da Unity (Lobby + Relay), então precisa de internet. O jogo começa pela cena **Menu**.
 
 ## Armadilhas conhecidas
 
