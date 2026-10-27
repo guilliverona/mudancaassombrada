@@ -55,6 +55,8 @@ namespace MudancaAssombrada
             LastError = null;
             Disconnected = null;
             current = null;
+            pending = published = null;
+            CreatedPrivate = false;
             LobbyManager.ResetSession();
         }
 
@@ -94,25 +96,49 @@ namespace MudancaAssombrada
         // ---------- Salas ----------
         // "async" = a função espera a resposta dos servidores da Unity sem travar o jogo.
 
-        // As salas abertas (não começaram e têm vaga), para o menu mostrar na lista.
-        public static async Task<List<ISessionInfo>> ListRooms()
+        // As salas que ainda não começaram, para a tela "Entrar numa sala" (as cheias também:
+        // aparecem apagadas, com "Cheia"). O que o host publicou (líder, capítulo, personagens)
+        // vem nas propriedades da sala; a ordem e a busca ficam no RoomBrowserRules.
+        public static async Task<List<RoomListing>> ListRooms()
         {
             await SignInAsync();
-            var result = await MultiplayerService.Instance.QuerySessionsAsync(new QuerySessionsOptions { Count = 20 });
-            var open = new List<ISessionInfo>();
+            var result = await MultiplayerService.Instance.QuerySessionsAsync(new QuerySessionsOptions { Count = 40 });
+            var rooms = new List<RoomListing>();
             foreach (var room in result.Sessions)
-                if (!room.IsLocked && room.AvailableSlots > 0) open.Add(room);
-            return open;
+            {
+                if (room.IsLocked) continue;
+                rooms.Add(new RoomListing
+                {
+                    Id = room.Id,
+                    Name = room.Name,
+                    Leader = Property(room, RoomBrowserRules.LeaderKey),
+                    Chapter = RoomBrowserRules.ParseChapter(Property(room, RoomBrowserRules.ChapterKey)),
+                    Characters = RoomBrowserRules.DecodeCharacters(Property(room, RoomBrowserRules.CharactersKey)),
+                    Players = room.MaxPlayers - room.AvailableSlots,
+                    MaxPlayers = room.MaxPlayers,
+                });
+            }
+            return rooms;
         }
 
-        public async Task CreateRoom(string roomName)
+        static string Property(ISessionInfo room, string key) =>
+            room.Properties != null && room.Properties.TryGetValue(key, out var property) ? property.Value : "";
+
+        // A sala que estou criando é privada? O LobbyManager lê isto quando a sala de espera abre.
+        public static bool CreatedPrivate { get; private set; }
+
+        public async Task CreateRoom(string roomName, bool isPrivate)
         {
             BeginSession();
             LobbyManager.ResetSession(); // partida nova: esquece a anterior
+            CreatedPrivate = isPrivate;
+            published = null;
             try
             {
                 await SignInAsync();
-                var options = new SessionOptions { Name = roomName, MaxPlayers = MaxPlayers }.WithRelayNetwork();
+                var options = new SessionOptions { Name = roomName, MaxPlayers = MaxPlayers, IsPrivate = isPrivate }.WithRelayNetwork();
+                // O líder já aparece na lista desde o começo; capítulo e personagens chegam pelo PublishRoomInfo.
+                options.SessionProperties[RoomBrowserRules.LeaderKey] = new SessionProperty(GameSettings.PlayerName);
                 current = await MultiplayerService.Instance.CreateSessionAsync(options);
             }
             catch (Exception e)
@@ -126,7 +152,7 @@ namespace MudancaAssombrada
             Join(() => MultiplayerService.Instance.JoinSessionByIdAsync(roomId), "A sala não existe mais ou está cheia.");
 
         public Task JoinByCode(string code) =>
-            Join(() => MultiplayerService.Instance.JoinSessionByCodeAsync(code.Trim().ToUpperInvariant()),
+            Join(() => MultiplayerService.Instance.JoinSessionByCodeAsync(RoomBrowserRules.CleanCode(code)),
                  "Código inválido, ou a sala está cheia ou já começou.");
 
         async Task Join(Func<Task<ISession>> join, string errorMessage)
@@ -177,6 +203,62 @@ namespace MudancaAssombrada
                 await host.SavePropertiesAsync();
             }
             catch (Exception e) { Debug.LogException(e); }
+        }
+
+        // ---------- O que a lista de salas mostra sobre a minha sala (só no host) ----------
+        // O LobbyManager chama sempre que algo muda; aqui juntamos as mudanças e mandamos no
+        // máximo uma vez a cada PublishInterval segundos (o Lobby da Unity limita os pedidos).
+
+        const float PublishInterval = 2f;
+        static Dictionary<string, string> pending;   // o que falta mandar (null = nada)
+        static Dictionary<string, string> published; // o último que foi mandado
+        float nextPublish;
+        bool publishing;
+
+        public static void PublishRoomInfo(string leaderName, int chapter, string characters)
+        {
+            if (current == null || !current.IsHost) return;
+            var info = new Dictionary<string, string>
+            {
+                [RoomBrowserRules.LeaderKey] = leaderName,
+                [RoomBrowserRules.ChapterKey] = chapter.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                [RoomBrowserRules.CharactersKey] = characters,
+            };
+            if (published != null && SameInfo(info, published)) { pending = null; return; }
+            pending = info;
+        }
+
+        static bool SameInfo(Dictionary<string, string> a, Dictionary<string, string> b)
+        {
+            foreach (var pair in a)
+                if (!b.TryGetValue(pair.Key, out var value) || value != pair.Value) return false;
+            return true;
+        }
+
+        void Update()
+        {
+            if (pending == null || publishing || Time.unscaledTime < nextPublish) return;
+            SendRoomInfo();
+        }
+
+        async void SendRoomInfo()
+        {
+            var info = pending;
+            pending = null;
+            if (current == null || !current.IsHost) return;
+            publishing = true;
+            nextPublish = Time.unscaledTime + PublishInterval;
+            try
+            {
+                var host = current.AsHost();
+                var properties = new Dictionary<string, SessionProperty>();
+                foreach (var pair in info) properties[pair.Key] = new SessionProperty(pair.Value);
+                host.SetProperties(properties);
+                await host.SavePropertiesAsync();
+                published = info;
+            }
+            catch (Exception e) { Debug.LogWarning("Erro ao atualizar a sala na lista: " + e.Message); }
+            finally { publishing = false; }
         }
 
         void BeginSession()

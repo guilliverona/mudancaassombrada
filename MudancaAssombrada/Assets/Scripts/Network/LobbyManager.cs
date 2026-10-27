@@ -140,9 +140,12 @@ namespace MudancaAssombrada
                 NetworkManager.OnClientDisconnectCallback += RemovePlayer;
                 leader.Value = NetworkManager.ServerClientId;
                 startAt.Value = 0;
-                isPrivate.Value = false;
+                isPrivate.Value = NetworkSession.CreatedPrivate; // escolhido na tela "Criar sala"
                 AddPlayer(NetworkManager.LocalClientId); // o próprio host
                 selectedChapter.Value = DefaultChapter();
+                // Tudo que muda na sala (jogadores, personagens, capítulo, líder) vai para a lista de salas.
+                Changed += PublishRoomInfo;
+                PublishRoomInfo();
             }
 
             // Cada um conta ao host o nome que digitou no menu e a sua conta.
@@ -157,6 +160,7 @@ namespace MudancaAssombrada
             leader.OnValueChanged -= OnUlongChanged;
             startAt.OnValueChanged -= OnDoubleChanged;
             isPrivate.OnValueChanged -= OnBoolChanged;
+            if (IsServer) Changed -= PublishRoomInfo;
             if (IsServer && NetworkManager != null)
             {
                 NetworkManager.OnClientConnectedCallback -= AddPlayer;
@@ -166,6 +170,19 @@ namespace MudancaAssombrada
         }
 
         void OnPlayersChanged(NetworkListEvent<LobbyPlayer> change) => Changed?.Invoke();
+
+        // Só no host: conta para a lista de salas quem é o líder, o capítulo e os personagens já escolhidos.
+        void PublishRoomInfo()
+        {
+            string leaderName = "";
+            var characters = new List<int>();
+            foreach (var p in players)
+            {
+                characters.Add(p.Character);
+                if (p.ClientId == leader.Value) leaderName = p.Name.ToString();
+            }
+            NetworkSession.PublishRoomInfo(leaderName, selectedChapter.Value, RoomBrowserRules.EncodeCharacters(characters));
+        }
         void OnIntChanged(int previous, int current) => Changed?.Invoke();
         void OnUlongChanged(ulong previous, ulong current) => Changed?.Invoke();
         void OnDoubleChanged(double previous, double current) => Changed?.Invoke();
