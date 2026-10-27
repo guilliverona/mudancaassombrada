@@ -26,7 +26,7 @@ namespace MudancaAssombrada.Editor
         [Serializable] class Catalog { public CatalogSound[] sons; public Mix[] mixagem = Array.Empty<Mix>(); }
         [Serializable] class CatalogSound { public string id; public string pasta; }
         // Campo ausente no JSON fica com o valor daqui (-1 = "não mexer no que está no Inspector").
-        [Serializable] class Mix { public string id; public string camada; public float volume = -1, alcance = -1, intervaloMin = -1; public bool noTempo; }
+        [Serializable] class Mix { public string id; public string camada; public float volume = -1, alcance = -1, intervaloMin = -1; public bool noTempo, importante; }
 
         static readonly Dictionary<string, SoundLayer> Layers = new()
         {
@@ -52,6 +52,7 @@ namespace MudancaAssombrada.Editor
                 EditorTools.EnsureFolder("Assets/Resources");
                 AssetDatabase.CreateAsset(library, LibraryPath);
             }
+            AddNewDefaults(library);
 
             var existing = library.sounds.Where(e => e != null && !string.IsNullOrEmpty(e.id))
                                          .GroupBy(e => e.id).ToDictionary(g => g.Key, g => g.First());
@@ -75,6 +76,10 @@ namespace MudancaAssombrada.Editor
                 new SoundChoice { type = SoundType.Footstep, sound = "passo_fantasma" },
                 new SoundChoice { type = SoundType.Breath, sound = "bibliotecario_respiracao" },
             });
+            // O falso pedindo ajuda ("Me ajuda a segurar a outra ponta?") fica MUDO no áudio: o padrão de
+            // voz (imitador_voz, uma voz abafada de "rádio") não combinava. O pedido continua no eco da
+            // Cida, para os fantasmas que ouvem e no texto de quem ouve; quem fala alto é a voz dele (falas).
+            GiveVoice(MirrorHouseBuilder.ImitatorPath, new[] { new SoundChoice { type = SoundType.Voice, sound = "" } });
             GiveImitatorSounds();
             AssetDatabase.SaveAssets();
 
@@ -94,6 +99,7 @@ namespace MudancaAssombrada.Editor
             if (mix.alcance >= 0) entry.maxDistance = mix.alcance;
             if (mix.intervaloMin >= 0) entry.minGap = mix.intervaloMin;
             entry.onBeat = mix.noTempo;
+            entry.important = mix.importante; // ameaça que é ACONTECIMENTO (toca sempre); sem isto, é clima
         }
 
         // Os arquivos de um som: <id>.ext, ou <id>_01.ext, <id>_02.ext... na pasta dele.
@@ -119,10 +125,30 @@ namespace MudancaAssombrada.Editor
             new SoundChoice { type = SoundType.Breath, sound = "respiracao_calma", loudSound = "respiracao_ofegante", loudFrom = 0.3f },
             new SoundChoice { type = SoundType.Voice, sound = "imitador_voz" },
             new SoundChoice { type = SoundType.Impact, sound = "impacto_leve", loudSound = "impacto_pesado", loudFrom = 0.6f },
-            new SoundChoice { type = SoundType.Cane, sound = "bengala" },
+            new SoundChoice { type = SoundType.Cane, sound = "bengala", loudSound = "cida_chamada", loudFrom = 0.99f },
+            new SoundChoice { type = SoundType.Tuning, sound = "diapasao_bate" },
+            new SoundChoice { type = SoundType.Carry, sound = "movel_dupla_apoio", loudSound = "arrastar_movel", loudFrom = 0.6f },
             new SoundChoice { type = SoundType.Whistle, sound = "apito" },
             new SoundChoice { type = SoundType.Music, sound = "caixinha_musica" },
         };
+
+        // Bibliotecas criadas antes de um tipo ou som novo existir ganham só o que falta:
+        //   - o diapasão (SoundType.Tuning) toca "diapasao_bate";
+        //   - a bengala com intensidade 1 é a CHAMADA (três batidas); a batida comum é 0,9.
+        // O que alguém ajustou no Inspector continua (só preenche o vazio).
+        static void AddNewDefaults(SoundLibrary library)
+        {
+            var list = library.defaults.ToList();
+            if (!list.Any(c => (c.type & SoundType.Tuning) != 0))
+                list.Add(new SoundChoice { type = SoundType.Tuning, sound = "diapasao_bate" });
+            // Móvel na mão: o apoio da dupla (fraco) e o arrastar sozinho (forte).
+            if (!list.Any(c => (c.type & SoundType.Carry) != 0))
+                list.Add(new SoundChoice { type = SoundType.Carry, sound = "movel_dupla_apoio", loudSound = "arrastar_movel", loudFrom = 0.6f });
+            for (int i = 0; i < list.Count; i++)
+                if ((list[i].type & SoundType.Cane) != 0 && string.IsNullOrEmpty(list[i].loudSound))
+                    list[i] = new SoundChoice { type = list[i].type, sound = list[i].sound, loudSound = "cida_chamada", loudFrom = 0.99f };
+            library.defaults = list.ToArray();
+        }
 
         static float DefaultVolume(CatalogSound s)
         {
@@ -147,24 +173,75 @@ namespace MudancaAssombrada.Editor
             }
         }
 
-        // Os sons do Imitador pelos estados do GhostImitator:
-        //   escondido no espelho (Patrolling)  sussurros de vez em quando
-        //   puxando a vítima (Pulling)         o zumbido do espelho, sem parar
-        //   puxando -> escondido               chegou no espelho com a vítima: captura
-        //   desmascarado (Fleeing)             o vidro trincando
-        static void GiveImitatorSounds() => AddIfMissing<GhostSounds>(MirrorHouseBuilder.ImitatorPath, sounds =>
+        // Os sons do Imitador pelos estados do GhostImitator. Ele é um ator vaidoso: quase tudo é a
+        // VOZ dele (falas no catálogo, "imitador_fala_*"), e cada momento tem o seu repertório.
+        //   dentro do espelho (InMirror)        "Minha casa..." a cada 25-47 s, sem direção (ImitatorLoops)
+        //   espelho -> prestes a sair           "Minha deixa..." sem direção, em metade das vezes
+        //   espelho -> em cena (a aparição)     "Senhoras e senhores..." ao sair e outra no meio do caminho
+        //   em cena -> reverência               o veludo, e "Obrigado... obrigado..."
+        //   puxando -> reverência               a captura, e "Mais um... para o elenco..."
+        //   disfarçado/puxando -> fugindo       desmascarado: "Errei... a fala..."
+        //   reverência -> fugindo               apontado na reverência: "Plateia... ingrata..."
+        //   puxando (Pulling)                   o zumbido do espelho, sem parar (ele não fala no pânico)
+        static GhostSounds.Transition[] ImitatorTransitions() => new[]
         {
-            sounds.transitions = new[]
+            new GhostSounds.Transition { from = GhostState.InMirror, to = GhostState.Emerging, sound = "imitador_fala_sai", skipChance = 0.5f, everywhere = true },
+            new GhostSounds.Transition { from = GhostState.InMirror, to = GhostState.Performing, sound = "imitador_fala_cena", delay = 0.5f },
+            new GhostSounds.Transition { from = GhostState.InMirror, to = GhostState.Performing, sound = "imitador_fala_cena", delay = 6f },
+            new GhostSounds.Transition { anyFrom = true, to = GhostState.Bowing, sound = "imitador_reverencia" },
+            new GhostSounds.Transition { from = GhostState.Performing, to = GhostState.Bowing, sound = "imitador_fala_obrigado", delay = 0.6f },
+            new GhostSounds.Transition { from = GhostState.Pulling, to = GhostState.Bowing, sound = "captura" },
+            new GhostSounds.Transition { from = GhostState.Pulling, to = GhostState.Bowing, sound = "imitador_fala_captura", delay = 1f },
+            new GhostSounds.Transition { from = GhostState.Disguised, to = GhostState.Fleeing, sound = "imitador_fala_desmascarado" },
+            new GhostSounds.Transition { from = GhostState.Pulling, to = GhostState.Fleeing, sound = "imitador_fala_desmascarado" },
+            new GhostSounds.Transition { from = GhostState.Bowing, to = GhostState.Fleeing, sound = "imitador_fala_ofendido" },
+        };
+
+        static GhostSounds.Loop[] ImitatorLoops() => new[]
+        {
+            new GhostSounds.Loop { state = GhostState.InMirror, sound = "imitador_fala", repeatEvery = 36f, firstDelay = 30f, finaleEvery = 23f, volume = 0.55f, everywhere = true },
+            new GhostSounds.Loop { state = GhostState.Pulling, sound = "espelho_puxando", volume = 1f },
+        };
+
+        static void GiveImitatorSounds()
+        {
+            AddIfMissing<GhostSounds>(MirrorHouseBuilder.ImitatorPath, sounds =>
             {
-                new GhostSounds.Transition { from = GhostState.Pulling, to = GhostState.Patrolling, sound = "captura" },
-                new GhostSounds.Transition { anyFrom = true, to = GhostState.Fleeing, sound = "espelho_rachando" },
-            };
-            sounds.loops = new[]
+                sounds.transitions = ImitatorTransitions();
+                sounds.loops = ImitatorLoops();
+            });
+            UpgradeImitatorSounds();
+        }
+
+        // Os sons que este construtor já pôs no Imitador em versões anteriores (o vidro trincando, a
+        // máscara, o sussurro sem palavras...). Na atualização eles saem e entram as listas novas;
+        // o que alguém acrescentou à mão no prefab fica.
+        static readonly HashSet<string> OldImitatorSounds = new()
+        {
+            "captura", "imitador_reverencia", "espelho_rachando", "imitador_mascara_gira", "imitador_sai_ofendido",
+            "imitador_sussurro", "imitador_fala", "espelho_puxando",
+        };
+
+        static void UpgradeImitatorSounds()
+        {
+            string path = MirrorHouseBuilder.ImitatorPath;
+            if (LevelPrefabsBuilder.Load(path) == null) return;
+            var root = PrefabUtility.LoadPrefabContents(path);
+            try
             {
-                new GhostSounds.Loop { state = GhostState.Patrolling, sound = "imitador_sussurro", repeatEvery = 9f, volume = 0.6f },
-                new GhostSounds.Loop { state = GhostState.Pulling, sound = "espelho_puxando", volume = 1f },
-            };
-        });
+                if (!root.TryGetComponent(out GhostSounds sounds)) return;
+                if (sounds.transitions.Any(t => t.sound == "imitador_fala_desmascarado")) return; // já está novo
+                bool Mine(string sound) => OldImitatorSounds.Contains(sound) || sound.StartsWith("imitador_fala");
+                sounds.transitions = sounds.transitions.Where(t => !Mine(t.sound)).Concat(ImitatorTransitions()).ToArray();
+                sounds.loops = sounds.loops.Where(l => !Mine(l.sound)).Concat(ImitatorLoops()).ToArray();
+                PrefabUtility.SaveAsPrefabAsset(root, path);
+                Debug.Log($"Falas do Imitador ligadas aos momentos: {path}");
+            }
+            finally
+            {
+                PrefabUtility.UnloadPrefabContents(root);
+            }
+        }
 
         // Prefab do mundo é de quem edita: aqui só ACRESCENTA o componente se ele ainda não tem.
         static void AddIfMissing<T>(string prefabPath, System.Action<T> fill) where T : Component
