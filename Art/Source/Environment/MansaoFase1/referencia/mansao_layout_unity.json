@@ -1,0 +1,320 @@
+{
+  "project": "Mudança Assombrada",
+  "version": "0.1-concept",
+  "units": "meters",
+  "coordinateSystem": {
+    "origin": "center of mansion ground-floor footprint",
+    "x": "east/right",
+    "y": "height/up",
+    "z": "north/top",
+    "note": "Unity uses Y for height. Room coordinates use X/Z on the ground plane."
+  },
+  "rooms": [
+    {
+      "id": 1,
+      "name": "Entrada / Spawn",
+      "level": 0,
+      "center": {
+        "x": 0.0,
+        "y": 0,
+        "z": -14.0
+      },
+      "size": {
+        "x": 8,
+        "y": 3.2,
+        "z": 6
+      },
+      "floor": "xadrez",
+      "notes": "Entrada principal; spawn e tutorial de interação."
+    },
+    {
+      "id": 2,
+      "name": "Grande Hall + Relógio",
+      "level": 0,
+      "center": {
+        "x": 0.0,
+        "y": 0,
+        "z": -6.0
+      },
+      "size": {
+        "x": 8,
+        "y": 3.2,
+        "z": 10
+      },
+      "floor": "xadrez",
+      "notes": "Hall central; relógio de pêndulo fixo próximo ao eixo central."
+    },
+    {
+      "id": 3,
+      "name": "Escadaria / Galeria Superior",
+      "level": 0,
+      "center": {
+        "x": 0.0,
+        "y": 0,
+        "z": 3.0
+      },
+      "size": {
+        "x": 8,
+        "y": 3.2,
+        "z": 8
+      },
+      "floor": "madeira + xadrez",
+      "notes": "Escada para o piso superior; guarda-corpo e patamar."
+    },
+    {
+      "id": 4,
+      "name": "Galeria dos Espelhos",
+      "level": 0,
+      "center": {
+        "x": 11.0,
+        "y": 0,
+        "z": 0.0
+      },
+      "size": {
+        "x": 14,
+        "y": 3.2,
+        "z": 6
+      },
+      "floor": "madeira escura",
+      "notes": "Espelhos S/M/L nas paredes; reservar corredores livres diante dos espelhos."
+    },
+    {
+      "id": 5,
+      "name": "Salão de Baile / Palco",
+      "level": 0,
+      "center": {
+        "x": 9.0,
+        "y": 0,
+        "z": 7.0
+      },
+      "size": {
+        "x": 10,
+        "y": 3.2,
+        "z": 8
+      },
+      "floor": "madeira",
+      "notes": "Cortinas, palco e espaço de perseguição."
+    },
+    {
+      "id": 6,
+      "name": "Camarins / Figurinos",
+      "level": 0,
+      "center": {
+        "x": 18.0,
+        "y": 0,
+        "z": 7.0
+      },
+      "size": {
+        "x": 8,
+        "y": 3.2,
+        "z": 8
+      },
+      "floor": "madeira",
+      "notes": "Penteadeiras, arara de figurino e espelhos de camarim."
+    },
+    {
+      "id": 7,
+      "name": "Biblioteca",
+      "level": 0,
+      "center": {
+        "x": -13.0,
+        "y": 0,
+        "z": 7.0
+      },
+      "size": {
+        "x": 10,
+        "y": 3.2,
+        "z": 8
+      },
+      "floor": "madeira",
+      "notes": "Estantes, pilhas de livros e luminária verde; futura zona de som/rangido."
+    },
+    {
+      "id": 8,
+      "name": "Sala de Jantar",
+      "level": 0,
+      "center": {
+        "x": -13.0,
+        "y": 0,
+        "z": -1.0
+      },
+      "size": {
+        "x": 10,
+        "y": 3.2,
+        "z": 8
+      },
+      "floor": "madeira",
+      "notes": "Mesa e cadeiras; rota alternativa ao hall."
+    },
+    {
+      "id": 9,
+      "name": "Cozinha",
+      "level": 0,
+      "center": {
+        "x": -13.0,
+        "y": 0,
+        "z": -9.0
+      },
+      "size": {
+        "x": 10,
+        "y": 3.2,
+        "z": 8
+      },
+      "floor": "ladrilho",
+      "notes": "Bancadas, fogão e armazenamento; props pequenos."
+    },
+    {
+      "id": 10,
+      "name": "Sala dos Retratos",
+      "level": 0,
+      "center": {
+        "x": 15.0,
+        "y": 0,
+        "z": -7.0
+      },
+      "size": {
+        "x": 10,
+        "y": 3.2,
+        "z": 8
+      },
+      "floor": "madeira",
+      "notes": "Retratos P/M/G e poltronas; pistas visuais."
+    },
+    {
+      "id": 11,
+      "name": "Sala de Música",
+      "level": 0,
+      "center": {
+        "x": 15.0,
+        "y": 0,
+        "z": -15.0
+      },
+      "size": {
+        "x": 10,
+        "y": 3.2,
+        "z": 8
+      },
+      "floor": "tapete + madeira",
+      "notes": "Piano de armário e objetos musicais; ponto de interesse sonoro."
+    },
+    {
+      "id": 12,
+      "name": "Depósito de Props",
+      "level": 0,
+      "center": {
+        "x": -9.0,
+        "y": 0,
+        "z": -17.0
+      },
+      "size": {
+        "x": 10,
+        "y": 3.2,
+        "z": 8
+      },
+      "floor": "pedra/madeira",
+      "notes": "Caixas P/G, baú, papéis e objetos carregáveis."
+    },
+    {
+      "id": 13,
+      "name": "Câmara Secreta do Espelho",
+      "level": 0,
+      "center": {
+        "x": 23.0,
+        "y": 0,
+        "z": 1.0
+      },
+      "size": {
+        "x": 6,
+        "y": 3.2,
+        "z": 8
+      },
+      "floor": "pedra escura",
+      "notes": "Sala de evento do Imitador; portal/espelho principal e gatilho de captura."
+    },
+    {
+      "id": 14,
+      "name": "Saída / Caminhão",
+      "level": 0,
+      "center": {
+        "x": 24.0,
+        "y": 0,
+        "z": -11.0
+      },
+      "size": {
+        "x": 8,
+        "y": 3.2,
+        "z": 8
+      },
+      "floor": "pátio de pedra",
+      "notes": "Saída exterior; caminhão e zona de entrega."
+    },
+    {
+      "id": "U1",
+      "name": "Galeria Superior Oeste",
+      "level": 1,
+      "center": {
+        "x": 0.0,
+        "y": 3.6,
+        "z": 3.0
+      },
+      "size": {
+        "x": 8,
+        "y": 3.2,
+        "z": 4
+      },
+      "floor": "madeira",
+      "notes": "Passarela acima do hall; guarda-corpo."
+    },
+    {
+      "id": "U2",
+      "name": "Corredor dos Retratos",
+      "level": 1,
+      "center": {
+        "x": 9.0,
+        "y": 3.6,
+        "z": 13.0
+      },
+      "size": {
+        "x": 10,
+        "y": 3.2,
+        "z": 4
+      },
+      "floor": "madeira",
+      "notes": "Conecta camarins e ala dos retratos."
+    },
+    {
+      "id": "U3",
+      "name": "Quarto da Família",
+      "level": 1,
+      "center": {
+        "x": 18.0,
+        "y": 3.6,
+        "z": 15.0
+      },
+      "size": {
+        "x": 8,
+        "y": 3.2,
+        "z": 8
+      },
+      "floor": "madeira",
+      "notes": "Sala opcional para expansão futura."
+    },
+    {
+      "id": "U4",
+      "name": "Sótão / Arquivo de Elencos",
+      "level": 1,
+      "center": {
+        "x": -9.0,
+        "y": 3.6,
+        "z": 15.0
+      },
+      "size": {
+        "x": 10,
+        "y": 3.2,
+        "z": 8
+      },
+      "floor": "tábuas",
+      "notes": "Área de narrativa opcional; acesso por escada secundária."
+    }
+  ]
+}

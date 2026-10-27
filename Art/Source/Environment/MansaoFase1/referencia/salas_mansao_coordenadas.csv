@@ -1,0 +1,19 @@
+﻿id,name,x,z,w,d,floor,level,notes
+1,Entrada / Spawn,-4,-17,8,6,xadrez,0,Entrada principal; spawn e tutorial de interação.
+2,Grande Hall + Relógio,-4,-11,8,10,xadrez,0,Hall central; relógio de pêndulo fixo próximo ao eixo central.
+3,Escadaria / Galeria Superior,-4,-1,8,8,madeira + xadrez,0,Escada para o piso superior; guarda-corpo e patamar.
+4,Galeria dos Espelhos,4,-3,14,6,madeira escura,0,Espelhos S/M/L nas paredes; reservar corredores livres diante dos espelhos.
+5,Salão de Baile / Palco,4,3,10,8,madeira,0,"Cortinas, palco e espaço de perseguição."
+6,Camarins / Figurinos,14,3,8,8,madeira,0,"Penteadeiras, arara de figurino e espelhos de camarim."
+7,Biblioteca,-18,3,10,8,madeira,0,"Estantes, pilhas de livros e luminária verde; futura zona de som/rangido."
+8,Sala de Jantar,-18,-5,10,8,madeira,0,Mesa e cadeiras; rota alternativa ao hall.
+9,Cozinha,-18,-13,10,8,ladrilho,0,"Bancadas, fogão e armazenamento; props pequenos."
+10,Sala dos Retratos,10,-11,10,8,madeira,0,Retratos P/M/G e poltronas; pistas visuais.
+11,Sala de Música,10,-19,10,8,tapete + madeira,0,Piano de armário e objetos musicais; ponto de interesse sonoro.
+12,Depósito de Props,-14,-21,10,8,pedra/madeira,0,"Caixas P/G, baú, papéis e objetos carregáveis."
+13,Câmara Secreta do Espelho,20,-3,6,8,pedra escura,0,Sala de evento do Imitador; portal/espelho principal e gatilho de captura.
+14,Saída / Caminhão,20,-15,8,8,pátio de pedra,0,Saída exterior; caminhão e zona de entrega.
+U1,Galeria Superior Oeste,-4,1,8,4,madeira,1,Passarela acima do hall; guarda-corpo.
+U2,Corredor dos Retratos,4,11,10,4,madeira,1,Conecta camarins e ala dos retratos.
+U3,Quarto da Família,14,11,8,8,madeira,1,Sala opcional para expansão futura.
+U4,Sótão / Arquivo de Elencos,-14,11,10,8,tábuas,1,Área de narrativa opcional; acesso por escada secundária.
