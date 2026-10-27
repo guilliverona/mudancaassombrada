@@ -11,7 +11,7 @@ está no [CLAUDE.md](CLAUDE.md), regra 6. Como rodar os testes também está lá
   só junta os dados e pergunta a ela. Assim a regra é testada sem host, sem física, sem Play.
 - **Teste de dados:** carrega os `.asset` de verdade (Elenco, Campanha, Sons) e confere que estão
   coerentes. Pega erro de quem edita no Inspector, não só de quem mexe no código.
-- **Play Mode** (`Assets/Tests/PlayMode`, ainda não existe): só alguns testes de fumaça. Lento e frágil,
+- **Play Mode** (`Assets/Tests/PlayMode`, asmdef `MudancaAssombrada.Tests.PlayMode`): só testes de fumaça. Lento e frágil,
   vale para "a cena abre e o Player nasce", não para regra.
 - **Achou diferença entre o código e os .md?** O teste não "escolhe" sozinho: avisar e decidir com o time.
 
@@ -27,7 +27,7 @@ está no [CLAUDE.md](CLAUDE.md), regra 6. Como rodar os testes também está lá
 | 5. Peso e dupla | `CarryRules` | `CarryRulesTests` | 19 | ✅ feito |
 | 6. Resgate de colega | `RescueRules` | `RescueRulesTests` | 12 | ✅ feito |
 | 7. Imitador: quando age | `ImitatorRules` | `ImitatorRulesTests` | 11 | ✅ feito |
-| 8. Testes de fumaça | — | `Assets/Tests/PlayMode` | — | depois |
+| 8. Testes de fumaça | — | `SmokeTests` (Play Mode) | 3 | ✅ feito |
 
 ---
 
@@ -124,12 +124,14 @@ relógio e os segundos no espelho e pergunta a ela (`ReadyToAct`, `NextLurkTime`
 
 A máquina de estados inteira (andar, NavMesh, espelhos) fica fora: depende de cena.
 
-## 8. Testes de fumaça (Play Mode, depois)
+## 8. Testes de fumaça (Play Mode) ✅
 
-Poucos e simples, para pegar o que quebra "por fora" das regras:
-- A cena Menu abre sem erro no Console.
-- Host local sobe, o Player nasce, a HUD aparece.
-- A Casa do Espelho abre e o `GameManager` acha o capítulo pela cena.
+Em `Assets/Tests/PlayMode/SmokeTests.cs`. Rodam na aba **PlayMode** do Test Runner (ou em batch com
+`-testPlatform PlayMode`). São lentos: abrem as cenas de verdade. Qualquer erro no Console reprova.
+O host é **local** (`StartHost` direto, sem Lobby nem Relay): não precisa de internet.
+- A cena Menu abre sem erro e cria o `NetworkManager`.
+- Host local sobe, a Casa do Espelho abre pela rede, o Player nasce e a HUD aparece.
+- Na Casa do Espelho o `GameManager` acha o capítulo pela cena (e ele tem relógio).
 
 ## Ordem sugerida
 
@@ -137,4 +139,4 @@ Poucos e simples, para pegar o que quebra "por fora" das regras:
 2. **Parte 4** (dados): barata e pega erro de Inspector, que hoje só aparece no Play.
 3. ~~**Parte 5** (peso e dupla)~~ ✅
 4. ~~**Partes 6 e 7** (resgate e Imitador)~~ ✅
-5. **Parte 8** (fumaça) quando o time quiser rodar os testes num CI.
+5. ~~**Parte 8** (fumaça)~~ ✅. Próximo passo: rodar Edit Mode e Play Mode num CI.
