@@ -100,7 +100,7 @@ gerar de novo no Blender atualiza os prefabs sozinho, porque o `Modelo` fica lig
 
 | Tipo | Limite | Hoje |
 |---|---|---|
-| Personagem jogável (com props) | 18k | Cida 10,2k · Tiago 8,5k · Marcelo 7,4k |
+| Personagem jogável (com props) | 18k | Cida 12,6k · Tiago 10,9k · Marcelo 11,9k (com mãos e dedos) |
 | Fantasma de fase | 20k | Bibliotecário 6,0k · Imitador 6,3k · Maestrina 4,2k |
 | Seu Valdemar | 15k | 4,8k |
 | O Inquilino (forma final) | 45k | — |
@@ -126,6 +126,20 @@ Personagem novo com modelo = ficha nova, sem mexer em código.
 | Malhas separadas | cabelo, óculos, bengala | cabelo, boné, bloquinho, lápis | barba, gorro, luvas, quadro branco |
 | Sockets | `SOC_Hand_L` (bengala), `SOC_Hand_R`, `SOC_Bun`, `SOC_CaneTip` | `SOC_Hand_L/R`, `SOC_Neck` (bloquinho), `SOC_Ear_L` (lápis), `SOC_Hip_L` (bolsa) | `SOC_Hand_L/R`, `SOC_Carry_A/B`, `SOC_Chest` (quadro), `SOC_Mouth` (apito) |
 | Ossos extras | `bun_jiggle`, `skirt_F/B/L/R` | `hood_01`, `notebook_lanyard`, `bag` | `beard_01`, `board_hinge`, `whistle_cord`, `tape_roll`, `belly_jiggle` |
+| Mão (ficha "cabeça e mãos") | 15 cm, palma 8,5 cm, nós marcados, aliança | 20 cm, médio = 54%, dedos longos | 26 cm, médio = 44%; luva = casca de 1,5 cm (palma 14 cm) |
+
+**Mãos e dedos:** os três têm palma, quatro dedos e polegar, com três ossos por dedo
+(`LeftIndexProximal/Intermediate/Distal`...), que o Avatar Humanoid reconhece sozinho. A mão vem
+do `Part.hand` e os ossos do `add_finger_bones` (`blockout_common.py`); cada script só traz a
+tabela `HAND` com as medidas da ficha. O roll dos ossos dos dedos deixa **+X fechando o dedo na
+palma** (para quem anima no Blender). Curativo, mancha de caneta, rugas e veias são textura (`_BC`).
+
+**Pega da bengala (Cida):** pose-chave da ficha de mãos, feita no `build_cida_blockout.py`
+(`pose_hold`): antebraço à frente, polegar para cima e dedos fechados. A bengala é modelada **nessa
+pose**, passando pelo meio do punho até o chão, e a pose sai como clipe em
+`Assets/Art/Animations/PegaBengala.fbx`. No Animator ela é a camada **"Bengala"** (máscara
+`MascaraBengala`: só braço e dedos esquerdos), que o `DollWalk` liga para quem tem bengala na ficha
+e solta ao cair (`HandPoseRules`). As prévias da Cida já mostram a pega.
 
 **Lados:** nos desenhos do Art Bible, a bengala da Cida, o lápis e a bolsa do Tiago
 ficam do lado **esquerdo** do personagem; o texto de algumas fichas diz "direito".

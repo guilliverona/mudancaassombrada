@@ -160,6 +160,7 @@ namespace MudancaAssombrada
             if (!currentModel.TryGetComponent(out DollWalk walk))
                 walk = currentModel.AddComponent<DollWalk>(); // acha os ossos sozinho pelo Humanoid
             walk.UseClips(animations); // com os clipes do Mixamo, o Animator anima no lugar do código
+            walk.HoldsCane = character.canTap; // quem tem bengala na ficha a segura (camada "Bengala")
             Walk = walk;
 
             // Com animação de verdade, a MINHA câmera segue a cabeça do modelo (não entra no pescoço

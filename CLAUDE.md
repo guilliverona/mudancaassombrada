@@ -135,6 +135,15 @@ tudo passa pelos serviços da Unity (Lobby + Relay), então precisa de internet.
   (`ApplyArt` no `LevelPrefabsBuilder`) só mexe no visual e não repete se já existe o filho `Modelo`.
 - **Falsas mudanças no Git:** `Assets/Editor/StableAssets.cs` evita que recriar cena/prefab troque
   todos os `fileID`. Mesmo assim, conferir o diff antes de propor commit.
+- **Clipe feito no Blender sobre um rig nosso** (ex.: `PegaBengala`): o FBX só tem o esqueleto já
+  posado, então precisa do avatar do personagem (`OwnRigClips` no `ArtImportSettings`: Copy From Other
+  + Bake Axis Conversion) e de um vazio ao lado do rig (sozinho na raiz, o Unity achata a hierarquia).
+  Mudou a regra? Apagar o `.meta` do clipe para reimportar.
+- **Medir animação em teste (batch):** sem câmera, o Animator não mexe os ossos (culling): usar
+  `cullingMode = AlwaysAnimate`. IK depois da animação vai no `LateUpdate` com a pose real; o
+  `GetIKPosition` do Animator pode não coincidir com a mão (ex.: meio do Levantar).
+- **Normais da malha:** o Unity só desenha a frente da face. As prévias do Blender escondem o verso
+  (`show_backface_culling`); peça montada vértice a vértice precisa de `recalc_face_normals`.
 - **Lados nos desenhos:** em várias fichas do Art Bible, o texto diz "direito" e o desenho mostra o
   lado esquerdo (bengala da Cida, lápis e bolsa do Tiago). Os modelos seguem o desenho.
 - **NavMesh do fantasma (raio 0,5 m, altura 2 m):** vão com menos de 1 m ele não atravessa; a colisão

@@ -46,7 +46,22 @@ MATS = bc.Materials("MAT_CHR_Marcelo", {
     "Moldura": ("#B9B4BE", 0.6, 0.4, 0.0),
     "Marcador": ("#E5687A", 0.0, 0.5, 0.0),
     "Olho": ("#2A1E18", 0.0, 0.2, 0.0),
+    "Unha": ("#E2B394", 0.0, 0.4, 0.0),
+    "Reforco": ("#C09A2A", 0.0, 0.7, 0.0),
 })
+
+# Ficha "Marcelo — mão direita": mão de 26 cm (punho até a ponta do médio), dedos grossos e
+# curtos (médio = 44%), palma quase quadrada. A luva é uma casca de 1,5 cm (malha separada,
+# mesmos pesos da mão): com ela, a palma tem 14 cm. A mão nua só aparece nas cutscenes.
+HAND = {
+    "length": 0.26, "middle": 0.44, "knuckles": 0.110, "wrist": 0.100, "thick": 0.040,
+    "radius": {"Thumb": 0.0160, "Index": 0.0135, "Middle": 0.0140, "Ring": 0.0135, "Little": 0.0120},
+    "ratio": {"Index": 0.93, "Middle": 1.0, "Ring": 0.95, "Little": 0.80},
+    "drop": {"Ring": 0.003, "Little": 0.010},
+    "splay": {"Index": 2, "Middle": 0, "Ring": 2, "Little": 5},
+    "thumb_len": 0.095, "knuckle_bulge": 0.05,
+}
+GLOVE = 0.015
 
 ARMS = {
     "Left": ((0.06, 0, 1.36), (0.287, 0, 1.36), (0.38, -0.01, 1.087), (0.413, -0.02, 0.74), (0.413, -0.02, 0.6)),
@@ -74,7 +89,9 @@ def build_rig(col):
         ("belly_jiggle", (0, -0.06, 0.92), (0, -0.24, 0.92), "Spine", False),
     ]
     bones += bc.humanoid_limbs(ARMS, LEGS, foot_fwd=0.1, toe_fwd=0.17)
-    return bc.build_armature("RIG_CHR_Marcelo", col, bones)
+    arm = bc.build_armature("RIG_CHR_Marcelo", col, bones)
+    bc.add_finger_bones(arm, ARMS, {side: HAND for side in ARMS})
+    return arm
 
 
 def build_body(arm, col):
@@ -131,7 +148,10 @@ def build_body(arm, col):
         cuff = el + (wr - el) * 0.25
         p.tube(el, cuff, 0.076, 0.074, "MacacaoClaro", f"{side}LowerArm", seg=14)
         p.limb([cuff, wr], (0.067, 0.06), "Pele", [f"{side}LowerArm"])
-        p.ellipsoid(wr, (0.06,) * 3, "Pele", f"{side}LowerArm", seg=12, rings=6)
+        # pulso achatado na direção da palma (X): a mão tem 4 cm de espessura e a luva, 7
+        p.ellipsoid(wr, (0.038, 0.058, 0.045), "Pele", f"{side}LowerArm", seg=12, rings=6)
+        # mão nua (fica dentro da luva; aparece sozinha nas cutscenes, sem a malha da luva)
+        p.hand(side, ARMS[side], HAND, "Pele", nail="Unha")
 
     # pescoço, cabeça, orelhas, rosto
     p.tube((0, -0.005, 1.38), (0, -0.01, 1.54), 0.1, 0.095, "PeleSombra", "Neck", seg=16)
@@ -169,7 +189,7 @@ def build_gloves(arm, col):
         wr, el = Vector(wr), Vector(el)
         dirv = (wr - el).normalized()
         p.tube(wr - dirv * 0.012, wr + dirv * 0.022, 0.07, 0.07, "Velcro", f"{side}Hand", seg=14)
-        p.ellipsoid(wr + dirv * 0.075, (0.088, 0.07, 0.095), "Luva", f"{side}Hand", seg=16, rings=10)
+        p.hand(side, ARMS[side], HAND, "Luva", grow=GLOVE, knuckle_pad="Reforco")
     return p.to_object(col, arm)
 
 

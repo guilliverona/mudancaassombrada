@@ -61,8 +61,15 @@ namespace MudancaAssombrada.Editor
             "Correr", "CorrerTras", "CorrerEsquerda", "CorrerDireita",
             "AgachadoParado", "AgachadoAndar", "AgachadoTras", "AgachadoDireita",
             "Cair", "Levantar",
+            "PegaBengala",
             // AgachadoEsquerda fica de fora: veio girado do Mixamo, usamos o AgachadoDireita espelhado.
         };
+
+        // Camada "Bengala": a pega da bengala (pose-chave da ficha de mãos da Cida, gerada pelo
+        // tools/blender/build_cida_blockout.py) por cima de tudo, só no braço e nos dedos esquerdos.
+        // Começa com peso 0; o DollWalk liga para quem tem bengala na ficha (HandPoseRules).
+        public const string CaneLayer = "Bengala";
+        const string CaneMaskPath = ClipsFolder + "MascaraBengala.mask";
 
         public static RuntimeAnimatorController EnsureController()
         {
@@ -135,6 +142,7 @@ namespace MudancaAssombrada.Editor
             Transition(standing, crouched, true);
             Transition(crouched, standing, false);
             AddFalling(machine, standing, crouched);
+            AddCaneLayer(controller);
 
             AssetDatabase.SaveAssets();
             Debug.Log($"Animator dos jogadores criado: {ControllerPath}");
@@ -184,6 +192,34 @@ namespace MudancaAssombrada.Editor
             back.hasFixedDuration = true;
             back.duration = 0.5f;
             back.AddCondition(AnimatorConditionMode.IfNot, 0, DownParam);
+        }
+
+        // A pega da bengala numa camada própria, com máscara: só o braço e os dedos esquerdos
+        // obedecem a ela; o resto do corpo continua andando, correndo e agachando pela camada de baixo.
+        static void AddCaneLayer(AnimatorController controller)
+        {
+            var hold = Clip("PegaBengala");
+            if (hold == null) return;
+
+            var mask = AssetDatabase.LoadAssetAtPath<AvatarMask>(CaneMaskPath);
+            if (mask == null)
+            {
+                mask = new AvatarMask();
+                AssetDatabase.CreateAsset(mask, CaneMaskPath);
+            }
+            for (var part = AvatarMaskBodyPart.Root; part < AvatarMaskBodyPart.LastBodyPart; part++)
+                mask.SetHumanoidBodyPartActive(part, part == AvatarMaskBodyPart.LeftArm || part == AvatarMaskBodyPart.LeftFingers);
+            EditorUtility.SetDirty(mask);
+
+            controller.AddLayer(CaneLayer);
+            var layers = controller.layers;
+            var layer = layers[layers.Length - 1];
+            layer.avatarMask = mask;
+            layer.defaultWeight = 0f;
+            var state = layer.stateMachine.AddState("Pega da bengala");
+            state.motion = hold;
+            layer.stateMachine.defaultState = state;
+            controller.layers = layers;
         }
 
         // Mistura 2D "direcional": cada clipe num ponto (Lado, Frente); o Unity mistura os vizinhos.

@@ -48,7 +48,20 @@ MATS = bc.Materials("MAT_CHR_Tiago", {
     "Adesivo": ("#7FE3C4", 0.0, 0.5, 0.0),
     "Metal": ("#D9B45A", 1.0, 0.3, 0.0),
     "Preto": ("#131118", 0.0, 0.7, 0.0),
+    "Unha": ("#D9A88A", 0.0, 0.4, 0.0),
 })
+
+# Ficha "Tiago — mão direita": mão de 20 cm (punho até a ponta do médio), médio = 54%,
+# dedos longos para sinais legíveis de longe, palma quase quadrada. Curativo no indicador e
+# mancha de caneta são decal na textura (_BC), não malha.
+HAND = {
+    "length": 0.20, "middle": 0.54, "knuckles": 0.092, "wrist": 0.078, "thick": 0.030,
+    "radius": {"Thumb": 0.0118, "Index": 0.0093, "Middle": 0.0097, "Ring": 0.0093, "Little": 0.0084},
+    "ratio": {"Index": 0.92, "Middle": 1.0, "Ring": 0.94, "Little": 0.74},
+    "drop": {"Ring": 0.002, "Little": 0.009},
+    "splay": {"Index": 3, "Middle": 0, "Ring": 3, "Little": 7},
+    "thumb_len": 0.075, "knuckle_bulge": 0.04,
+}
 
 ARMS = {
     "Left": ((0.03, 0, 1.13), (0.167, 0, 1.12), (0.24, 0, 0.907), (0.267, 0, 0.693), (0.27, 0, 0.62)),
@@ -76,7 +89,9 @@ def build_rig(col):
         ("bag", (0.19, 0.02, 0.76), (0.205, 0.02, 0.6), "Hips", False),
     ]
     bones += bc.humanoid_limbs(ARMS, LEGS, foot_fwd=0.08, toe_fwd=0.14)
-    return bc.build_armature("RIG_CHR_Tiago", col, bones)
+    arm = bc.build_armature("RIG_CHR_Tiago", col, bones)
+    bc.add_finger_bones(arm, ARMS, {side: HAND for side in ARMS})
+    return arm
 
 
 def build_body(arm, col):
@@ -148,7 +163,7 @@ def build_body(arm, col):
         dirv = (wr - el).normalized()
         band = "Faixa" if side == "Right" else "Colete"
         p.tube(wr - dirv * 0.03, wr - dirv * 0.002, 0.039, 0.039, band, f"{side}LowerArm", seg=12)
-        p.ellipsoid(wr + dirv * 0.045, (0.032, 0.026, 0.047), "Pele", f"{side}Hand", seg=12, rings=8)
+        p.hand(side, ARMS[side], HAND, "Pele", nail="Unha")
 
     # pescoço, cabeça, orelhas
     p.tube((0, -0.005, 1.14), (0, -0.01, 1.28), 0.04, 0.038, "PeleSombra", "Neck", seg=12)
