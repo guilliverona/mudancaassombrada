@@ -14,7 +14,7 @@ namespace MudancaAssombrada
     public class GhostHearing : MonoBehaviour
     {
         [Tooltip("Que tipos de som chamam a atenção dele. A música, por exemplo, o Bibliotecário ignora.")]
-        [SerializeField] SoundType hears = SoundType.Footstep | SoundType.Voice | SoundType.Impact | SoundType.Cane | SoundType.Whistle;
+        [SerializeField] SoundType hears = SoundType.Footstep | SoundType.Voice | SoundType.Impact | SoundType.Cane | SoundType.Whistle | SoundType.Carry;
         [Tooltip("Ouve sons um pouco além do alcance deles (1,5 = 50% mais longe).")]
         [SerializeField] float hearingMultiplier = 1.5f;
 

@@ -68,6 +68,15 @@ namespace MudancaAssombrada
         public bool IsRunning { get; private set; }
         public bool IsExhausted { get; private set; }
         public float Stamina01 => stamina / maxStamina; // 0 = vazia, 1 = cheia
+        // Pisando num chão inclinado (a rampa da escada)? O carregador anda mais devagar com móvel de dupla.
+        public bool OnStairs { get; private set; }
+        // Onde ficam os pés, no mundo.
+        public Vector3 Feet => transform.position + Vector3.up * feetY;
+
+        [Header("Escada")]
+        [Tooltip("Chão mais inclinado que isto (graus) conta como escada.")]
+        [SerializeField] float stairsAngle = 15f;
+        float groundAngle; // inclinação do chão que o colisor tocou no último Move
 
         // Cada personagem tem uma altura de olhos (a Cida é baixinha, o Marcelo é enorme).
         // A câmera vai deslizando até a nova altura, pelo mesmo Lerp do agachar.
@@ -225,7 +234,17 @@ namespace MudancaAssombrada
 
             // Time.deltaTime = segundos desde o último frame. Multiplicar por ele deixa
             // o movimento igual em PCs rápidos ou lentos.
-            controller.Move(velocity * Time.deltaTime);
+            groundAngle = 0f;
+            controller.Move(velocity * Time.deltaTime); // chama o OnControllerColliderHit abaixo
+            OnStairs = controller.isGrounded && groundAngle > stairsAngle && groundAngle < 60f;
+        }
+
+        // A Unity chama durante o controller.Move, para cada coisa que o colisor encostou.
+        // Só o que está debaixo dos pés conta como chão.
+        void OnControllerColliderHit(ControllerColliderHit hit)
+        {
+            if (hit.point.y > Feet.y + controller.radius) return;
+            groundAngle = Mathf.Max(groundAngle, Vector3.Angle(hit.normal, Vector3.up));
         }
 
         void UpdateStamina(bool isMoving)

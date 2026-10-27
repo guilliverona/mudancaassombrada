@@ -11,7 +11,7 @@ namespace MudancaAssombrada
         [SerializeField] Color weakColor = new Color(1f, 0.85f, 0.3f);  // vibração fraca: amarelo
         [SerializeField] Color strongColor = new Color(1f, 0.2f, 0.3f); // vibração forte: vermelho
         [Tooltip("Que sons fazem o chão vibrar. Respiração e voz não fazem.")]
-        [SerializeField] SoundType visibleSounds = SoundType.Footstep | SoundType.Impact | SoundType.Cane | SoundType.Whistle | SoundType.Music;
+        [SerializeField] SoundType visibleSounds = SoundType.Footstep | SoundType.Impact | SoundType.Cane | SoundType.Whistle | SoundType.Music | SoundType.Carry;
 
         // Mesmo evento que o fantasma usa para ouvir. Um evento, vários "ouvintes" diferentes:
         // o fantasma persegue, o Tiago enxerga. Nenhum dos dois sabe que o outro existe.
