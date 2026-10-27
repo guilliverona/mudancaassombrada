@@ -2,7 +2,7 @@
 
 Este arquivo é lido **automaticamente** pelo Claude Code em toda conversa aberta nesta pasta.
 Ele diz o que é o projeto, onde está cada informação e **como trabalhamos**, para nenhuma
-conversa nova precisar ser "apresentada" ao projeto de novo.
+conversa nova precisar ser "apresentada" ao projeto de novo...
 
 **Regra deste arquivo:** ele é um MAPA, não um manual. Fatos que mudam com o projeto (o que já
 foi feito, medidas, nomes de scripts) moram nos documentos abaixo; aqui fica só o que ajuda a
