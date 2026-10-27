@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Unity.Netcode;
+using Unity.Netcode.Components; // NetworkTransform
 using UnityEngine;
 using UnityEngine.AI; // NavMeshAgent: o "GPS" da Unity para personagens
 
@@ -17,6 +18,11 @@ namespace MudancaAssombrada
         Disguised,      // disfarçado de jogador (Imitador)
         Pulling,        // puxando a vítima (Imitador)
         Fleeing,        // desmascarado, fugindo
+        // Novos sempre NO FIM: o número de cada estado fica gravado nos prefabs (GhostSounds).
+        Performing,     // em cena, à mostra, sem atacar: a aparição (Imitador)
+        Bowing,         // a reverência: parado 2 s, dá para apontar (Imitador)
+        InMirror,       // DENTRO de um espelho: invisível e sem corpo; só a Cida nota o espelho diferente (Imitador)
+        Emerging,       // ainda dentro do espelho, prestes a sair (os 3 s de espera perto da vítima) (Imitador)
     }
 
     // A BASE comum de todo fantasma: o que todos têm igual.
@@ -70,6 +76,10 @@ namespace MudancaAssombrada
 
         public int Disguise => disguise.Value;
         public bool IsDisguised => disguise.Value >= 0;
+        // Dá para APONTAR para ele agora? Disfarçado, ou parado na reverência (a janela de contra-ataque).
+        public bool CanBeUnmasked => IsDisguised || state.Value == GhostState.Bowing;
+        // Está DENTRO de um espelho (esperando ou prestes a sair)? Sem corpo, invisível.
+        public bool IsInsideMirror => state.Value is GhostState.InMirror or GhostState.Emerging;
         // Avisa quando o disfarce muda (em TODOS os computadores). O GhostVisual troca o corpo.
         public event Action<int> DisguiseChanged;
 
@@ -141,13 +151,13 @@ namespace MudancaAssombrada
         }
 
         // Um jogador APONTOU para este fantasma ("esse aí é falso!"). Qualquer um pode pedir;
-        // o host confere se ele está mesmo disfarçado e avisa os comportamentos.
+        // o host confere se ele está mesmo disfarçado (ou na reverência) e avisa os comportamentos.
         public void RequestUnmask() => UnmaskRpc();
 
         [Rpc(SendTo.Server)]
         void UnmaskRpc()
         {
-            if (!IsDisguised) return;
+            if (!CanBeUnmasked) return;
             foreach (var b in behaviours) b.ServerUnmasked();
         }
 
@@ -213,6 +223,16 @@ namespace MudancaAssombrada
             lastPosition = Home;
             Active = null; // o árbitro escolhe de novo no próximo frame
             foreach (var b in behaviours) b.ServerReset();
+        }
+
+        // Só no host: TELEPORTE de verdade (de um espelho para outro). Sem avisar o NetworkTransform,
+        // os outros computadores veriam o fantasma "deslizar" pela casa até o ponto novo.
+        public void ServerTeleport(Vector3 position)
+        {
+            Agent.Warp(position);
+            lastPosition = position;
+            if (TryGetComponent(out NetworkTransform net) && net.CanCommitToTransform)
+                net.Teleport(position, transform.rotation, transform.localScale);
         }
 
         public NetworkPlayer NearestPlayer()

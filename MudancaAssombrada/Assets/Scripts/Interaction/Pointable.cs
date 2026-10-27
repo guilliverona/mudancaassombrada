@@ -14,27 +14,37 @@ namespace MudancaAssombrada
 
         Ghost ghost;                    // se este objeto for um fantasma
         CharacterSwitcher character;    // se for um jogador
+        PlayerCondition condition;      // idem
 
         void Awake()
         {
             ghost = GetComponent<Ghost>();
             character = GetComponent<CharacterSwitcher>();
+            condition = GetComponent<PlayerCondition>();
         }
 
         public InteractionPrompt PromptFor(PlayerInteractor player)
         {
+            if (ghost != null)
+            {
+                // Fantasma: disfarçado ("é falso!") ou parado na reverência, à mostra ("é ele!").
+                if (!ghost.CanBeUnmasked) return InteractionPrompt.None;
+                return new InteractionPrompt(ghost.IsDisguised ? "Apontar: é falso!" : "Apontar: é ele!", true);
+            }
             if (!Ghost.AnyDisguised) return InteractionPrompt.None;
-            if (ghost != null && !ghost.IsDisguised) return InteractionPrompt.None; // fantasma à mostra: não precisa
+            // Colega sendo puxado: a tecla é para SEGURAR ele (PlayerCondition), não para apontar.
+            if (condition != null && condition.IsPulled) return InteractionPrompt.None;
             return new InteractionPrompt("Apontar: é falso!", true);
         }
 
         public void Interact(PlayerInteractor player)
         {
             string who = player.Character.displayName;
-            string target = ghost != null && ghost.IsDisguised ? DisguiseName() : character != null ? character.Current.displayName : name;
             // Quem aponta é o dono do PRÓPRIO boneco: o aviso sai dele (SoundRelay leva aos outros).
-            GameCues.Emit(new GameCue(player.transform.position, cueRange, Senses.Sight | Senses.Hearing,
-                $"{who} aponta para \"{target}\": é falso!", player.gameObject));
+            string text = ghost != null && !ghost.IsDisguised
+                ? $"{who} aponta para o fantasma: é ele!"
+                : $"{who} aponta para \"{(ghost != null ? DisguiseName() : character != null ? character.Current.displayName : name)}\": é falso!";
+            GameCues.Emit(new GameCue(player.transform.position, cueRange, Senses.Sight | Senses.Hearing, text, player.gameObject));
 
             if (ghost != null && ghost.IsSpawned) ghost.RequestUnmask();
         }

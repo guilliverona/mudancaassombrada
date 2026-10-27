@@ -19,7 +19,9 @@ namespace MudancaAssombrada
     // Mecânica nova que afeta o jogador = um valor novo no PlayerState + o efeito dele aqui.
     //
     // Também é um alvo de interação: olhando para um colega caído, aparece "Ajudar fulano", e é
-    // preciso SEGURAR a tecla até ele terminar de se levantar (ver "Resgate").
+    // preciso SEGURAR a tecla até ele terminar de se levantar (ver "Resgate"). Olhando para um colega
+    // sendo PUXADO, aparece "Segurar fulano": segurando, ele para de ser arrastado (a âncora) e,
+    // segurando até o fim, o falso larga. A vítima tem um tempo (PullLeft) até ser levada.
     // Regra do roteiro: um falha, os outros ficam vulneráveis. A equipe só perde se TODOS caírem.
     //
     // EM REDE: só o host muda o estado; cada computador aplica o efeito no SEU boneco.
@@ -37,8 +39,16 @@ namespace MudancaAssombrada
         FurnitureCarrier carrier;
         CharacterSwitcher character;
 
+        // Sendo puxado: quantos segundos faltam para o espelho levar. O fantasma escreve (no host).
+        readonly NetworkVariable<float> pullLeft = new(
+            0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+
         public PlayerState State => state.Value;
         public bool IsDown => state.Value == PlayerState.Down;
+        public bool IsPulled => state.Value == PlayerState.Pulled;
+        public float PullLeft => pullLeft.Value;
+        // Puxado, mas um colega está segurando: o puxão para (o fantasma também espera).
+        public bool IsAnchored => IsPulled && rescuer.Value != NoRescuer;
         // Pode agir (andar livre, pegar, usar)?
         public bool IsFree => state.Value == PlayerState.Normal;
 
@@ -122,6 +132,7 @@ namespace MudancaAssombrada
         {
             state.OnValueChanged += OnStateChanged;
             source.OnValueChanged += OnSourceChanged;
+            rescuer.OnValueChanged += OnRescuerChanged;
             ApplyEffects();
         }
 
@@ -129,6 +140,14 @@ namespace MudancaAssombrada
         {
             state.OnValueChanged -= OnStateChanged;
             source.OnValueChanged -= OnSourceChanged;
+            rescuer.OnValueChanged -= OnRescuerChanged;
+        }
+
+        // Só no host (o fantasma que puxa): quanto falta. Só escreve quando muda de verdade (menos rede).
+        public void ServerSetPullLeft(float seconds)
+        {
+            seconds = Mathf.Max(0f, Mathf.Round(seconds * 10f) / 10f);
+            if (IsServer && !Mathf.Approximately(pullLeft.Value, seconds)) pullLeft.Value = seconds;
         }
 
         // ---------- Só no host ----------
@@ -138,6 +157,10 @@ namespace MudancaAssombrada
         {
             if (!IsServer || state.Value == newState) return;
             source.Value = from != null ? new NetworkObjectReference(from) : default;
+            // Condição nova, ajuda nova: quem segurava o puxado não vira, sem querer, quem levanta o caído.
+            rescuer.Value = NoRescuer;
+            rescue.Value = 0f;
+            pullLeft.Value = 0f;
             state.Value = newState;
 
             // Avisos para a equipe, saindo deste jogador (o host os manda pelo fantasma/jogador dono).
@@ -177,6 +200,7 @@ namespace MudancaAssombrada
         [SerializeField] float rescueDuration = 8.4f;  // o tempo do clipe Levantar, em segundos
         [SerializeField] float rescueFallBack = 1.5f;  // soltou: em quantos segundos o progresso volta a zero
         [SerializeField] float rescueReach = 3.5f;     // longe disto (metros), o resgate para
+        [SerializeField] float anchorDuration = 1.5f;  // segurando um colega puxado por tanto tempo, o falso larga
 
         const ulong NoRescuer = ulong.MaxValue;
         // Quanto já levantou (0 a 1): a animação e a dica leem daqui.
@@ -190,12 +214,14 @@ namespace MudancaAssombrada
 
         public InteractionPrompt PromptFor(PlayerInteractor player)
         {
-            if (!IsDown || player.Player == GetComponent<NetworkPlayer>()) return InteractionPrompt.None;
+            if ((!IsDown && !IsPulled) || player.Player == GetComponent<NetworkPlayer>()) return InteractionPrompt.None;
             string hold = $"segure {GameInput.KeyLabel(GameInput.Interact)}";
-            if (rescuer.Value == NoRescuer) return new InteractionPrompt($"Ajudar {DisplayName} ({hold})", true);
+            string verb = IsPulled ? "Segurar" : "Ajudar";
+            string doing = IsPulled ? "Segurando" : "Ajudando";
+            if (rescuer.Value == NoRescuer) return new InteractionPrompt($"{verb} {DisplayName} ({hold})", true);
             if (rescuer.Value == player.Player.OwnerClientId)
-                return new InteractionPrompt($"Ajudando {DisplayName}... {Mathf.FloorToInt(rescue.Value * 100f)}%", true);
-            return new InteractionPrompt($"Alguém já está ajudando {DisplayName}", false);
+                return new InteractionPrompt($"{doing} {DisplayName}... {Mathf.FloorToInt(rescue.Value * 100f)}%", true);
+            return new InteractionPrompt($"Alguém já está {(IsPulled ? "segurando" : "ajudando")} {DisplayName}", false);
         }
 
         public void Interact(PlayerInteractor player) => RescueHoldRpc(true);
@@ -206,7 +232,7 @@ namespace MudancaAssombrada
         void RescueHoldRpc(bool holding, RpcParams rpc = default)
         {
             ulong sender = rpc.Receive.SenderClientId;
-            if (holding && IsDown && rescuer.Value == NoRescuer) rescuer.Value = sender;
+            if (holding && (IsDown || IsPulled) && rescuer.Value == NoRescuer) rescuer.Value = sender;
             else if (!holding && rescuer.Value == sender) rescuer.Value = NoRescuer;
         }
 
@@ -214,7 +240,7 @@ namespace MudancaAssombrada
         void Update()
         {
             if (!IsServer || !IsSpawned) return;
-            if (!IsDown)
+            if (!IsDown && !IsPulled)
             {
                 if (rescue.Value != 0f) rescue.Value = 0f;
                 if (rescuer.Value != NoRescuer) rescuer.Value = NoRescuer;
@@ -225,13 +251,16 @@ namespace MudancaAssombrada
             if (rescuer.Value != NoRescuer && !CanRescue(helper)) rescuer.Value = NoRescuer; // caiu, saiu ou se afastou
             bool helping = rescuer.Value != NoRescuer;
 
-            float speed = helping ? 1f / rescueDuration : -1f / rescueFallBack;
+            // Caído: levantar leva o clipe inteiro. Puxado: segurar firme por um instante basta.
+            float duration = IsPulled ? anchorDuration : rescueDuration;
+            float speed = helping ? 1f / duration : -1f / rescueFallBack;
             float next = Mathf.Clamp01(rescue.Value + speed * Time.deltaTime);
             if (next != rescue.Value) rescue.Value = next;
 
             if (next >= 1f)
             {
-                Cue(Senses.Sight | Senses.Hearing, $"{DisplayName} levantou!");
+                // Puxado: o fantasma vê a vítima livre e larga (GhostImitator). Caído: levantou.
+                Cue(Senses.Sight | Senses.Hearing, IsPulled ? $"Seguraram {DisplayName}! O falso largou." : $"{DisplayName} levantou!");
                 ServerSet(PlayerState.Normal); // o Update seguinte zera o progresso e quem ajudava
             }
         }
@@ -252,12 +281,14 @@ namespace MudancaAssombrada
 
         void OnStateChanged(PlayerState previous, PlayerState current) => ApplyEffects();
         void OnSourceChanged(NetworkObjectReference previous, NetworkObjectReference current) => ApplyEffects();
+        void OnRescuerChanged(ulong previous, ulong current) => ApplyEffects();
 
         void ApplyEffects()
         {
             if (!IsOwner || movement == null) return;
 
-            Transform puller = state.Value == PlayerState.Pulled && source.Value.TryGet(out NetworkObject from) ? from.transform : null;
+            // Puxado e ninguém segurando: o puxão leva. Segurado (âncora): fica onde está.
+            Transform puller = IsPulled && !IsAnchored && source.Value.TryGet(out NetworkObject from) ? from.transform : null;
             movement.PulledBy = puller;
             ApplyFreeze();
 
