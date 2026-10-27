@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.Collections; // FixedString512Bytes
 
 namespace MudancaAssombrada
 {
@@ -57,6 +58,31 @@ namespace MudancaAssombrada
         // Passar a liderança: só o líder, para outro jogador da sala, e não durante a contagem.
         public static bool CanMakeLeader(IReadOnlyList<LobbyPlayer> players, ulong sender, ulong target, ulong leader, bool counting) =>
             sender == leader && target != leader && !counting && IndexOf(players, target) >= 0;
+
+        // Começar a partida: o capítulo precisa dar para jogar E todos (menos o líder) prontos.
+        // A contagem usa a mesma regra a cada quadro: se deixar de valer, ela é cancelada.
+        public static bool CanStart(bool chapterPlayable, bool allReady) => chapterPlayable && allReady;
+
+        // Alguém saiu: se era o líder, a liderança volta para o host. Senão, nada muda.
+        public static ulong LeaderAfterLeave(ulong leader, ulong leaving, ulong host) =>
+            leader == leaving ? host : leader;
+
+        // Só dá para banir uma conta de verdade: PlayerId vazio (o login falhou) baniria
+        // todo mundo que também entrasse sem conta.
+        public static bool CanBan(string playerId) => !string.IsNullOrEmpty(playerId);
+
+        // Quem entra foi expulso antes? O host nunca é barrado (ele é a sala).
+        public static bool IsBanned(ICollection<string> banned, string playerId, bool isHost) =>
+            !isHost && CanBan(playerId) && banned.Contains(playerId);
+
+        // O FixedString512Bytes guarda no máximo ~500 BYTES (letra com acento ou emoji ocupa mais
+        // de um). Converter texto maior direto daria erro; o CopyFromTruncated corta o excesso.
+        public static FixedString512Bytes Fit(string line)
+        {
+            var fixedLine = new FixedString512Bytes();
+            fixedLine.CopyFromTruncated(line);
+            return fixedLine;
+        }
 
         // Anti-flood: last = hora da última mensagem desse jogador (null = nunca mandou).
         public static bool ChatAllowed(float? last, float now) => last == null || now - last.Value >= ChatCooldown;

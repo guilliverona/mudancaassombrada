@@ -38,6 +38,12 @@ namespace MudancaAssombrada
             return won ? stageIndex : stageIndex + 1;
         }
 
+        // O texto dos objetivos vai pela rede num FixedString de 512 BYTES (acento ocupa mais de um).
+        // 150 letras cabem com folga; mais que isso é cortado em vez de dar erro.
+        public const int ObjectiveTextMax = 150;
+        public static string FitObjectiveText(string text) =>
+            text.Length > ObjectiveTextMax ? text.Substring(0, ObjectiveTextMax) : text;
+
         // Objetivo de lista ("leve os 3 móveis", "desligue os instrumentos"): lista vazia nunca cumpre.
         public static bool AllDone(int done, int total) => total > 0 && done >= total;
 

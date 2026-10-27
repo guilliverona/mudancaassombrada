@@ -1,0 +1,131 @@
+# Roteiro de testes (TDD)
+
+Plano de testes automatizados do projeto: o que já existe, o que vem a seguir e em que ordem.
+A regra de trabalho (feature nova começa por um teste que falha; bug corrigido ganha um teste)
+está no [CLAUDE.md](CLAUDE.md), regra 6. Como rodar os testes também está lá ("Rodar os testes").
+
+## Como os testes são feitos aqui
+
+- **Edit Mode** (`Assets/Tests/EditMode`): rápido, sem cena nem rede. É onde fica quase tudo.
+- **A regra mora numa classe C# pura** (`LobbyRules`, `MatchRules`...). O MonoBehaviour ou o RPC
+  só junta os dados e pergunta a ela. Assim a regra é testada sem host, sem física, sem Play.
+- **Teste de dados:** carrega os `.asset` de verdade (Elenco, Campanha, Sons) e confere que estão
+  coerentes. Pega erro de quem edita no Inspector, não só de quem mexe no código.
+- **Play Mode** (`Assets/Tests/PlayMode`, ainda não existe): só alguns testes de fumaça. Lento e frágil,
+  vale para "a cena abre e o Player nasce", não para regra.
+- **Achou diferença entre o código e os .md?** O teste não "escolhe" sozinho: avisar e decidir com o time.
+
+## Onde estamos
+
+| Parte | Classe da regra | Arquivo de teste | Testes | Situação |
+|---|---|---|---|---|
+| 1. Campanha e save | `Campaign`, `SaveData`, `SaveSystem.Parse` | `CampaignTests`, `SaveDataTests` | 16 | ✅ feito |
+| 1. Sala de espera | `LobbyRules` | `LobbyRulesTests` | 27 | ✅ feito |
+| 2. Partida e objetivos | `MatchRules`, `HouseClock.OffBeatDelay` | `MatchRulesTests` | 18 | ✅ feito |
+| 3. Reforço dos testes já feitos | — | os mesmos | +22 | ✅ feito (falta 1 item, abaixo) |
+| 4. Dados do projeto | — | `DataTests` (novo) | — | a fazer |
+| 5. Peso e dupla | `CarryRules` (nova) | `CarryRulesTests` | — | a fazer |
+| 6. Resgate de colega | `RescueRules` (nova) | `RescueRulesTests` | — | a fazer |
+| 7. Imitador: quando age | `ImitatorRules` (nova) | `ImitatorRulesTests` | — | a fazer |
+| 8. Testes de fumaça | — | `Assets/Tests/PlayMode` | — | depois |
+
+---
+
+## 3. Reforço dos testes já feitos ✅
+
+Casos que faltaram nas partes 1 e 2. Tudo feito, menos o "trocar de capítulo desmarca os prontos":
+o `ClearReady` mexe direto na `NetworkList` dentro do RPC, e separar só ele não vale a pena agora.
+O teste do `id` repetido mostra o comportamento atual (dois capítulos dividem o "concluído"); quem
+impede isso é o teste de dados da parte 4.
+
+**Campanha e save**
+- Capítulo concluído com `id` vazio ou repetido: o que acontece? (Hoje dois capítulos com o mesmo
+  `id` dividiriam o mesmo "concluído" no save.)
+- `FindByScene` acha o capítulo certo e devolve `null` para cena desconhecida.
+- `CompleteChapter(null)` não quebra nem paga.
+- Save antigo (JSON sem `storyFlags`, ou com `version` menor) carrega sem erro.
+- Save corrompido (texto qualquer) cai no save vazio, sem exceção. Precisa separar a leitura do
+  arquivo (`SaveSystem.Parse(string)`) para testar sem disco.
+
+**Sala de espera**
+- Liderança volta ao host quando o líder sai (hoje está no `RemovePlayer`, dentro do RPC; separar).
+- Trocar de capítulo desmarca todos os "pronto" (`ClearReady`).
+- Começar exige capítulo jogável **e** todos prontos (`CanStart`), e a contagem cancela se alguém
+  desmarcar no meio.
+- Banido não volta: mesmo `PlayerId` recusado; `PlayerId` vazio (login falhou) não bane ninguém.
+- Chat: texto com acentos e emoji acima do limite de bytes (o `Fit` do `FixedString512Bytes`).
+- Personagem padrão de quem entra: o primeiro livre (já testado), e o que acontece com 4 jogadores.
+
+**Partida**
+- Estrelas nas bordas: exatamente 20%, 40%... da noite (o `CeilToInt` arredonda para cima).
+- Etapa sem objetivo nenhum no meio (etapas 0 e 2, sem a 1): pula direto, sem travar.
+- Texto dos objetivos acima de 150 letras é cortado (`SetObjectiveText`).
+
+## 4. Dados do projeto (novo)
+
+Testes que carregam os `.asset` reais e conferem que estão coerentes:
+- **Elenco:** 3 personagens, sem ficha nula, nomes preenchidos, força e velocidade > 0, nenhum
+  personagem repetido.
+- **Campanha:** os 4 capítulos na ordem do roteiro, `id` únicos e não vazios, nenhum capítulo nulo;
+  todo capítulo com `sceneName` tem a cena no Build Settings.
+- **Capítulo:** `nightDuration` ≥ 0, `payment` ≥ 0; comentários da avaliação apontam para
+  personagens do Elenco.
+- **Sons:** todo nome de som usado no código (`"relogio_tique"`, `"relogio_taque"`...) existe na
+  biblioteca `Sons.asset`, e nenhuma entrada está sem clipe.
+- **Móveis:** todo prefab de `Assets/Prefabs/Móveis` tem `Furniture`, `Rigidbody`, `NetworkObject`
+  e peso entre 1 e 5.
+- **Menu:** depois do `MenuSceneBuilder`, nenhum campo `[SerializeField]` do `MainMenu` ficou nulo.
+
+## 5. Peso e dupla (fase 1, vale para o jogo todo)
+
+Separar de `Furniture` e `FurnitureCarrier` uma `CarryRules`. Números do ARQUITETURA.md:
+cada um levanta sozinho até a **própria força** (Cida 1, Tiago 1,5, Marcelo 3; armário 3,5).
+- Levantar sozinho: Cida levanta a cadeira (1) e arrasta a caixa (1,5); Marcelo levanta a caixa G (2)
+  e arrasta o armário (3,5).
+- Dupla: Cida + Tiago = 2,5 levanta a penteadeira (2,5, o limite é "maior ou igual"); o armário só
+  com o Marcelo na dupla.
+- A ponta falsa do Imitador vale zero: o nome aparece, mas o móvel continua arrastando.
+- "Segurar a outra ponta" só aparece se quem segura sente o peso, a ponta está livre e não há ponta falsa.
+- Velocidade: a dupla anda no passo do mais lento; o peso sentido nunca fica abaixo de 1;
+  móvel pesado na escada anda mais devagar.
+- **Bug para o primeiro teste vermelho:** o host (`HelpRpc`) aceita como ajudante quem já está
+  carregando outro móvel; hoje só o cliente impede.
+- **Corrigir junto:** o comentário do topo do `Furniture.cs` ainda diz "força + 1 (Cida e Tiago até 2,
+  Marcelo até 4)"; o código e os .md dizem "a própria força". E o `IsBulky` (peso > 2) é explicado
+  como "pesado demais para força 1", o que não bate (a Cida já arrasta 1,5): renomear ou reexplicar.
+
+## 6. Resgate de colega
+
+Separar do `PlayerCondition` a conta do progresso:
+- Levantar um colega caído: 8,4 s segurando. Soltou: o progresso volta a zero em 1,5 s.
+- Segurar um colega puxado: 1,5 s e o falso larga.
+- Só quem começou o resgate pode parar; um segundo jogador não rouba a vez.
+- Quem ajuda precisa estar de pé (livre) e a até 3,5 m; senão o resgate para.
+- A equipe inteira caída = derrota (`EveryoneDown` do `GameManager`); um de pé = a partida segue.
+
+## 7. Imitador: quando ele age
+
+Separar do `GhostImitator` as decisões de tempo (`ReadyToAct`, `NextLurkTime`):
+- Antes da aparição programada (45 s de noite), não ataca: espera por ela.
+- Depois: sai do espelho quando o tempo de espera acaba **ou** quando alguém arrasta sozinho um
+  móvel de dupla por 2,5 s; nunca antes de 5 s dentro do espelho.
+- Fim da noite (depois de 75%): espera metade; ofendido (não apontaram na reverência): espera o dobro.
+- Disfarçado há 40 s sem chegar na vítima: desiste e volta para um espelho.
+- Puxando a vítima: 6 s para os colegas salvarem.
+
+A máquina de estados inteira (andar, NavMesh, espelhos) fica fora: depende de cena.
+
+## 8. Testes de fumaça (Play Mode, depois)
+
+Poucos e simples, para pegar o que quebra "por fora" das regras:
+- A cena Menu abre sem erro no Console.
+- Host local sobe, o Player nasce, a HUD aparece.
+- A Casa do Espelho abre e o `GameManager` acha o capítulo pela cena.
+
+## Ordem sugerida
+
+1. **Parte 3** (reforço): pequena, aproveita o que já existe.
+2. **Parte 4** (dados): barata e pega erro de Inspector, que hoje só aparece no Play.
+3. **Parte 5** (peso e dupla), começando pelo bug do `HelpRpc` como primeiro teste vermelho.
+4. **Partes 6 e 7** (resgate e Imitador).
+5. **Parte 8** (fumaça) quando o time quiser rodar os testes num CI.

@@ -153,7 +153,7 @@ namespace MudancaAssombrada
         {
             // O FixedString tem limite de BYTES (512), e letras acentuadas ocupam mais de um.
             // 150 letras cabem com folga; textos maiores são cortados em vez de dar erro.
-            if (text.Length > 150) text = text.Substring(0, 150);
+            text = MatchRules.FitObjectiveText(text);
             var value = new FixedString512Bytes(text);
             if (!objectiveText.Value.Equals(value)) objectiveText.Value = value; // só manda se mudou
         }

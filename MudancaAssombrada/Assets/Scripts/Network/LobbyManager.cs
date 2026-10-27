@@ -225,9 +225,10 @@ namespace MudancaAssombrada
             if (!kicked.Remove(clientId)) SystemMessage($"{name} saiu da sala.");
 
             // O líder saiu: a liderança volta para o host.
-            if (leader.Value == clientId)
+            ulong newLeader = LobbyRules.LeaderAfterLeave(leader.Value, clientId, NetworkManager.ServerClientId);
+            if (newLeader != leader.Value)
             {
-                leader.Value = NetworkManager.ServerClientId;
+                leader.Value = newLeader;
                 int h = IndexOf(NetworkManager.ServerClientId);
                 if (h >= 0) SystemMessage($"{players[h].Name} agora é o líder.");
             }
@@ -244,7 +245,7 @@ namespace MudancaAssombrada
             if (i < 0) return;
 
             // Foi expulso antes e tentou voltar (pela lista ou pelo código)? Não entra.
-            if (sender != NetworkManager.ServerClientId && Banned.Contains(playerId.ToString()))
+            if (LobbyRules.IsBanned(Banned, playerId.ToString(), sender == NetworkManager.ServerClientId))
             {
                 NetworkManager.DisconnectClient(sender, "Você foi expulso desta sala.");
                 NetworkSession.RemoveFromRoom(playerId.ToString());
@@ -317,7 +318,7 @@ namespace MudancaAssombrada
 
             var p = players[i];
             string id = p.PlayerId.ToString();
-            if (id.Length > 0) Banned.Add(id);
+            if (LobbyRules.CanBan(id)) Banned.Add(id);
             SystemMessage($"{p.Name} foi expulso da sala.");
             kicked.Add(target);
             NetworkManager.DisconnectClient(target, "Você foi expulso da sala.");
@@ -376,12 +377,7 @@ namespace MudancaAssombrada
 
         // O FixedString512Bytes guarda no máximo ~500 BYTES (letra com acento ou emoji ocupa mais
         // de um). Converter texto maior direto daria erro; o CopyFromTruncated corta o excesso.
-        static FixedString512Bytes Fit(string line)
-        {
-            var fixedLine = new FixedString512Bytes();
-            fixedLine.CopyFromTruncated(line);
-            return fixedLine;
-        }
+        static FixedString512Bytes Fit(string line) => LobbyRules.Fit(line);
 
         // SendTo.Everyone: roda em todos os computadores, inclusive no do host.
         [Rpc(SendTo.Everyone)]
@@ -407,7 +403,7 @@ namespace MudancaAssombrada
         public bool AllReady => LobbyRules.AllReady(Players, leader.Value);
 
         public bool ChapterPlayable => Campaign.Instance.CanPlay(selectedChapter.Value);
-        public bool CanStart => ChapterPlayable && AllReady;
+        public bool CanStart => LobbyRules.CanStart(ChapterPlayable, AllReady);
 
         void StartGame()
         {

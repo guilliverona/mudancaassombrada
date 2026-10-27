@@ -105,5 +105,38 @@ namespace MudancaAssombrada.Tests
             Assert.IsTrue(loaded.HasFlag("diario"));
             Assert.AreEqual(80, loaded.money);
         }
+
+        [Test]
+        public void AchaOCapituloPelaCena()
+        {
+            var c2 = Chapter("c2", scene: "Conservatorio");
+            var campaign = Make(Chapter("c1", scene: "CasaDoEspelho"), c2);
+            Assert.AreSame(c2, campaign.FindByScene("Conservatorio"));
+            Assert.IsNull(campaign.FindByScene("CenaQueNaoExiste"));
+        }
+
+        [Test]
+        public void CapituloNuloNaLista_NaoQuebraNemBloqueia()
+        {
+            // Um buraco na lista da Campanha (arrastaram e não preencheram) é pulado na fila.
+            var campaign = Make(Chapter("c1"), null, Chapter("c2"));
+            var save = new SaveData();
+            save.completedChapters.Add("c1");
+            Assert.IsFalse(campaign.IsUnlocked(1, save));
+            Assert.IsTrue(campaign.IsUnlocked(2, save));
+            Assert.DoesNotThrow(() => campaign.FindByScene("CenaQueNaoExiste"));
+        }
+
+        [Test]
+        public void IdRepetido_DoisCapitulosDividemOMesmoConcluido()
+        {
+            // Não é o que se quer, mas é o que acontece: o save guarda só o id. Por isso o
+            // teste de dados (parte 4 do TESTES.md) vai exigir ids únicos na Campanha.
+            var campaign = Make(Chapter("igual"), Chapter("igual"), Chapter("c3"));
+            var save = new SaveData();
+            save.Complete(campaign.Get(0));
+            Assert.IsFalse(save.Complete(campaign.Get(1)), "o segundo já conta como concluído");
+            Assert.IsTrue(campaign.IsUnlocked(2, save));
+        }
     }
 }

@@ -121,5 +121,44 @@ namespace MudancaAssombrada.Tests
             // Agora = 9,7 s: o de 9,5 já foi, o próximo é 10,5.
             Assert.AreEqual(0.8f, HouseClock.OffBeatDelay(10f, 1f, 9.7f), 1e-5f);
         }
+
+        // --- Reforço (parte 3) ---
+
+        [Test]
+        public void Estrelas_NasBordas_ArredondamParaCima()
+        {
+            // Cada estrela = 20% da noite sobrando. Exatamente 40% ainda são 2; um pouco mais já são 3.
+            Assert.AreEqual(2, MatchRules.Stars(72f, 180f));    // 40%
+            Assert.AreEqual(3, MatchRules.Stars(72.5f, 180f));  // pouco mais de 40%
+            Assert.AreEqual(1, MatchRules.Stars(36f, 180f));    // 20%
+            Assert.AreEqual(4, MatchRules.Stars(144f, 180f));   // 80%
+        }
+
+        [Test]
+        public void EtapaFaltandoNoMeio_NaoTrava()
+        {
+            // Objetivos só nas etapas 0 e 2 (ninguém usou a 1): são duas etapas, em ordem.
+            var stages = MatchRules.Stages(new[] { 2, 0 });
+            CollectionAssert.AreEqual(new[] { 0, 2 }, stages);
+            int next = MatchRules.AdvanceStage(0, stages.Count, out bool won);
+            Assert.AreEqual(2, stages[next]);
+            Assert.IsFalse(won);
+        }
+
+        [Test]
+        public void TextoDosObjetivos_CortadoNoLimite()
+        {
+            Assert.AreEqual("curto", MatchRules.FitObjectiveText("curto"));
+            Assert.AreEqual(MatchRules.ObjectiveTextMax,
+                MatchRules.FitObjectiveText(new string('a', 400)).Length);
+        }
+
+        [Test]
+        public void TextoDosObjetivos_NoPiorCaso_CabeNaRede()
+        {
+            // "✓" ocupa 3 bytes: 150 deles são o pior caso real da HUD. Precisa caber nos 512 bytes.
+            string pior = MatchRules.FitObjectiveText(new string('✓', 400));
+            Assert.DoesNotThrow(() => new Unity.Collections.FixedString512Bytes(pior));
+        }
     }
 }

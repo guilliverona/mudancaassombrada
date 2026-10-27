@@ -152,5 +152,77 @@ namespace MudancaAssombrada.Tests
             string longo = new string('a', LobbyRules.ChatMaxLength + 30);
             Assert.AreEqual(LobbyRules.ChatMaxLength, LobbyRules.CleanChat(longo).Length);
         }
+
+        [Test]
+        public void Chat_MensagemLongaComAcentoEEmoji_CabeNaRedeSemErro()
+        {
+            // 120 letras "ç" + emoji passam de 512 BYTES com a cor e o nome: o Fit corta, sem exceção.
+            string texto = "<color=#aabbcc>Fulano:</color> " + new string('ç', 120) + string.Concat(System.Linq.Enumerable.Repeat("👻", 100));
+            Assert.DoesNotThrow(() => LobbyRules.Fit(texto));
+            Assert.LessOrEqual(LobbyRules.Fit(texto).Length, Unity.Collections.FixedString512Bytes.UTF8MaxLengthInBytes);
+        }
+
+        // --- Sair, começar, banir ---
+
+        [Test]
+        public void LiderSai_ALiderancaVoltaParaOHost()
+        {
+            Assert.AreEqual(Host, LobbyRules.LeaderAfterLeave(leader: 2, leaving: 2, host: Host));
+        }
+
+        [Test]
+        public void OutroJogadorSai_OLiderContinua()
+        {
+            Assert.AreEqual(2UL, LobbyRules.LeaderAfterLeave(leader: 2, leaving: 1, host: Host));
+        }
+
+        [Test]
+        public void Comecar_PrecisaDeCapituloJogavelETodosProntos()
+        {
+            Assert.IsTrue(LobbyRules.CanStart(chapterPlayable: true, allReady: true));
+            Assert.IsFalse(LobbyRules.CanStart(chapterPlayable: false, allReady: true), "capítulo bloqueado");
+            Assert.IsFalse(LobbyRules.CanStart(chapterPlayable: true, allReady: false), "alguém não está pronto");
+        }
+
+        [Test]
+        public void ContagemCancela_QuandoAlguemDesmarcaPronto()
+        {
+            // A contagem confere CanStart a cada quadro: alguém desmarcou, AllReady cai e ela para.
+            var room = Room(P(Host, 0), P(1, 1, ready: true));
+            Assert.IsTrue(LobbyRules.CanStart(true, LobbyRules.AllReady(room, Host)));
+            room[1] = P(1, 1, ready: false);
+            Assert.IsFalse(LobbyRules.CanStart(true, LobbyRules.AllReady(room, Host)));
+        }
+
+        [Test]
+        public void Expulso_NaoVoltaComAMesmaConta()
+        {
+            var banned = new HashSet<string> { "conta-1" };
+            Assert.IsTrue(LobbyRules.IsBanned(banned, "conta-1", isHost: false));
+            Assert.IsFalse(LobbyRules.IsBanned(banned, "conta-2", isHost: false));
+        }
+
+        [Test]
+        public void ContaVazia_NaoEBanida_NemBaneNinguem()
+        {
+            // Login que falhou deixa o PlayerId vazio: banir "" barraria todos sem conta.
+            Assert.IsFalse(LobbyRules.CanBan(""));
+            Assert.IsFalse(LobbyRules.CanBan(null));
+            Assert.IsFalse(LobbyRules.IsBanned(new HashSet<string> { "" }, "", isHost: false));
+        }
+
+        [Test]
+        public void Host_NuncaEBarrado()
+        {
+            Assert.IsFalse(LobbyRules.IsBanned(new HashSet<string> { "conta-host" }, "conta-host", isHost: true));
+        }
+
+        [Test]
+        public void QuartoJogador_RepeteOPrimeiroPersonagem()
+        {
+            // A sala é de 3, mas se um quarto entrar (ex.: alguém trocou o MaxPlayers) não quebra.
+            var room = Room(P(Host, 0), P(1, 1), P(2, 2));
+            Assert.AreEqual(0, LobbyRules.FirstFreeCharacter(room, Roster));
+        }
     }
 }

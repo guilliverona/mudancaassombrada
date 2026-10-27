@@ -30,6 +30,7 @@ achá-los e as regras de trabalho. Ver "Como manter este arquivo" no fim.
 | Padrão visual da interface (cores do `Theme`, fontes, HUD) | [DESIGN.md](DESIGN.md) |
 | Modelos 3D: pipeline Blender → Unity, regras de modelagem, nomes, orçamento, o que já tem modelo | [ART_BIBLE.md](ART_BIBLE.md) |
 | O que já foi feito, o que vem a seguir, decisões em aberto | [PLANEJAMENTO.md](PLANEJAMENTO.md) |
+| Testes automatizados: o que já tem, o que falta, em que ordem | [TESTES.md](TESTES.md) |
 | Level design da Fase 1: briefing com os números do jogo, para projetar fora do código | [LEVEL_DESIGN_FASE1_BRIEFING.md](LEVEL_DESIGN_FASE1_BRIEFING.md) |
 | Os designs completos (fichas com vistas, cabeça e mãos, cenários) | Art Bible completo (link no ART_BIBLE.md) |
 
