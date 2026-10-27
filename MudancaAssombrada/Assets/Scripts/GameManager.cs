@@ -79,10 +79,10 @@ namespace MudancaAssombrada
         // A equipe inteira está caída? (Ninguém sobrou para ajudar: os fantasmas venceram.)
         static bool EveryoneDown()
         {
-            if (NetworkPlayer.All.Count == 0) return false;
+            int down = 0;
             foreach (var p in NetworkPlayer.All)
-                if (p.Condition == null || !p.Condition.IsDown) return false;
-            return true;
+                if (p.Condition != null && p.Condition.IsDown) down++;
+            return RescueRules.EveryoneDown(down, NetworkPlayer.All.Count);
         }
 
         void ServerStartMatch()

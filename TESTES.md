@@ -24,8 +24,8 @@ está no [CLAUDE.md](CLAUDE.md), regra 6. Como rodar os testes também está lá
 | 2. Partida e objetivos | `MatchRules`, `HouseClock.OffBeatDelay` | `MatchRulesTests` | 18 | ✅ feito |
 | 3. Reforço dos testes já feitos | — | os mesmos | +22 | ✅ feito (falta 1 item, abaixo) |
 | 4. Dados do projeto | — | `DataTests` | 10 | ✅ feito |
-| 5. Peso e dupla | `CarryRules` | `CarryRulesTests` | 17 | ✅ feito |
-| 6. Resgate de colega | `RescueRules` (nova) | `RescueRulesTests` | — | a fazer |
+| 5. Peso e dupla | `CarryRules` | `CarryRulesTests` | 17 | ✅ feito (falta 1 bug, abaixo) |
+| 6. Resgate de colega | `RescueRules` | `RescueRulesTests` | 12 | ✅ feito |
 | 7. Imitador: quando age | `ImitatorRules` (nova) | `ImitatorRulesTests` | — | a fazer |
 | 8. Testes de fumaça | — | `Assets/Tests/PlayMode` | — | depois |
 
@@ -95,15 +95,19 @@ Marcelo 3; cadeira 1, caixa 1,5, caixa G 2, penteadeira 2,5, armário 3,5).
 - **Bug corrigido:** o host (`HelpRpc`) aceitava como ajudante quem já carregava ou ajudava em outro
   móvel; agora `CarryRules.CanAcceptHelper` recebe "mãos ocupadas em outro móvel" e recusa.
 - O comentário do topo do `Furniture.cs` agora diz "a própria força", e o `IsBulky` foi reexplicado.
+- **Falta (bug achado depois):** o `PickUpRpc` tem o mesmo furo: o host entrega o móvel a quem já
+  carrega ou ajuda em outro (só o `TryPickUp` do cliente impede). Corrigir igual ao `HelpRpc`: uma
+  regra na `CarryRules` com o "mãos ocupadas" (`BusyElsewhere`) e um teste que falha primeiro.
 
-## 6. Resgate de colega
+## 6. Resgate de colega ✅
 
-Separar do `PlayerCondition` a conta do progresso:
-- Levantar um colega caído: 8,4 s segurando. Soltou: o progresso volta a zero em 1,5 s.
+A `RescueRules` (`Assets/Scripts/Player/`) tem as contas; o `PlayerCondition` (no host) e o
+`GameManager` (`EveryoneDown`) só juntam os dados e perguntam a ela.
+- Levantar um colega caído: 8,4 s segurando. Soltou: o progresso volta a zero em 1,5 s (fica entre 0 e 1).
 - Segurar um colega puxado: 1,5 s e o falso larga.
-- Só quem começou o resgate pode parar; um segundo jogador não rouba a vez.
-- Quem ajuda precisa estar de pé (livre) e a até 3,5 m; senão o resgate para.
-- A equipe inteira caída = derrota (`EveryoneDown` do `GameManager`); um de pé = a partida segue.
+- Só quem começou o resgate pode parar; um segundo jogador não rouba a vez. Vítima de pé: ninguém começa.
+- Quem ajuda precisa estar na partida, de pé (livre) e a até 3,5 m (no limite ainda vale).
+- A equipe inteira caída = derrota; um de pé = a partida segue; sem jogadores, ninguém perdeu.
 
 ## 7. Imitador: quando ele age
 
@@ -129,5 +133,5 @@ Poucos e simples, para pegar o que quebra "por fora" das regras:
 1. **Parte 3** (reforço): pequena, aproveita o que já existe.
 2. **Parte 4** (dados): barata e pega erro de Inspector, que hoje só aparece no Play.
 3. ~~**Parte 5** (peso e dupla)~~ ✅
-4. **Partes 6 e 7** (resgate e Imitador).
+4. ~~**Parte 6** (resgate)~~ ✅ e **parte 7** (Imitador). Antes, o bug do `PickUpRpc` da parte 5.
 5. **Parte 8** (fumaça) quando o time quiser rodar os testes num CI.

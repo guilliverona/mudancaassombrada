@@ -202,7 +202,7 @@ namespace MudancaAssombrada
         [SerializeField] float rescueReach = 3.5f;     // longe disto (metros), o resgate para
         [SerializeField] float anchorDuration = 1.5f;  // segurando um colega puxado por tanto tempo, o falso larga
 
-        const ulong NoRescuer = ulong.MaxValue;
+        const ulong NoRescuer = RescueRules.NoRescuer;
         // Quanto já levantou (0 a 1): a animação e a dica leem daqui.
         readonly NetworkVariable<float> rescue = new(
             0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
@@ -231,9 +231,8 @@ namespace MudancaAssombrada
         [Rpc(SendTo.Server)]
         void RescueHoldRpc(bool holding, RpcParams rpc = default)
         {
-            ulong sender = rpc.Receive.SenderClientId;
-            if (holding && (IsDown || IsPulled) && rescuer.Value == NoRescuer) rescuer.Value = sender;
-            else if (!holding && rescuer.Value == sender) rescuer.Value = NoRescuer;
+            ulong next = RescueRules.Claim(rescuer.Value, rpc.Receive.SenderClientId, holding, IsDown || IsPulled);
+            if (next != rescuer.Value) rescuer.Value = next;
         }
 
         // Só no host: sobe o progresso enquanto o colega segura e está perto; senão, ele volta.
@@ -252,9 +251,8 @@ namespace MudancaAssombrada
             bool helping = rescuer.Value != NoRescuer;
 
             // Caído: levantar leva o clipe inteiro. Puxado: segurar firme por um instante basta.
-            float duration = IsPulled ? anchorDuration : rescueDuration;
-            float speed = helping ? 1f / duration : -1f / rescueFallBack;
-            float next = Mathf.Clamp01(rescue.Value + speed * Time.deltaTime);
+            float duration = RescueRules.Duration(IsPulled, rescueDuration, anchorDuration);
+            float next = RescueRules.Step(rescue.Value, helping, duration, rescueFallBack, Time.deltaTime);
             if (next != rescue.Value) rescue.Value = next;
 
             if (next >= 1f)
@@ -274,8 +272,8 @@ namespace MudancaAssombrada
         }
 
         bool CanRescue(NetworkPlayer helper) =>
-            helper != null && helper.Condition != null && helper.Condition.IsFree
-            && Vector3.Distance(helper.transform.position, transform.position) <= rescueReach;
+            RescueRules.CanRescue(helper != null, helper != null && helper.Condition != null && helper.Condition.IsFree,
+                                  helper != null ? Vector3.Distance(helper.transform.position, transform.position) : 0f, rescueReach);
 
         // ---------- Efeitos (em todos; o movimento só no dono) ----------
 
