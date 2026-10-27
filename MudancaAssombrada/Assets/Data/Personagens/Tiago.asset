@@ -21,7 +21,7 @@ MonoBehaviour:
   height: 1.74
   radius: 0.35
   speed: 1
-  strength: 1
+  strength: 1.5
   carryNoise: 1
   stepVolume: 1
   blind: 0

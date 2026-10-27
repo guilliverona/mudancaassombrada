@@ -57,6 +57,7 @@ namespace MudancaAssombrada.Editor
             c.radius = 0.3f;
             c.blind = true;
             c.canTap = true;
+            c.tuningFork = true; // ex-afinadora de pianos (LEVEL_DESIGN_FASE1.md, MEC-01)
         });
 
         static CharacterDefinition Tiago => Character("Tiago", c =>
@@ -67,6 +68,7 @@ namespace MudancaAssombrada.Editor
             c.description = "Ex-entregador de bicicleta. Não ouve nada, mas vê as vibrações no chão.";
             c.height = 1.74f;
             c.radius = 0.35f;
+            c.strength = 1.5f; // ex-entregador: levanta a penteadeira junto com a Cida (1 + 1,5)
             c.deaf = true;
             c.vibrationVision = true;
         });

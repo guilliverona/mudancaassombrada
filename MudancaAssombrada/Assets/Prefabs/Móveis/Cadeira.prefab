@@ -17,6 +17,7 @@ GameObject:
   - component: {fileID: 1869182010615998628}
   - component: {fileID: 3257435888659318012}
   - component: {fileID: 148836083657791823}
+  - component: {fileID: 3245881638384108141}
   m_Layer: 0
   m_Name: Cadeira
   m_TagString: Untagged
@@ -228,6 +229,19 @@ NavMeshObstacle:
   m_CarveOnlyStationary: 1
   m_Center: {x: 0, y: 0, z: 0}
   m_TimeToStationary: 0.5
+--- !u!114 &3245881638384108141
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2455855642337776254}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6c768296c92b036418d0e99e9c6a9f5f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.SurfaceTag
+  type: 1
 --- !u!1001 &2613138505899721508
 PrefabInstance:
   m_ObjectHideFlags: 0
