@@ -115,6 +115,14 @@ Duplique um prefab em `Assets/Prefabs/Móveis`, troque o modelo/tamanho e o **pe
 (componente Furniture). Arraste para a cena. O caminhão e o placar contam sozinhos.
 O desenho fica no filho `Modelo` (o FBX); a colisão é o BoxCollider da raiz, que é o que a
 mira e o caminhão enxergam. Modelo novo gerado pelo Blender: ver [ART_BIBLE.md](ART_BIBLE.md).
+**Peso e dupla (vale em todas as fases):** cada um levanta sozinho até a **própria força**
+(`CharacterDefinition.LiftLimit`): Cida 1, Tiago 1,5, Marcelo 3. Mais pesado, sozinho só arrasta
+(no chão, devagar, `SoundType.Carry` forte = `arrastar_movel`). Quem pega primeiro é a primeira
+ponta (dono, simula a física); um colega mirando vê "Segurar a outra ponta" (ajudante,
+`Furniture.helper`). A dupla levanta até a soma das forças (Cida + Tiago = 2,5; o armário, 3,5, pede
+o Marcelo), divide o peso por essa soma e anda no passo do mais lento; peso acima de 2 na escada anda
+÷1,5. O Imitador pode ser a "ponta falsa" (`ServerSetFakeHelper`): aparece o nome, não vale nada.
+Quem precisa de ajuda para cada móvel sai só do **peso** dele e da **força** das fichas.
 
 ### Um fantasma (ou tipo de fantasma)
 Duplique `Assets/Prefabs/Fantasmas/Fantasma Bibliotecário` e ajuste velocidades,
@@ -128,6 +136,18 @@ pergunta `ServerPriority()` a todos e dá o "volante" a quem quer mais (`ServerG
 componentes à parte: `GhostHearing` (ouve os tipos de som marcados e avisa pelo evento `Heard`).
 A raiz fica no meio do corpo (cápsula de colisão e `NavMeshAgent` com `baseOffset` = metade da
 altura); o desenho é o filho `Modelo`, com `DollWalk` para balançar braços e pernas.
+Estado novo em `GhostState` vai sempre **no fim** do enum (o número fica gravado nos `GhostSounds`).
+O `GhostVisual` lê o estado e mexe no modelo: inclinação por estado, o osso `hat` (cartola) e o
+blendshape `Tragedia` (máscara), quando o modelo tem. Apontar (`Pointable`) vale enquanto
+`Ghost.CanBeUnmasked`: disfarçado, ou na reverência do Imitador (`GhostState.Bowing`).
+Fantasma que "some" (o Imitador dentro do espelho, `GhostState.InMirror`): o `GhostVisual` esconde o
+corpo e desliga os colisores; para trocar de lugar sem deslizar na tela dos outros, `Ghost.ServerTeleport`.
+Som por estado do fantasma: `GhostSounds` (uma troca de estado toca uma vez, com atraso, chance de
+pular e "sem direção" opcionais; um estado repete um som enquanto dura, mais rápido no fim da noite).
+Pista que só a Cida vê: um timbre do `SurfaceTag` que o `Echo.shader` desenha mesmo sem onda (o espelho
+ocupado "respira"); quem enxerga usa o material normal e não vê nada.
+Coisas que acontecem numa hora da noite (a aparição dos 45 s, o manequim que tomba) leem o relógio
+do `GameManager` (`NightDuration − TimeLeft`), que já chega a todos: sem rede própria (`TimedTopple`).
 
 ### Uma fase (capítulo)
 1. **Mudança Assombrada › Nova Fase (cena vazia)**. A cena nasce com o prefab **Sistemas da Fase**
@@ -179,7 +199,27 @@ O fantasma (no host) só chama `player.Condition.ServerSet(PlayerState.X, Networ
 desfazer, `ServerClear(PlayerState.X)`. O `PlayerCondition` aplica as consequências no boneco do dono
 (travar, ser arrastado, largar o móvel) e avisa a equipe. Efeito novo = um valor no `PlayerState`
 e o efeito dele em `PlayerCondition.ApplyEffects`. Pego = `Ghost.ServerCatch(player)` (fica caído;
-a partida só acaba quando todos caem).
+a partida só acaba quando todos caem). Puxado: o fantasma escreve a contagem (`ServerSetPullLeft`,
+a HUD mostra) e lê `IsAnchored` (um colega segurando: "Segurar fulano", o mesmo segurar-E do resgate);
+segurado até o fim, a condição volta a `Normal` e o fantasma percebe que a vítima escapou.
+
+### O que a Cida "ouve" da casa (diapasão, ruído, timbre)
+- **Timbre** (`SurfaceTag` na raiz de um objeto): do que ele é feito (madeira, vidro, metal, tecido,
+  pessoa, cópia). O `EchoSystem` passa para o material de eco (`_Timbre`), e a onda do **diapasão**
+  (`SoundType.Tuning`, `TuningFork`, tecla Q) faz cada coisa responder do seu jeito. A cópia do
+  Imitador não responde. Objeto novo que importa no eco = um `SurfaceTag` no prefab.
+- **Ruído** (`NoiseSource`): uma fonte ligada encolhe e borra o eco por perto (`EchoSystem.NoiseLevel`).
+  Quem desliga é um `Interactable` no mesmo objeto (o "Afinar" da Cida, com `holdSeconds` e `onlyFor`).
+- **Piso que range** (`CreakyFloor`): área (sem colisor) onde o passo vira rangido alto.
+- **Chamada** (`CaneCall`): segurar a bengala; marcador no chão para todos.
+
+### Lanterna, pilhas e coisas tocáveis
+A lanterna é o componente `Flashlight` no Player (tecla L, `GameInput.Flashlight`), mas só funciona
+depois de pegar uma: o host decide quem tem (`ServerGive`), o dono liga e gasta a bateria, e todos
+veem a luz falhando quando ela está fraca. Os itens do chão são `FlashlightPickup` (lanterna ou
+pilhas, some ao pegar e volta no reinício). Um objeto que dá para **tocar** (o piano) é um
+`PlayableInstrument`: o host emite um `SoundEvent` de música e o `SoundVoice` do objeto diz o arquivo.
+Luz que treme (arandela, vela): `LightFlicker` na `Light`.
 
 ### Um tipo de som
 Um valor novo no `SoundType` (o próximo bit livre, ex.: `1 << 7`). Quem faz o som usa
@@ -191,7 +231,12 @@ tipo em `Sons.asset` (lista "Defaults").
 O `SoundEvent` é a REGRA (quem ouviu, até onde); o arquivo é só o que sai na caixa de som.
 1. Descreva o som em `tools/audio/catalogo.json` (id, pasta, texto em inglês para a IA, duração).
    Som que a IA entrega baixo demais (os ambientes vêm a ~−60 dB): `"normalizar": -30` gera em
-   PCM, ajusta o volume do arquivo até esse nível e salva em `.wav`.
+   PCM, ajusta o volume do arquivo até esse nível e salva em `.wav`. `"tom": -2` deixa o som mais
+   grave (passos mais sombrios). Uma VOZ falando frases: `"fala": [...]` e `"voz": "<id da voz>"`
+   (cada frase vira uma variação). Escreva a fala como se fala (reticência só no fim) e escolha a voz
+   de ouvido: voz estrangeira falando português tem sotaque. `"modelo"` troca o modelo de voz.
+   `"assombrar"` dá o tratamento de voz de fantasma (grave sem arrastar, oitava abaixo, reverb e eco
+   ao contrário); os campos estão explicados no `gerar_sons.py`.
 2. `python tools/audio/gerar_sons.py --so <id>` (chave do ElevenLabs na variável
    `ELEVENLABS_API_KEY`; o script pula o que já existe). Sai em `Assets/Audio/<pasta>/`, e a
    importação é configurada pela pasta (`AudioImportSettings`).
@@ -210,6 +255,17 @@ o mesmo som não repete antes do intervalo mínimo; sons de **ameaça** abaixam 
 (`BedGain`); e sons marcados "no tempo" (respiração, sussurro) esperam o **contratempo** do relógio
 da casa (`HouseClock`, um tique ou taque por segundo), para não cair em cima da batida. Passos,
 batidas, voz e ataques nunca esperam: são informação e precisam ser instantâneos.
+E **uma ameaça por vez**: ameaça de clima (sussurro, acorde) só toca com nenhuma outra soando e 6 s
+depois da última; ameaça marcada `"importante": true` (captura, desmascarar) é acontecimento, toca
+sempre e corta as de clima. Um evento só para o eco/vibração, sem som: `SoundVoice` com som vazio.
+
+**Trilha e silêncio (o diretor de som).** A música de uma fase é um asset `Soundtrack`
+(`Assets/Data/Trilhas/`): a faixa cortada em trechos, cada um com um humor (calma, crescendo, pânico,
+aparição). O `SoundDirector` (no objeto "Sons" da cena) toca a faixa inteira como uma **cama** baixa
+e contínua, e troca para o trecho do momento nos sustos, visto do MEU boneco; com o perigo perto, a
+cama e a casa se calam (`AmbienceGain`, que todo `AmbientSound` obedece). Faixa trazida pela equipe (não gerada): `"externo": true` no catálogo,
+o `gerar_sons.py` nunca mexe. Fase nova = um `Soundtrack` com a faixa dela e o diretor na cena.
+Os porquês e os tempos da Casa do Espelho: LEVEL_DESIGN_FASE1.md §10.2.
 
 ### Um marcador da história (pista, escolha)
 `SaveSystem.Data.SetFlag("achou-cartaz-teatro"); SaveSystem.Save();` e depois

@@ -145,13 +145,15 @@ a penteadeira e o cartaz do teatro, pelo `MirrorHouseBuilder` (Casa do Espelho).
 |---|---|---|
 | Cida, Tiago, Marcelo | blockout + rig + ficha + colisor da altura de cada um + respiração (`Breathing`) | animações (bengala, Libras, carregar), roda de gestos e quadro do Marcelo |
 | Bibliotecário (GHO_03) | blockout 2,6 m + rig + `Ghost` (base) + `GhostHunter` (caça por som) + `GhostVisual` + respiração | orelhas que abrem, distração por livros, captura, postura curvada (animação) |
-| Imitador (GHO_01) | blockout 2,3 m + rig + prefab + `GhostImitator` (disfarce espelhado, puxa para o espelho) | máscara comédia → tragédia (animação) |
+| Imitador (GHO_01) | blockout 2,3 m + rig + prefab + `GhostImitator` (disfarce espelhado, puxa para o espelho, aparição e reverência) · máscara com blendshape `Tragedia` (comédia → tragédia, mesma malha) · osso `hat` (tomba na reverência) | cadeias de mola da cortina ("sai ofendido") |
 | Maestrina (GHO_02) | blockout 2,4 m + rig (`Ghosts/Maestrina`) | prefab; **hipnose** pela música, pescoço que estica |
 | Seu Valdemar (BOS_00) | blockout 1,68 m + rig (`Bosses/Valdemar`) | aparições por estado (rádio → translúcido → sólido) |
 | O Inquilino (BOS_01) | ficha do capítulo | **modelo** (3 etapas + epílogo), chefe em 3 etapas, final |
 | Móveis do protótipo | armário, cadeira e caixa com modelo, no prefab | pontos de pega |
 | Mobília do Art Bible | penteadeira, piano de armário, estante, mesa de leitura, sofá, caixas P/G (`Props/`) | prefabs com o peso da tabela |
-| Relógio de pêndulo (fora do Art Bible: decoração do ENV_01) | modelo 0,55 × 0,32 × 2,1 m + prefab fixo com o tique-taque, na sala da Casa do Espelho | — |
+| Relógio de pêndulo (fora do Art Bible: decoração do ENV_01) | modelo 0,55 × 0,32 × 2,1 m + prefab fixo com o tique-taque, no hall da Casa do Espelho | — |
+| Abandono e luz (Casa do Espelho, depois do 1º Play) | poltrona e cômoda sob lençol, teia, entulho, janela com tábuas, papel descascando, baú, papéis no chão, velas · lanterna e pilhas · **portas maiores: simples 1,20 × 2,40, dupla 1,60 × 2,40** (o Marcelo passa; o Art Bible dizia 0,90 × 2,10) | — |
+| Casa do Espelho de dois andares ([LEVEL_DESIGN_FASE1.md](LEVEL_DESIGN_FASE1.md) §9) | kit: escada (lance de 16 degraus), guarda-corpo, parede com porta dupla, laje, moldura G rachada, arandela a gás, clarabóia, tábua solta · cenário: manequins A/B/C, gramofone, retratos P/M/G, lustre, pia com torneira · móvel: arara de figurino | folhas de porta dupla, pote de pó, livro de falas |
 | Props de história | rádio, bilhete, nota fiscal, cartaz, partitura, diário, caixinha (`Props/`) | relíquias que pesam mais longe da porta; texto real nos bilhetes (decal) |
 | Biblioteca (ENV_03) | estante, pilha de livros, luminária verde, piso de tábuas | cena; piso que range |
 | Kit modular (ENV_01–04) | parede lisa, parede com porta, porta, piso xadrez, molduras de espelho S/M/L (`Environment/`) | cenas das casas; instrumentos do Conservatório |
