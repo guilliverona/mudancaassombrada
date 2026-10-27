@@ -43,7 +43,7 @@ namespace MudancaAssombrada
         public bool HasClock => NightDuration > 0;
         public float TimeLeft => timeLeft.Value;
         // 0 = começo da noite, 1 = amanheceu. Sem relógio: sempre 0 (noite o tempo todo).
-        public float NightProgress => HasClock ? 1f - Mathf.Clamp01(timeLeft.Value / NightDuration) : 0f;
+        public float NightProgress => MatchRules.NightProgress(timeLeft.Value, NightDuration);
         public MatchOutcome Outcome => outcome.Value;
         public int Stars => stars.Value; // 1 a 5, só quando Outcome == Won
         public string ObjectiveText => objectiveText.Value.ToString();
@@ -79,19 +79,20 @@ namespace MudancaAssombrada
         // A equipe inteira está caída? (Ninguém sobrou para ajudar: os fantasmas venceram.)
         static bool EveryoneDown()
         {
-            if (NetworkPlayer.All.Count == 0) return false;
+            int down = 0;
             foreach (var p in NetworkPlayer.All)
-                if (p.Condition == null || !p.Condition.IsDown) return false;
-            return true;
+                if (p.Condition != null && p.Condition.IsDown) down++;
+            return RescueRules.EveryoneDown(down, NetworkPlayer.All.Count);
         }
 
         void ServerStartMatch()
         {
             // Descobre as etapas que existem na cena (sem repetir, em ordem).
             stages.Clear();
-            foreach (var o in Objective.All)
-                if (!stages.Contains(o.Stage)) stages.Add(o.Stage);
-            stages.Sort();
+            foreach (var o in Objective.All) stages.Add(o.Stage);
+            var ordered = MatchRules.Stages(stages);
+            stages.Clear();
+            stages.AddRange(ordered);
             if (stages.Count == 0)
                 Debug.LogWarning("Esta fase não tem nenhum objetivo (componente Objective): ela nunca vai terminar em vitória.");
 
@@ -144,15 +145,15 @@ namespace MudancaAssombrada
             SetObjectiveText(sb.ToString().TrimEnd());
 
             if (!allDone) return;
-            if (stageIndex + 1 < stages.Count) stageIndex++; // próxima etapa
-            else End(MatchOutcome.Won);
+            stageIndex = MatchRules.AdvanceStage(stageIndex, stages.Count, out bool won); // próxima etapa
+            if (won) End(MatchOutcome.Won);
         }
 
         void SetObjectiveText(string text)
         {
             // O FixedString tem limite de BYTES (512), e letras acentuadas ocupam mais de um.
             // 150 letras cabem com folga; textos maiores são cortados em vez de dar erro.
-            if (text.Length > 150) text = text.Substring(0, 150);
+            text = MatchRules.FitObjectiveText(text);
             var value = new FixedString512Bytes(text);
             if (!objectiveText.Value.Equals(value)) objectiveText.Value = value; // só manda se mudou
         }
@@ -163,7 +164,7 @@ namespace MudancaAssombrada
             if (o == MatchOutcome.Won)
             {
                 // Mais tempo sobrando = mais estrelas. Sem relógio: 5 estrelas.
-                stars.Value = HasClock ? Mathf.Clamp(Mathf.CeilToInt(timeLeft.Value / NightDuration * 5f), 1, 5) : 5;
+                stars.Value = MatchRules.Stars(timeLeft.Value, NightDuration);
                 ChapterCompletedRpc();
             }
             outcome.Value = o;

@@ -69,8 +69,8 @@ namespace MudancaAssombrada
         ulong MyClientId => player != null ? player.OwnerClientId : 0;
 
         // Peso que o jogador SENTE: nunca menos que 1 (nada fica mais leve que "sem peso").
-        // A força de quem está nas duas pontas se soma (a ponta falsa não soma nada).
-        static float FeltWeight(Furniture f) => Mathf.Max(1f, f.Weight / f.CrewStrength);
+        // A força de quem está nas duas pontas se soma (a ponta falsa não soma nada). Conta na CarryRules.
+        static float FeltWeight(Furniture f) => f.FeltWeight;
 
         void Awake()
         {
@@ -161,13 +161,11 @@ namespace MudancaAssombrada
             var f = held != null ? held : helping;
             if (f == null || !f.IsSpawned) { movement.SpeedMultiplier = 1f; return; }
 
-            float speed;
             // Arrastando: BEM devagar, e mais devagar quanto mais pesado for para quem arrasta.
             // (Depois, arrastar também vai gastar estamina.)
-            if (held != null && !held.CanLift) speed = dragSpeed / FeltWeight(f);
-            else speed = f.CrewSpeed / Mathf.Max(0.1f, movement.CharacterSpeed) / FeltWeight(f);
-            if (f.IsBulky && movement.OnStairs) speed /= stairsSlowdown;
-            movement.SpeedMultiplier = speed;
+            bool dragging = held != null && !held.CanLift;
+            movement.SpeedMultiplier = CarryRules.CarrySpeed(dragging, dragSpeed, f.CrewSpeed, movement.CharacterSpeed,
+                                                             FeltWeight(f), f.IsBulky, movement.OnStairs, stairsSlowdown);
         }
 
         // Móvel de dupla na escada: cada degrau range alto (o fantasma e a Cida ouvem a mudança descendo).

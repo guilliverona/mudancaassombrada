@@ -30,6 +30,7 @@ achá-los e as regras de trabalho. Ver "Como manter este arquivo" no fim.
 | Padrão visual da interface (cores do `Theme`, fontes, HUD) | [DESIGN.md](DESIGN.md) |
 | Modelos 3D: pipeline Blender → Unity, regras de modelagem, nomes, orçamento, o que já tem modelo | [ART_BIBLE.md](ART_BIBLE.md) |
 | O que já foi feito, o que vem a seguir, decisões em aberto | [PLANEJAMENTO.md](PLANEJAMENTO.md) |
+| Testes automatizados: o que já tem, o que falta, em que ordem | [TESTES.md](TESTES.md) |
 | Level design da Fase 1: briefing com os números do jogo, para projetar fora do código | [LEVEL_DESIGN_FASE1_BRIEFING.md](LEVEL_DESIGN_FASE1_BRIEFING.md) |
 | Os designs completos (fichas com vistas, cabeça e mãos, cenários) | Art Bible completo (link no ART_BIBLE.md) |
 
@@ -86,7 +87,11 @@ mudancaassombrada/                 ← raiz do Git (os .md ficam aqui)
    ScriptableObjects/prefabs, composição, registros (`All`) em vez de `Find`, controles pelo
    `GameInput`, interface só pelo `UiBuilder`/`Theme` (nada de `OnGUI`). Os princípios completos
    estão no ARQUITETURA.md.
-6. **Arte:** modelos são **gerados por script** a partir das medidas do Art Bible, nunca
+6. **Testes (TDD):** feature nova com regra começa por um teste que falha; bug corrigido ganha
+   um teste que reproduz o bug. A regra fica numa classe C# pura (ex.: `LobbyRules`) e o
+   MonoBehaviour/RPC só chama ela. Testes em `Assets/Tests/EditMode` (NUnit). Se um teste mostrar
+   que o código não faz o que os .md dizem, avisar antes de decidir quem está certo.
+7. **Arte:** modelos são **gerados por script** a partir das medidas do Art Bible, nunca
    editados à mão no Blender. Mudou uma medida → ajustar o script e gerar de novo.
 
 ## Como verificar (receitas)
@@ -106,6 +111,12 @@ e devem ser abertas e comparadas com o Art Bible.
 - `-executeMethod` aceita métodos estáticos privados (ex.: os de `[MenuItem]`).
 - Para medir algo (orientação, tamanhos, se um prefab tem o `Modelo`), criar um script
   temporário `Assets/Editor/Temp*.cs`, rodar em batch e **apagar** depois (com o `.meta`).
+
+**Rodar os testes:** com o Unity aberto, Window › General › Test Runner › EditMode › Run All.
+Fechado, em batch (o `results.xml` lista cada teste; código de saída 0 = todos passaram):
+```
+& "C:\Program Files\Unity\Hub\Editor\6000.6.7f1\Editor\Unity.exe" -batchmode -nographics -projectPath <projeto> -runTests -testPlatform EditMode -testResults <scratchpad>\results.xml -logFile <scratchpad>\tests.log
+```
 
 **Testar em rede:** Multiplayer Play Mode (Window › Multiplayer › Multiplayer Play Mode, Player 2):
 uma janela cria a sala, a outra entra pela lista de salas ou pelo código. Não existe mais LAN:

@@ -32,15 +32,7 @@ namespace MudancaAssombrada
             }
         }
 
-        public override bool IsComplete
-        {
-            get
-            {
-                int total = NetworkPlayer.All.Count;
-                if (total == 0) return false;
-                return wholeTeam ? Inside >= total : Inside > 0;
-            }
-        }
+        public override bool IsComplete => MatchRules.AreaReached(Inside, NetworkPlayer.All.Count, wholeTeam);
 
         public override string Progress =>
             wholeTeam ? $"{label}: {Inside}/{NetworkPlayer.All.Count}" : label;

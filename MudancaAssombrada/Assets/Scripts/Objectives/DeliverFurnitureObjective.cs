@@ -25,7 +25,7 @@ namespace MudancaAssombrada
             }
         }
 
-        public override bool IsComplete => Targets.Count > 0 && DeliveredCount >= Targets.Count;
+        public override bool IsComplete => MatchRules.AllDone(DeliveredCount, Targets.Count);
 
         public override string Progress => $"{label}: {DeliveredCount}/{Targets.Count}";
     }

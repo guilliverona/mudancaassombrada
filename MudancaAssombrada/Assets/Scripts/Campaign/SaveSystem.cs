@@ -21,6 +21,15 @@ namespace MudancaAssombrada
 
         // Marcadores: "achou o cartaz do teatro", "esqueceu o diário"... O final alternativo
         // do roteiro ("Volte para buscar o resto") depende de marcadores assim.
+        // Marca o capítulo como concluído e paga. Devolve false se já estava (repetir não paga de novo).
+        public bool Complete(ChapterDefinition chapter)
+        {
+            if (chapter == null || IsCompleted(chapter.id)) return false;
+            completedChapters.Add(chapter.id);
+            money += chapter.payment;
+            return true;
+        }
+
         public bool HasFlag(string flag) => storyFlags.Contains(flag);
 
         public void SetFlag(string flag)
@@ -52,7 +61,7 @@ namespace MudancaAssombrada
         {
             try
             {
-                if (File.Exists(FilePath)) return JsonUtility.FromJson<SaveData>(File.ReadAllText(FilePath));
+                if (File.Exists(FilePath)) return Parse(File.ReadAllText(FilePath));
             }
             catch (Exception e)
             {
@@ -60,6 +69,24 @@ namespace MudancaAssombrada
                 Debug.LogWarning($"Não deu para ler o save ({e.Message}). Começando um novo.");
             }
             return new SaveData();
+        }
+
+        // Texto do arquivo -> SaveData. Separado do disco para os testes conferirem saves antigos
+        // e corrompidos. Texto inválido lança exceção (o Load avisa e começa do zero).
+        public static SaveData Parse(string json)
+        {
+            var save = JsonUtility.FromJson<SaveData>(json) ?? new SaveData();
+            // Save antigo, sem um dos campos: a lista vem nula, e o jogo espera uma lista vazia.
+            save.completedChapters ??= new List<string>();
+            save.storyFlags ??= new List<string>();
+            return save;
+        }
+
+        // Lê o texto sem lançar exceção: corrompido ou vazio = save novo.
+        public static SaveData ParseOrNew(string json)
+        {
+            try { return string.IsNullOrWhiteSpace(json) ? new SaveData() : Parse(json); }
+            catch (Exception) { return new SaveData(); }
         }
 
         public static void Save()
@@ -71,10 +98,7 @@ namespace MudancaAssombrada
         // Chamado em TODOS os computadores quando a equipe conclui um capítulo.
         public static void CompleteChapter(ChapterDefinition chapter)
         {
-            if (chapter == null || Data.IsCompleted(chapter.id)) return; // repetir não paga de novo
-            Data.completedChapters.Add(chapter.id);
-            Data.money += chapter.payment;
-            Save();
+            if (Data.Complete(chapter)) Save();
         }
 
         // Apaga o progresso (útil para testar a campanha do começo).
