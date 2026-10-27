@@ -8,3 +8,15 @@
 *.mp3 binary
 *.ogg binary
 *.blend binary
+
+# Arquivos do Unity (texto YAML/JSON): sempre LF, no repositório e no disco.
+# O Unity grava com LF; sem isto, o autocrlf do Windows converte para CRLF e o
+# git status marca arquivos "modificados" que não têm mudança nenhuma.
+*.unity   text eol=lf
+*.prefab  text eol=lf
+*.asset   text eol=lf
+*.mat     text eol=lf
+*.meta    text eol=lf
+*.asmdef  text eol=lf
+*.controller text eol=lf
+*.anim    text eol=lf

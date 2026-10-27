@@ -61,10 +61,15 @@ namespace MudancaAssombrada
         public static float DelayToOffBeat()
         {
             if (Instance == null) return 0f;
-            float half = Instance.period / 2f;
-            float offBeat = Instance.nextBeat - half;                // o meio antes da próxima batida
-            if (offBeat < Time.time) offBeat += Instance.period;     // já passou: o seguinte
-            return offBeat - Time.time;
+            return OffBeatDelay(Instance.nextBeat, Instance.period, Time.time);
+        }
+
+        // A conta em si, sem relógio na cena (os testes usam esta).
+        public static float OffBeatDelay(float nextBeat, float period, float now)
+        {
+            float offBeat = nextBeat - period / 2f;   // o meio antes da próxima batida
+            if (offBeat < now) offBeat += period;     // já passou: o seguinte
+            return offBeat - now;
         }
     }
 }
