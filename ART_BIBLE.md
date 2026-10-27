@@ -66,7 +66,7 @@ mexer no Rig do Inspector. Vale só na primeira importação; depois, o Inspecto
 .\tools\blender\build_all.ps1
 ```
 
-Depois, no Unity: **Mudança Assombrada › Criar Prefabs que Faltam**. Ele recria o Player,
+Depois, no Unity: **Mudança Assombrada › Avançado › Criar Prefabs que Faltam**. Ele recria o Player,
 liga os modelos nas fichas que estiverem vazias e **troca o bloco pelo modelo** nos prefabs do
 mundo que já têm arte (móveis, caminhão, fantasma): o bloco vira só a colisão e o modelo entra
 como filho `Modelo`. Peso, velocidades e tamanho ajustados no Inspector continuam. Depois disso,

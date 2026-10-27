@@ -39,10 +39,10 @@ namespace MudancaAssombrada.Editor
         public const string HudPath = "Assets/Prefabs/Interface/HUD.prefab";
         public const string PausePath = "Assets/Prefabs/Interface/Pausa.prefab";
 
-        [MenuItem("Mudança Assombrada/Criar Prefabs que Faltam", priority = 21)]
+        [MenuItem("Mudança Assombrada/Avançado/Criar Prefabs que Faltam", priority = 103)]
         static void EnsureMenu() => EnsurePrefabs(recreateAll: false);
 
-        [MenuItem("Mudança Assombrada/Recriar Todos os Prefabs", priority = 22)]
+        [MenuItem("Mudança Assombrada/Avançado/Recriar Todos os Prefabs", priority = 104)]
         static void RecreateMenu()
         {
             if (!EditorUtility.DisplayDialog("Recriar todos os prefabs?",

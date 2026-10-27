@@ -103,15 +103,6 @@ namespace MudancaAssombrada.Editor
         const float Inside = WallThickness / 2 + 0.04f; // afasta da parede o que encosta nela (espelhos)
         const string ChapterPath = "Assets/Data/Capítulos/1 - A Casa do Espelho.asset";
 
-        [MenuItem("Mudança Assombrada/Criar Cena Casa do Espelho", priority = 3)]
-        static void Build()
-        {
-            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
-            if (!ConfirmOverwrite()) return;
-            LevelPrefabsBuilder.EnsurePrefabs(recreateAll: false);
-            BuildScene();
-        }
-
         // Se a cena já existe, pergunta antes de apagar o trabalho feito à mão nela.
         public static bool ConfirmOverwrite()
         {

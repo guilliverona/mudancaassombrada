@@ -15,27 +15,25 @@ namespace MudancaAssombrada.Editor
         public const string ScenePath = EditorTools.ScenesFolder + "/Menu.unity";
         const string NetworkManagerPrefabPath = EditorTools.PrefabsFolder + "/NetworkManager.prefab";
 
-        // Prepara tudo para jogar: dados, prefabs, a fase (se você deixar) e o menu.
+        // Prepara tudo para jogar, na ordem certa. O EnsurePrefabs já cria os dados que faltam,
+        // liga os modelos 3D, atualiza os sons e as animações; depois vêm as cenas.
+        // Antes, "Manter a minha" pulava a Casa do Espelho em silêncio e parecia que o item
+        // "não recriava todas as cenas". Agora o Console diz o que foi recriado e o que ficou.
         // priority 0 = aparece em primeiro no menu.
-        [MenuItem("Mudança Assombrada/Criar Todas as Cenas", priority = 0)]
+        [MenuItem("Mudança Assombrada/Preparar Tudo", priority = 0)]
         static void BuildAll()
         {
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
 
-            LevelPrefabsBuilder.EnsurePrefabs(recreateAll: false); // também cria os dados que faltam
-            if (MirrorHouseBuilder.ConfirmOverwrite()) MirrorHouseBuilder.BuildScene();
-            BuildScene();
+            LevelPrefabsBuilder.EnsurePrefabs(recreateAll: false);
+            bool mirror = MirrorHouseBuilder.ConfirmOverwrite();
+            if (mirror) MirrorHouseBuilder.BuildScene();
+            BuildScene(); // o Menu é só código: sempre recriado
 
             EditorSceneManager.OpenScene(ScenePath); // termina com o Menu aberto, pronto para o Play
-            Debug.Log("Tudo pronto! A cena Menu está aberta: aperte Play.");
-        }
-
-        [MenuItem("Mudança Assombrada/Criar Cena Menu", priority = 1)]
-        static void Build()
-        {
-            if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) return;
-            GameDataBuilder.EnsureData();
-            BuildScene();
+            Debug.Log(mirror
+                ? "Tudo pronto! Recriadas: Menu e Casa do Espelho. A cena Menu está aberta: aperte Play."
+                : "Tudo pronto! Recriada: Menu. A Casa do Espelho foi MANTIDA como estava (você escolheu \"Manter a minha\"). Aperte Play.");
         }
 
         public static void BuildScene()

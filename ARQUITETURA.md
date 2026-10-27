@@ -94,7 +94,7 @@ infinitas. A estrutura segue isso:
 1. `Assets/Data/Personagens` → botão direito → **Create › Mudança Assombrada › Personagem**.
 2. Preencha a ficha (nome, cor, atributos, habilidades).
 3. Arraste a ficha para a lista do **Elenco** (`Assets/Resources/Elenco.asset`).
-4. Rode **Criar Cena Menu** (para o botão aparecer na sala de espera).
+4. Rode **Preparar Tudo** (para o botão aparecer na sala de espera).
 5. Se quiser 4+ jogadores, aumente `NetworkSession.MaxPlayers`.
 
 ### Uma habilidade
@@ -163,7 +163,7 @@ do `GameManager` (`NightDuration − TimeLeft`), que já chega a todos: sem rede
    Cena antiga, com sistemas soltos? Abra e rode **Usar Sistemas da Fase na cena aberta**.
 4. Na ficha do capítulo (`Data/Capítulos`), preencha **Scene Name** com o nome da cena.
    As 4 fases do roteiro já têm ficha, só falta a cena ("Em produção" no menu).
-5. Rode **Criar Cena Menu** (atualiza a Build Settings). O capítulo aparece na sala de espera.
+5. Rode **Preparar Tudo** (atualiza a Build Settings). O capítulo aparece na sala de espera.
 
 ### Um objetivo
 Crie um objeto vazio na cena e adicione um destes componentes:
@@ -240,7 +240,7 @@ O `SoundEvent` é a REGRA (quem ouviu, até onde); o arquivo é só o que sai na
 2. `python tools/audio/gerar_sons.py --so <id>` (chave do ElevenLabs na variável
    `ELEVENLABS_API_KEY`; o script pula o que já existe). Sai em `Assets/Audio/<pasta>/`, e a
    importação é configurada pela pasta (`AudioImportSettings`).
-3. **Mudança Assombrada › Atualizar Biblioteca de Sons** liga os arquivos ao `Sons.asset`.
+3. **Mudança Assombrada › Avançado › Criar Prefabs que Faltam** liga os arquivos ao `Sons.asset`.
 4. Para tocar: nada a fazer se é um `SoundEvent` (o `GameAudio` toca todos sozinho, pelo tipo).
    Um objeto com som próprio (passos arrastados do fantasma) ganha um `SoundVoice`. Loop de
    cena (clima, relógio, música): componente `AmbientSound`. Som avulso: `GameAudio.Play(id, posição)`.
@@ -250,7 +250,7 @@ O `SoundEvent` é a REGRA (quem ouviu, até onde); o arquivo é só o que sai na
 **Mixagem (para os sons não se atropelarem).** Cada som tem uma **camada** (cama, ritmo, pista,
 ameaça, música, interface), volume, alcance, intervalo mínimo e se entra "no tempo". Os números
 ficam na lista `mixagem` do `catalogo.json` (calculados pelo volume medido de cada arquivo) e o
-menu Atualizar Biblioteca de Sons os copia para o `Sons.asset`. O `GameAudio` aplica três regras:
+menu Criar Prefabs que Faltam os copia para o `Sons.asset`. O `GameAudio` aplica três regras:
 o mesmo som não repete antes do intervalo mínimo; sons de **ameaça** abaixam a cama e o ritmo
 (`BedGain`); e sons marcados "no tempo" (respiração, sussurro) esperam o **contratempo** do relógio
 da casa (`HouseClock`, um tique ou taque por segundo), para não cair em cima da batida. Passos,
@@ -316,22 +316,22 @@ espera em si é o `LobbyManager`:
   (capítulo, Começar, expulsar, passar a liderança, sala privada) e pode ser qualquer jogador.
 - Todo pedido é um `Rpc(SendTo.Server)` e o host confere (`FromLeader`) antes de mudar algo.
 - Estado da sala = `NetworkList`/`NetworkVariable`; avisos do sistema e mensagens vão pelo `ChatRpc`.
-- Interface: `MenuSceneBuilder` (peças) + `MainMenu` (o que cada botão faz). Mudou a interface → **Criar Cena Menu**.
+- Interface: `MenuSceneBuilder` (peças) + `MainMenu` (o que cada botão faz). Mudou a interface → **Preparar Tudo**.
 
 ## Menus do editor (Mudança Assombrada)
 
+No dia a dia, só os quatro primeiros. Os dois do **Avançado** são para quando só os prefabs mudaram.
+
 | Menu | O que faz | Apaga trabalho manual? |
 |---|---|---|
-| Criar Todas as Cenas | dados + prefabs que faltam + fase (pergunta) + menu | só se você confirmar |
-| Criar Cena Menu | recria o menu | não (o menu é só código) |
-| Criar Cena Casa do Espelho | prefabs do capítulo 1 que faltam + rascunho da cena + liga a ficha | **sim** (pergunta antes) |
+| Preparar Tudo | tudo do "Criar Prefabs que Faltam" + Casa do Espelho (pergunta) + Menu; o Console diz qual cena foi mantida | só se você confirmar |
 | Nova Fase (cena vazia) | cena nova com Sistemas da Fase, chão e marcadores | não (cena nova) |
 | Usar Sistemas da Fase na cena aberta | troca eco/partida/HUD/pausa soltos pelo prefab e cria marcadores de nascer | só os sistemas (pergunta antes) |
-| Criar Dados que Faltam | cria fichas/Elenco se não existirem | não |
-| Criar Prefabs que Faltam | cria prefabs do mundo que não existem; recria Player, HUD e Pausa | não |
-| Recriar Todos os Prefabs | volta todos os prefabs ao original | **sim** (pergunta antes) |
-| Atualizar Biblioteca de Sons | liga os arquivos de `Assets/Audio` ao `Sons.asset` e dá voz aos fantasmas que não têm (também roda em "Criar Prefabs que Faltam") | não (volume e alcance ajustados ficam) |
 | Apagar Progresso (save) | zera capítulos concluídos, dinheiro e marcadores | **sim** (pergunta antes) |
+| Avançado › Criar Prefabs que Faltam | dados e fichas que faltam, modelos 3D nas fichas, biblioteca de sons (e voz dos fantasmas), animações do Player, prefabs do mundo que não existem; recria Player, HUD e Pausa. Não mexe nas cenas | não (volume e alcance dos sons ficam) |
+| Avançado › Recriar Todos os Prefabs | volta todos os prefabs ao original | **sim** (pergunta antes) |
+
+Cenas feitas com **Nova Fase** são de quem edita: nenhum menu as recria.
 
 **Rodar os menus não "suja" o Git.** Recriar o Menu, a HUD, a pausa ou o Player do zero faz a
 Unity sortear números internos novos (fileID), e o arquivo inteiro pareceria mudado. O

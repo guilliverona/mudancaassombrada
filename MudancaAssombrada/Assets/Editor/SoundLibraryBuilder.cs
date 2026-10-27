@@ -34,7 +34,6 @@ namespace MudancaAssombrada.Editor
             ["ameaca"] = SoundLayer.Threat, ["musica"] = SoundLayer.Music, ["interface"] = SoundLayer.Interface,
         };
 
-        [MenuItem("Mudança Assombrada/Atualizar Biblioteca de Sons", priority = 23)]
         public static void EnsureLibrary()
         {
             if (!File.Exists(CatalogPath))

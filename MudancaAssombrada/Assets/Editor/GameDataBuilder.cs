@@ -14,7 +14,6 @@ namespace MudancaAssombrada.Editor
         const string RosterPath = "Assets/Resources/" + CharacterRoster.ResourceName + ".asset";
         const string CampaignPath = "Assets/Resources/" + Campaign.ResourceName + ".asset";
 
-        [MenuItem("Mudança Assombrada/Criar Dados que Faltam", priority = 20)]
         public static void EnsureData()
         {
             EditorTools.EnsureFolder("Assets/Resources");
@@ -99,7 +98,6 @@ namespace MudancaAssombrada.Editor
 
         // Fichas criadas antes de existirem os modelos ficam com o campo "Modelo" vazio.
         // Aqui só preenchemos o que está VAZIO: um modelo ou altura ajustados à mão não são tocados.
-        [MenuItem("Mudança Assombrada/Ligar Modelos 3D nas Fichas", priority = 23)]
         public static void AssignMissingModels()
         {
             foreach (var (file, eyeHeight) in ArtModels)
@@ -145,7 +143,7 @@ namespace MudancaAssombrada.Editor
                 c.title = "A Casa do Espelho";
                 c.ghostName = "O Imitador";
                 c.featuredCharacter = Cida;
-                c.sceneName = "CasaDoEspelho"; // a cena sai do menu Criar Cena Casa do Espelho
+                c.sceneName = "CasaDoEspelho"; // a cena sai do menu Preparar Tudo
                 c.openingNote = "Casa de uma família de atores. Muitos espelhos. Se alguém pedir ajuda " +
                                 "com o armário, confiram se é mesmo alguém da equipe.";
             });

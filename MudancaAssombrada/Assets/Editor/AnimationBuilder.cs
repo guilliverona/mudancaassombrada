@@ -64,13 +64,6 @@ namespace MudancaAssombrada.Editor
             // AgachadoEsquerda fica de fora: veio girado do Mixamo, usamos o AgachadoDireita espelhado.
         };
 
-        [MenuItem("Mudança Assombrada/Criar Animações do Jogador", priority = 23)]
-        static void Menu()
-        {
-            var controller = EnsureController();
-            if (controller != null) Selection.activeObject = controller;
-        }
-
         public static RuntimeAnimatorController EnsureController()
         {
             var existing = AssetDatabase.LoadAssetAtPath<AnimatorController>(ControllerPath);
