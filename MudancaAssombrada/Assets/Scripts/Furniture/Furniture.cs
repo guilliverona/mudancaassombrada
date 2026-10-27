@@ -16,13 +16,14 @@ namespace MudancaAssombrada
     // Nos outros computadores o Rigidbody fica "kinematic" (sem física própria) e só copia
     // a posição que chega pela rede. Quem faz essa troca é o componente NetworkRigidbody.
     //
-    // MÓVEL PESADO: cada um LEVANTA sozinho até força + 1 (CharacterDefinition.LiftLimit): Cida e
-    // Tiago até 2, o Marcelo até 4. Mais pesado, quem pega é a primeira ponta (o dono) e um colega pode
+    // MÓVEL PESADO: cada um LEVANTA sozinho até a própria força (CharacterDefinition.LiftLimit): Cida 1,
+    // Tiago 1,5, Marcelo 3. Mais pesado, quem pega é a primeira ponta (o dono) e um colega pode
     // "Segurar a outra ponta" (o ajudante); a dupla levanta até a soma dos dois limites.
     // Faltou gente? Dá para pegar, mas só ARRASTANDO: no chão, devagar e fazendo barulho.
     // (Num móvel que a pessoa levanta mas sente o peso, a outra ponta também vale: a dupla anda mais rápido.)
     // O Imitador disfarçado pode fingir que segura a outra ponta (a ponta FALSA): o nome do colega
     // aparece, mas ele não vale nada. O móvel continua arrastando, sem o "toc" do apoio (as pistas).
+    // As contas (quem levanta, peso sentido, passo da dupla, quem pode ajudar) ficam na CarryRules.
     [RequireComponent(typeof(Rigidbody))]
     public class Furniture : NetworkBehaviour, IInteractionTarget
     {
@@ -32,7 +33,7 @@ namespace MudancaAssombrada
         public static IReadOnlyList<Furniture> All => all;
 
         // 1 = leve (cadeira), 3 = pesado (armário). A força do personagem divide isto.
-        // Mais de 2 = pesado demais para a Cida ou o Tiago sozinhos (o Marcelo levanta até 4).
+        // Mais que a força de quem pega = só arrasta sozinho (Cida 1, Tiago 1,5, Marcelo 3).
         [SerializeField, Range(1f, 5f)] float weight = 1f;
 
         [Header("Arrastar e dupla")]
@@ -54,8 +55,9 @@ namespace MudancaAssombrada
             -1, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
 
         public float Weight => weight;
-        // Pesado demais para quem tem força 1: na escada, a carga anda mais devagar e range.
-        public bool IsBulky => weight > 2f;
+        // Móvel GRANDE (peso acima de 2: penteadeira, armário): na escada anda mais devagar e cada
+        // degrau range. Só serve para a escada; quem levanta o quê sai da força (CanLift).
+        public bool IsBulky => CarryRules.IsBulky(weight);
         public Rigidbody Body { get; private set; }
         public bool IsHeld => isHeld.Value;
         public ulong HelperClientId => helper.Value;
@@ -95,25 +97,19 @@ namespace MudancaAssombrada
 
         static float LimitOf(NetworkPlayer p) => p != null ? p.Character.Current.LiftLimit : 0f;
         static float StrengthOf(NetworkPlayer p) => p != null ? p.Character.Current.strength : 0f;
+        static float SpeedOf(NetworkPlayer p) => p != null ? p.Character.Current.speed : 0f;
 
         // Dá para levantar? A soma do que cada ponta levanta sozinha tem que vencer o peso.
         // A ponta falsa vale ZERO: é a mentira da isca. Senão, quem segura só arrasta.
-        public bool CanLift => LimitOf(Holder) + LimitOf(Helper) >= weight;
+        public bool CanLift => CarryRules.CanLift(LimitOf(Holder), LimitOf(Helper), weight);
         // Quem segura sente o peso (é mais pesado que a força dele)? Então cabe alguém na outra ponta.
-        bool HolderFeelsWeight => weight > StrengthOf(Holder);
+        bool HolderFeelsWeight => CarryRules.FeelsWeight(StrengthOf(Holder), weight);
         // A força somada de quem segura (divide o peso). A ponta falsa não ajuda em nada.
-        public float CrewStrength => Mathf.Max(0.1f, StrengthOf(Holder) + StrengthOf(Helper));
+        public float CrewStrength => CarryRules.CrewStrength(StrengthOf(Holder), StrengthOf(Helper));
         // A dupla anda no passo do mais lento.
-        public float CrewSpeed
-        {
-            get
-            {
-                NetworkPlayer a = Holder, b = Helper;
-                if (a == null && b == null) return 1f;
-                if (a == null || b == null) return (a != null ? a : b).Character.Current.speed;
-                return Mathf.Min(a.Character.Current.speed, b.Character.Current.speed);
-            }
-        }
+        public float CrewSpeed => CarryRules.CrewSpeed(SpeedOf(Holder), SpeedOf(Helper));
+        // Peso que quem carrega sente (nunca menos que 1).
+        public float FeltWeight => CarryRules.FeltWeight(weight, CrewStrength);
 
         // Quem está na outra ponta, como quem carrega vê: o colega, o "colega" falso ou ninguém.
         public string OtherEndName
@@ -134,6 +130,15 @@ namespace MudancaAssombrada
             foreach (var f in all)
                 if (f.IsSpawned && f.IsHeld && f.OwnerClientId == clientId) return f;
             return null;
+        }
+
+        // Este jogador está com as mãos ocupadas em OUTRO móvel (primeira ponta ou outra ponta)?
+        bool BusyElsewhere(ulong clientId)
+        {
+            foreach (var f in all)
+                if (f != this && f.IsSpawned && f.IsHeld && (f.OwnerClientId == clientId || f.helper.Value == clientId))
+                    return true;
+            return false;
         }
 
         // ---------- Só no host ----------
@@ -210,7 +215,7 @@ namespace MudancaAssombrada
             if (player.Carrier.IsWaiting) return new InteractionPrompt("Ocupado", false);
             if (IsHeld)
             {
-                bool free = HolderFeelsWeight && helper.Value == NoHelper && !HasFakeHelper;
+                bool free = CarryRules.HelpOffered(HolderFeelsWeight, helper.Value != NoHelper, HasFakeHelper);
                 return free ? new InteractionPrompt($"Segurar a outra ponta ({name})", true) : new InteractionPrompt("Ocupado", false);
             }
             if (player.Character.LiftLimit < weight)
@@ -256,7 +261,9 @@ namespace MudancaAssombrada
             ulong sender = rpcParams.Receive.SenderClientId;
             if (holding)
             {
-                if (isHeld.Value && HolderFeelsWeight && sender != OwnerClientId && helper.Value == NoHelper && fakeHelper.Value < 0)
+                // O cliente já confere as mãos livres, mas quem decide é o host (pedidos ao mesmo tempo).
+                if (CarryRules.CanAcceptHelper(isHeld.Value, HolderFeelsWeight, helper.Value != NoHelper, fakeHelper.Value >= 0,
+                                               sender, OwnerClientId, BusyElsewhere(sender)))
                     helper.Value = sender;
             }
             else if (helper.Value == sender) helper.Value = NoHelper;

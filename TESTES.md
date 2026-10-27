@@ -24,7 +24,7 @@ está no [CLAUDE.md](CLAUDE.md), regra 6. Como rodar os testes também está lá
 | 2. Partida e objetivos | `MatchRules`, `HouseClock.OffBeatDelay` | `MatchRulesTests` | 18 | ✅ feito |
 | 3. Reforço dos testes já feitos | — | os mesmos | +22 | ✅ feito (falta 1 item, abaixo) |
 | 4. Dados do projeto | — | `DataTests` | 10 | ✅ feito |
-| 5. Peso e dupla | `CarryRules` (nova) | `CarryRulesTests` | — | a fazer |
+| 5. Peso e dupla | `CarryRules` | `CarryRulesTests` | 17 | ✅ feito |
 | 6. Resgate de colega | `RescueRules` (nova) | `RescueRulesTests` | — | a fazer |
 | 7. Imitador: quando age | `ImitatorRules` (nova) | `ImitatorRulesTests` | — | a fazer |
 | 8. Testes de fumaça | — | `Assets/Tests/PlayMode` | — | depois |
@@ -79,23 +79,22 @@ Testes que carregam os `.asset` reais e conferem que estão coerentes:
   e peso entre 1 e 5.
 - **Menu:** depois do `MenuSceneBuilder`, nenhum campo `[SerializeField]` do `MainMenu` ficou nulo.
 
-## 5. Peso e dupla (fase 1, vale para o jogo todo)
+## 5. Peso e dupla ✅
 
-Separar de `Furniture` e `FurnitureCarrier` uma `CarryRules`. Números do ARQUITETURA.md:
-cada um levanta sozinho até a **própria força** (Cida 1, Tiago 1,5, Marcelo 3; armário 3,5).
-- Levantar sozinho: Cida levanta a cadeira (1) e arrasta a caixa (1,5); Marcelo levanta a caixa G (2)
-  e arrasta o armário (3,5).
-- Dupla: Cida + Tiago = 2,5 levanta a penteadeira (2,5, o limite é "maior ou igual"); o armário só
-  com o Marcelo na dupla.
-- A ponta falsa do Imitador vale zero: o nome aparece, mas o móvel continua arrastando.
+A `CarryRules` (`Assets/Scripts/Furniture/`) tem as contas; o `Furniture` e o `FurnitureCarrier` só
+juntam força, peso, velocidade e ids e perguntam a ela. Ponta vazia ou ponta FALSA entra como 0.
+Números do ARQUITETURA.md: cada um levanta sozinho até a **própria força** (Cida 1, Tiago 1,5,
+Marcelo 3; cadeira 1, caixa 1,5, caixa G 2, penteadeira 2,5, armário 3,5).
+- Levantar sozinho: Cida levanta a cadeira e arrasta a caixa; Tiago levanta a caixa e arrasta a caixa G;
+  Marcelo levanta a caixa G e arrasta o armário.
+- Dupla: Cida + Tiago = 2,5 levanta a penteadeira (limite "maior ou igual"); o armário só com o Marcelo.
+- A ponta falsa do Imitador vale zero: o móvel continua arrastando.
 - "Segurar a outra ponta" só aparece se quem segura sente o peso, a ponta está livre e não há ponta falsa.
-- Velocidade: a dupla anda no passo do mais lento; o peso sentido nunca fica abaixo de 1;
-  móvel pesado na escada anda mais devagar.
-- **Bug para o primeiro teste vermelho:** o host (`HelpRpc`) aceita como ajudante quem já está
-  carregando outro móvel; hoje só o cliente impede.
-- **Corrigir junto:** o comentário do topo do `Furniture.cs` ainda diz "força + 1 (Cida e Tiago até 2,
-  Marcelo até 4)"; o código e os .md dizem "a própria força". E o `IsBulky` (peso > 2) é explicado
-  como "pesado demais para força 1", o que não bate (a Cida já arrasta 1,5): renomear ou reexplicar.
+- Velocidade: passo do mais lento; peso sentido nunca abaixo de 1; arrastando = 0,35 ÷ peso sentido;
+  móvel grande (`IsBulky`, peso > 2, só para a escada) anda ÷1,5 na escada.
+- **Bug corrigido:** o host (`HelpRpc`) aceitava como ajudante quem já carregava ou ajudava em outro
+  móvel; agora `CarryRules.CanAcceptHelper` recebe "mãos ocupadas em outro móvel" e recusa.
+- O comentário do topo do `Furniture.cs` agora diz "a própria força", e o `IsBulky` foi reexplicado.
 
 ## 6. Resgate de colega
 
@@ -129,6 +128,6 @@ Poucos e simples, para pegar o que quebra "por fora" das regras:
 
 1. **Parte 3** (reforço): pequena, aproveita o que já existe.
 2. **Parte 4** (dados): barata e pega erro de Inspector, que hoje só aparece no Play.
-3. **Parte 5** (peso e dupla), começando pelo bug do `HelpRpc` como primeiro teste vermelho.
+3. ~~**Parte 5** (peso e dupla)~~ ✅
 4. **Partes 6 e 7** (resgate e Imitador).
 5. **Parte 8** (fumaça) quando o time quiser rodar os testes num CI.
