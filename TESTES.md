@@ -23,7 +23,7 @@ está no [CLAUDE.md](CLAUDE.md), regra 6. Como rodar os testes também está lá
 | 1. Sala de espera | `LobbyRules` | `LobbyRulesTests` | 27 | ✅ feito |
 | 2. Partida e objetivos | `MatchRules`, `HouseClock.OffBeatDelay` | `MatchRulesTests` | 18 | ✅ feito |
 | 3. Reforço dos testes já feitos | — | os mesmos | +22 | ✅ feito (falta 1 item, abaixo) |
-| 4. Dados do projeto | — | `DataTests` (novo) | — | a fazer |
+| 4. Dados do projeto | — | `DataTests` | 10 | ✅ feito |
 | 5. Peso e dupla | `CarryRules` (nova) | `CarryRulesTests` | — | a fazer |
 | 6. Resgate de colega | `RescueRules` (nova) | `RescueRulesTests` | — | a fazer |
 | 7. Imitador: quando age | `ImitatorRules` (nova) | `ImitatorRulesTests` | — | a fazer |
@@ -61,7 +61,10 @@ impede isso é o teste de dados da parte 4.
 - Etapa sem objetivo nenhum no meio (etapas 0 e 2, sem a 1): pula direto, sem travar.
 - Texto dos objetivos acima de 150 letras é cortado (`SetObjectiveText`).
 
-## 4. Dados do projeto (novo)
+## 4. Dados do projeto ✅
+
+Falhou um destes? Quase sempre é um dado para corrigir no Unity, não o teste. Os nomes de som
+escolhidos no Inspector (em prefabs e cenas) ainda não são conferidos, só os escritos no código.
 
 Testes que carregam os `.asset` reais e conferem que estão coerentes:
 - **Elenco:** 3 personagens, sem ficha nula, nomes preenchidos, força e velocidade > 0, nenhum
