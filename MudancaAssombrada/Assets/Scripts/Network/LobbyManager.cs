@@ -66,9 +66,8 @@ namespace MudancaAssombrada
         }
 
         public const float CountdownSeconds = 3f;
-        public const int ChatMaxLength = 120;   // letras por mensagem (o campo do menu também limita)
+        public const int ChatMaxLength = LobbyRules.ChatMaxLength;
         const int ChatHistory = 40;             // mensagens guardadas
-        const float ChatCooldown = 0.5f;        // anti-flood: intervalo mínimo entre mensagens
 
         // O menu escuta estes eventos para redesenhar a tela.
         public event Action Changed;
@@ -262,9 +261,10 @@ namespace MudancaAssombrada
         [Rpc(SendTo.Server)]
         void RequestCharacterRpc(int wanted, RpcParams rpcParams = default)
         {
-            int i = IndexOf(rpcParams.Receive.SenderClientId);
+            ulong sender = rpcParams.Receive.SenderClientId;
             // Quem já está pronto não troca de personagem (tem que desmarcar antes).
-            if (i < 0 || players[i].Ready || !CharacterRoster.Instance.IsValid(wanted) || IsTaken(wanted)) return;
+            if (!LobbyRules.CanChangeCharacter(Players, sender, wanted, CharacterRoster.Instance.Count)) return;
+            int i = IndexOf(sender);
             var p = players[i];
             p.Character = wanted;
             players[i] = p;
@@ -311,10 +311,9 @@ namespace MudancaAssombrada
         void KickRpc(ulong target, RpcParams rpcParams = default)
         {
             // Ninguém expulsa a si mesmo nem o host (sem o host, a partida acaba para todos).
-            if (!FromLeader(rpcParams) || target == rpcParams.Receive.SenderClientId
-                || target == NetworkManager.ServerClientId) return;
+            if (!LobbyRules.CanKick(Players, rpcParams.Receive.SenderClientId, target,
+                    leader.Value, NetworkManager.ServerClientId)) return;
             int i = IndexOf(target);
-            if (i < 0) return;
 
             var p = players[i];
             string id = p.PlayerId.ToString();
@@ -328,9 +327,9 @@ namespace MudancaAssombrada
         [Rpc(SendTo.Server)]
         void MakeLeaderRpc(ulong target, RpcParams rpcParams = default)
         {
-            if (!FromLeader(rpcParams) || target == leader.Value || startAt.Value > 0) return;
+            if (!LobbyRules.CanMakeLeader(Players, rpcParams.Receive.SenderClientId, target,
+                    leader.Value, startAt.Value > 0)) return;
             int i = IndexOf(target);
-            if (i < 0) return;
             leader.Value = target;
             // O novo líder não precisa marcar "pronto"; desmarca para a lista não confundir.
             var p = players[i];
@@ -354,13 +353,13 @@ namespace MudancaAssombrada
             ulong sender = rpcParams.Receive.SenderClientId;
             int i = IndexOf(sender);
             if (i < 0) return;
-            if (lastChatTime.TryGetValue(sender, out float last) && Time.unscaledTime - last < ChatCooldown) return;
+            float? last = lastChatTime.TryGetValue(sender, out float t) ? t : null;
+            if (!LobbyRules.ChatAllowed(last, Time.unscaledTime)) return;
             lastChatTime[sender] = Time.unscaledTime;
 
             // O texto é do jogador: tiramos o "<" para ninguém conseguir mexer nas cores (rich text).
-            string clean = text.ToString().Replace("<", "‹").Trim();
-            if (clean.Length == 0) return;
-            if (clean.Length > ChatMaxLength) clean = clean.Substring(0, ChatMaxLength);
+            string clean = LobbyRules.CleanChat(text.ToString());
+            if (clean == null) return;
 
             var character = CharacterRoster.Instance.Get(players[i].Character);
             string color = ColorUtility.ToHtmlStringRGB(Theme.Muted(character.color));
@@ -405,15 +404,7 @@ namespace MudancaAssombrada
         }
 
         // Todos prontos? (o líder não precisa marcar)
-        public bool AllReady
-        {
-            get
-            {
-                foreach (var p in players)
-                    if (p.ClientId != leader.Value && !p.Ready) return false;
-                return true;
-            }
-        }
+        public bool AllReady => LobbyRules.AllReady(Players, leader.Value);
 
         public bool ChapterPlayable => Campaign.Instance.CanPlay(selectedChapter.Value);
         public bool CanStart => ChapterPlayable && AllReady;
@@ -456,25 +447,8 @@ namespace MudancaAssombrada
 
         // ---------- Ajudantes ----------
 
-        int IndexOf(ulong clientId)
-        {
-            for (int i = 0; i < players.Count; i++)
-                if (players[i].ClientId == clientId) return i;
-            return -1;
-        }
-
-        public bool IsTaken(int character)
-        {
-            foreach (var p in players)
-                if (p.Character == character) return true;
-            return false;
-        }
-
-        int FirstFreeCharacter()
-        {
-            for (int c = 0; c < CharacterRoster.Instance.Count; c++)
-                if (!IsTaken(c)) return c;
-            return 0; // mais jogadores que personagens: repete o primeiro
-        }
+        int IndexOf(ulong clientId) => LobbyRules.IndexOf(Players, clientId);
+        public bool IsTaken(int character) => LobbyRules.IsTaken(Players, character);
+        int FirstFreeCharacter() => LobbyRules.FirstFreeCharacter(Players, CharacterRoster.Instance.Count);
     }
 }

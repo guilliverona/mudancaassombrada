@@ -45,7 +45,11 @@ namespace MudancaAssombrada
 
         // Liberado = sempre liberado, OU é o primeiro da história, OU o anterior da história foi concluído.
         // (Capítulos "sempre liberados", como o de teste, não contam na fila da história.)
-        public bool IsUnlocked(int index)
+        public bool IsUnlocked(int index) => IsUnlocked(index, SaveSystem.Data);
+
+        // A mesma regra, com o save passado de fora (os testes usam um save de mentira,
+        // sem tocar no arquivo de verdade).
+        public bool IsUnlocked(int index, SaveData save)
         {
             var chapter = Get(index);
             if (chapter == null) return false;
@@ -55,12 +59,16 @@ namespace MudancaAssombrada
             {
                 var previous = chapters[i];
                 if (previous == null || previous.alwaysUnlocked) continue;
-                return SaveSystem.Data.IsCompleted(previous.id);
+                return save.IsCompleted(previous.id);
             }
             return true; // é o primeiro capítulo da história
         }
 
         // Dá para jogar agora? Precisa estar liberado E ter cena pronta.
-        public bool CanPlay(int index) => IsUnlocked(index) && Get(index).IsPlayable;
+        public bool CanPlay(int index) => CanPlay(index, SaveSystem.Data);
+        public bool CanPlay(int index, SaveData save) => IsUnlocked(index, save) && Get(index).IsPlayable;
+
+        // Só para os testes montarem uma campanha na memória (o jogo usa a lista do .asset).
+        internal void SetChaptersForTests(params ChapterDefinition[] list) => chapters = list;
     }
 }

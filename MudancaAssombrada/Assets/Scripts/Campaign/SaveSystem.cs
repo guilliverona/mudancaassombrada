@@ -21,6 +21,15 @@ namespace MudancaAssombrada
 
         // Marcadores: "achou o cartaz do teatro", "esqueceu o diário"... O final alternativo
         // do roteiro ("Volte para buscar o resto") depende de marcadores assim.
+        // Marca o capítulo como concluído e paga. Devolve false se já estava (repetir não paga de novo).
+        public bool Complete(ChapterDefinition chapter)
+        {
+            if (chapter == null || IsCompleted(chapter.id)) return false;
+            completedChapters.Add(chapter.id);
+            money += chapter.payment;
+            return true;
+        }
+
         public bool HasFlag(string flag) => storyFlags.Contains(flag);
 
         public void SetFlag(string flag)
@@ -71,10 +80,7 @@ namespace MudancaAssombrada
         // Chamado em TODOS os computadores quando a equipe conclui um capítulo.
         public static void CompleteChapter(ChapterDefinition chapter)
         {
-            if (chapter == null || Data.IsCompleted(chapter.id)) return; // repetir não paga de novo
-            Data.completedChapters.Add(chapter.id);
-            Data.money += chapter.payment;
-            Save();
+            if (Data.Complete(chapter)) Save();
         }
 
         // Apaga o progresso (útil para testar a campanha do começo).
