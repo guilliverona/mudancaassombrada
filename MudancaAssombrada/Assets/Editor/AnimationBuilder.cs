@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.Animations;
@@ -11,15 +12,15 @@ namespace MudancaAssombrada.Editor
     // Duas misturas 2D pela DIREÇÃO do movimento, medida em relação ao próprio boneco
     // (Lado = para a direita, Frente = para a frente, em metros por segundo):
     //
-    //   Em pé:    Parado no meio; andar a 4 m/s e correr a 7,2 m/s para frente, trás, esquerda e direita
-    //   Agachado: AgachadoParado no meio; andar agachado a 2 m/s nas quatro direções
+    //   Em pé:    Parado no meio; andar a 2,2 m/s e correr a 4,4 m/s para frente, trás, esquerda e direita
+    //   Agachado: AgachadoParado no meio; andar agachado a 1,1 m/s nas quatro direções
     //             (para a esquerda: o AgachadoDireita espelhado; clipe "para trás" que faltar é
     //             o da frente tocado ao contrário)
     //   Em pé <-> Agachado: pelo parâmetro Agachado (bool)
     //   Caído (bool Caido): de QUALQUER estado vai para "Caindo" (o clipe Cair, que para deitado
     //   no último quadro); ao ser ajudado, "Levantando" (Levantar) e volta para Em pé.
     //
-    // As velocidades são as do PlayerMovement (andar 4, correr x1,8, agachado x0,5). Quem preenche
+    // As velocidades são as do PlayerMovement (andar 2,2, correr x2, agachado x0,5). Quem preenche
     // os parâmetros é o DollWalk, em todos os computadores (a posição e o agachar vêm pela rede).
     // Entre as direções (ex.: frente-esquerda), o Unity mistura os clipes vizinhos sozinho.
     //
@@ -38,7 +39,20 @@ namespace MudancaAssombrada.Editor
         public const string DownParam = "Caido";
         public const string RescueParam = "Ajuda";
 
-        const float Walk = 4f, Run = 7.2f, Crouch = 2f;
+        // As velocidades do PlayerMovement (andar 2,2, correr x2, agachado x0,5), em m/s.
+        public const float Walk = 2.2f, Run = 4.4f, Crouch = 1.1f;
+
+        // A velocidade NATURAL de cada clipe (são "in place": o boneco não sai do lugar), medida
+        // pelo pé de apoio deslizando para trás, num corpo de tamanho 1 (Animator.humanScale = 1).
+        // Cada clipe toca a (velocidade do ponto ÷ esta), e o DollWalk ainda divide pelo tamanho de
+        // cada personagem: assim o pé fica parado no chão. Os "Esquerda" usam o mesmo do "Direita".
+        // Clipe novo ou trocado = medir de novo (média da Cida, do Tiago e do Marcelo).
+        static readonly Dictionary<string, float> NaturalSpeed = new()
+        {
+            { "Andar", 1.33f }, { "AndarTras", 1.0f }, { "AndarDireita", 1.4f }, { "AndarEsquerda", 1.4f },
+            { "Correr", 3.55f }, { "CorrerTras", 2.42f }, { "CorrerDireita", 3.43f }, { "CorrerEsquerda", 3.43f },
+            { "AgachadoAndar", 1.1f }, { "AgachadoTras", 1.32f }, { "AgachadoDireita", 0.85f },
+        };
 
         // Todos os clipes que o controller sabe usar (Agachar fica de fora: ainda não é usado).
         static readonly string[] ClipNames =
@@ -69,7 +83,9 @@ namespace MudancaAssombrada.Editor
                 // ...ou se ainda usa um clipe que saiu da lista (ex.: o AgachadoEsquerda girado).
                 var removed = used.Where(n => !ClipNames.Contains(n)).ToList();
                 // ...ou se falta um parâmetro de uma versão mais nova (ex.: Ajuda, do resgate segurando a tecla).
-                bool upToDate = new[] { SideParam, RescueParam }.All(n => existing.parameters.Any(p => p.name == n));
+                bool upToDate = new[] { SideParam, RescueParam }.All(n => existing.parameters.Any(p => p.name == n))
+                    // ...ou se foi feito para outra velocidade (ex.: o antigo andar a 4 m/s).
+                    && MaxForward(existing) == Run;
                 if (upToDate && missing.Count == 0 && removed.Count == 0)
                     return existing;
                 AssetDatabase.DeleteAsset(ControllerPath);
@@ -197,9 +213,8 @@ namespace MudancaAssombrada.Editor
             }
             if (clip == null) return;
             tree.AddChild(clip, position);
-            if (!reversed) return;
             var children = tree.children;
-            children[children.Length - 1].timeScale = -1f;
+            children[children.Length - 1].timeScale = Pace(clip, position) * (reversed ? -1f : 1f);
             tree.children = children;
         }
 
@@ -209,7 +224,21 @@ namespace MudancaAssombrada.Editor
             tree.AddChild(clip, position);
             var children = tree.children;
             children[children.Length - 1].mirror = true;
+            children[children.Length - 1].timeScale = Pace(clip, position);
             tree.children = children;
+        }
+
+        // Quantas vezes mais rápido o clipe toca para o pé acompanhar a velocidade do ponto
+        // (num corpo de tamanho 1). Clipe sem medida na tabela: toca no ritmo original.
+        static float Pace(AnimationClip clip, Vector2 position) =>
+            NaturalSpeed.TryGetValue(clip.name, out var natural) ? position.magnitude / natural : 1f;
+
+        // A maior velocidade "para a frente" da mistura Em pé: diz para qual velocidade o controller foi feito.
+        static float MaxForward(AnimatorController controller)
+        {
+            var tree = controller.layers[0].stateMachine.states
+                .Where(s => s.state.name == "Em pé").Select(s => s.state.motion).OfType<BlendTree>().FirstOrDefault();
+            return tree == null ? 0f : tree.children.Max(c => c.position.y);
         }
 
         // Troca de estado sem esperar o clipe acabar, num "crossfade" curto (o mesmo tempo

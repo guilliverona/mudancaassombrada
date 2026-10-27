@@ -1016,7 +1016,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 890148d1deff07043bfde50ee5aa2be2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.PlayerMovement
-  walkSpeed: 4
+  walkSpeed: 2.2
   gravity: -20
   cameraPivot: {fileID: 8801395347483215849}
   mouseSensitivity: 0.1
@@ -1030,7 +1030,7 @@ MonoBehaviour:
   crouchHeight: 1.2
   crouchSpeedMultiplier: 0.5
   crouchTransitionSpeed: 8
-  runSpeedMultiplier: 1.8
+  runSpeedMultiplier: 2
   maxStamina: 100
   staminaDrain: 25
   staminaRegen: 15

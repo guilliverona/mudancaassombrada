@@ -9,7 +9,9 @@ namespace MudancaAssombrada
     {
         // [SerializeField] deixa o campo privado, mas visível/editável no Inspector.
         [Header("Movimento")]
-        [SerializeField] float walkSpeed = 4f;
+        // Combina com as animações (AnimationBuilder.Walk/Run): o passo dos clipes é acelerado
+        // até o pé "grudar" no chão nesta velocidade. Mudou aqui = mudar lá também.
+        [SerializeField] float walkSpeed = 2.2f;
         [SerializeField] float gravity = -20f;
 
         [Header("Câmera")]
@@ -35,7 +37,7 @@ namespace MudancaAssombrada
         [SerializeField] float crouchTransitionSpeed = 8f; // quão rápido a câmera desce/sobe
 
         [Header("Correr")]
-        [SerializeField] float runSpeedMultiplier = 1.8f;
+        [SerializeField] float runSpeedMultiplier = 2f; // 4,4 m/s
         [SerializeField] float maxStamina = 100f;
         [SerializeField] float staminaDrain = 25f;   // por segundo correndo (4s de corrida)
         [SerializeField] float staminaRegen = 15f;   // por segundo sem correr
@@ -62,7 +64,7 @@ namespace MudancaAssombrada
         // Travado (caído ou hipnotizado): não anda nem corre, mas ainda olha em volta.
         public bool Frozen { get; set; }
         [Header("Sendo puxado")]
-        [SerializeField] float pullSpeed = 6f;      // mais rápido que andar (4) e que o fantasma (2,5): acompanha o puxão
+        [SerializeField] float pullSpeed = 6f;      // mais rápido que andar (2,2) e que o fantasma (2,5): acompanha o puxão
         [SerializeField] float pullDistance = 1.2f; // fica "segurando a outra ponta", a esta distância
         [Tooltip("Quanto do próprio passo sobra sendo puxado: dá para resistir um pouco, não para fugir.")]
         [SerializeField, Range(0f, 1f)] float pulledMoveMultiplier = 0.3f;

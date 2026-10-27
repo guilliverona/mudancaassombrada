@@ -165,7 +165,13 @@ namespace MudancaAssombrada
             animator.applyRootMotion = false; // quem anda é o CharacterController, não a animação
             animator.enabled = true;
             clips = animator;
+            // Os clipes foram acertados para um corpo de tamanho 1 (AnimationBuilder.NaturalSpeed):
+            // perna mais curta (a Cida) precisa de passos mais rápidos para andar o mesmo tanto.
+            stepPace = 1f / Mathf.Max(animator.humanScale, 0.1f);
         }
+
+        float stepPace = 1f; // quanto os clipes de andar aceleram por causa do tamanho do personagem
+        const float FullPaceSpeed = 1.1f; // a partir desta velocidade (m/s), o ajuste vale inteiro
 
         float thighLength, shinLength, walkHipHeight; // medidos no mundo (0 = boneco sem joelho)
 
@@ -254,6 +260,11 @@ namespace MudancaAssombrada
                 if (down) shown = Mathf.MoveTowards(shown, condition.RescueProgress, Time.deltaTime);
                 else if (!IsGettingUp) shown = 0f;
                 clips.SetFloat(RescueId, shown);
+                // Ritmo dos passos pelo tamanho do corpo, só andando: parado, caindo ou levantando,
+                // os clipes tocam no tempo original (senão a Cida respiraria e cairia acelerada).
+                float moving = down || IsGettingUp ? 0f
+                    : Mathf.Clamp01(new Vector2(clips.GetFloat(SideId), clips.GetFloat(ForwardId)).magnitude / FullPaceSpeed);
+                clips.speed = Mathf.Lerp(1f, stepPace, moving);
                 return;
             }
 
