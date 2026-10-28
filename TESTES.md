@@ -28,6 +28,8 @@ está no [CLAUDE.md](CLAUDE.md), regra 6. Como rodar os testes também está lá
 | 6. Resgate de colega | `RescueRules` | `RescueRulesTests` | 12 | ✅ feito |
 | 7. Imitador: quando age | `ImitatorRules` | `ImitatorRulesTests` | 11 | ✅ feito |
 | 8. Testes de fumaça | — | `SmokeTests` (Play Mode) | 3 | ✅ feito |
+| 9. Mansão do Espelho | `ImitatorRules` (espelho pelo caminho), `SecretDoorRules`, `PortalRules`, `MirrorReflection.Priority` | `MansionRulesTests` | 18 | ✅ feito |
+| 10. Atmosfera da Mansão | `HouseScareRules`, `PianolaRules`, `PeriodFindRules`, `SaveData.Complete` (extra) | `AtmosphereRulesTests` | 16 | ✅ feito |
 
 ---
 
@@ -123,6 +125,37 @@ relógio e os segundos no espelho e pergunta a ela (`ReadyToAct`, `NextLurkTime`
 - Puxando a vítima: 6 s para os colegas salvarem.
 
 A máquina de estados inteira (andar, NavMesh, espelhos) fica fora: depende de cena.
+
+## 9. Mansão do Espelho ✅
+
+As regras novas da Fase 1 V1.2 (LEVEL_DESIGN_FASE1_MANSAO.md):
+- **Qual espelho (R03):** `ImitatorRules.NearestMirror`/`FarthestMirror` escolhem pelo caminho
+  andando (o `MirrorPaths` mede no NavMesh); inalcançável não conta; sem caminho nenhum, vale a
+  linha reta.
+- **Espelho-porta da Câmara (D5, R01):** `SecretDoorRules`. Fechado só a Cida afina; revelado
+  qualquer um empurra; fora de ordem nada muda; sem a Cida na partida, já começa revelado.
+- **Portal (R13):** `PortalRules`. Só depois de mexer no cartaz; avisa aos 2 s sozinho (uma vez),
+  puxa aos 4 s; um colega a menos de 6 m zera a conta.
+- **Espelhos-herói (R04):** `MirrorReflection.Priority` põe os heróis à frente de um comum mais perto.
+
+## 10. Atmosfera da Mansão ✅
+
+As regras da Etapa 3 (LEVEL_DESIGN_FASE1_MANSAO.md §6 a §9):
+- **Sustos (R20):** `HouseScareRules`.
+  - O primeiro dispara na hora; o próximo espera 20 s; nada no pânico.
+  - Cada susto acontece uma vez por noite (a estante, duas).
+  - Correr a menos de 1,5 m dispara; andar, não.
+  - "Passar perto" sorteia uma vez só.
+  - A cadeira de balanço só balança com ninguém olhando (a menos de 60°).
+- **Teias (R23):** só jogador rasga.
+- **Pianola (R18):** `PianolaRules`.
+  - Diferença pequena com a cama não pula.
+  - Na volta da faixa (fim → começo) as duas não estão "270 s" separadas.
+  - Perto da pianola a cama 2D abaixa; na Câmara, some.
+- **Pagamento (D10, D13):** `PeriodFindRules`.
+  - Achados somam ao pagamento; cada pancada num frágil desconta; o total nunca fica negativo.
+  - Quicar logo depois (menos de 1 s) é a mesma pancada.
+  - O save paga o extra junto com o capítulo, só na primeira vez, e o desconto nunca tira do caixa.
 
 ## 8. Testes de fumaça (Play Mode) ✅
 

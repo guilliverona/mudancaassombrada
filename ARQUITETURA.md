@@ -35,7 +35,7 @@ Assets/
 │   ├── SoundLibraryBuilder   monta a biblioteca de sons a partir do catálogo (tools/audio)
 │   ├── ArtImportSettings / AudioImportSettings  importação de modelos e sons pela pasta
 │   ├── HudBuilder / UiBuilder  monta interface com o padrão visual
-│   ├── MirrorHouseBuilder    rascunho da Casa do Espelho (capítulo 1)
+│   ├── MirrorHouseBuilder    capítulo 1: prefabs da Casa do Espelho; .Mansao.cs monta a planta de tools/level/mansao_v1_2.json
 │   └── MenuSceneBuilder      cena do menu (100% gerada)
 ├── Data/Personagens/         fichas dos personagens (.asset, editáveis)
 ├── Data/Capítulos/           fichas dos capítulos (.asset, editáveis)
@@ -146,6 +146,12 @@ Som por estado do fantasma: `GhostSounds` (uma troca de estado toca uma vez, com
 pular e "sem direção" opcionais; um estado repete um som enquanto dura, mais rápido no fim da noite).
 Pista que só a Cida vê: um timbre do `SurfaceTag` que o `Echo.shader` desenha mesmo sem onda (o espelho
 ocupado "respira"); quem enxerga usa o material normal e não vê nada.
+Qual espelho o Imitador usa (entrar, puxar, fugir): `MirrorPaths.Nearest`/`Farthest`, pelo caminho no
+NavMesh e não em linha reta (numa casa de dois níveis, o espelho "logo acima" pode estar a 30 m andando).
+Na Mansão: o `SecretMirrorDoor` (o espelho-porta E9, que só a Cida revela) e o `PortalTrap` (o portal
+da Câmara, que puxa quem fica sozinho; o Imitador sai por ele sem disfarce, `ServerAmbushFromPortal`)
+não são `Mirror`: não entram no rodízio de esconderijos. `AppearanceLights` acende o lustre e o
+refletor só enquanto ele está em cena.
 Coisas que acontecem numa hora da noite (a aparição dos 45 s, o manequim que tomba) leem o relógio
 do `GameManager` (`NightDuration − TimeLeft`), que já chega a todos: sem rede própria (`TimedTopple`).
 
@@ -220,6 +226,28 @@ veem a luz falhando quando ela está fraca. Os itens do chão são `FlashlightPi
 pilhas, some ao pegar e volta no reinício). Um objeto que dá para **tocar** (o piano) é um
 `PlayableInstrument`: o host emite um `SoundEvent` de música e o `SoundVoice` do objeto diz o arquivo.
 Luz que treme (arandela, vela): `LightFlicker` na `Light`.
+Pilha **escondida**: `startsHidden` no `FlashlightPickup`; aparece quando algo chama `ServerReveal`
+(um `HouseScare` com o campo "Reveals"). Luz que se **carrega** (o lampião da Mansão): um móvel
+(`Furniture`) com uma `Light` filha; ocupa as mãos e não entra em objetivo nenhum. Luz que se
+**acende** (a luminária verde): `Interactable` ("Acender") + `LampSwitch`, que segue o estado dele.
+
+### Algo que a casa faz sozinha (cai, toca, balança)
+O `HouseScare` (um objeto de rede; na Mansão, o prefab "Susto da Casa" com o modelo como filho).
+No Inspector:
+- **Trigger** (pode marcar vários): correndo perto, móvel carregado perto, passar perto (chance,
+  sorteada uma vez), um segundo da noite, ninguém olhando.
+- **Motion:** cai no chão, gaveta que abre, balanço ou tombo.
+- **Som** (vira um `SoundEvent` de impacto: eco e anel), **Cue** (o aviso) e **Reveals** (a pilha).
+O host decide e todos animam igual; as regras (um a cada 20 s, nada no pânico, uma vez por noite)
+ficam na `HouseScareRules`. **Is Scare** desligado = não é susto (só revela uma pilha).
+Teia que fecha um vão: `DoorWeb` (só jogador rasga; o fantasma passa e ela fica: a pista).
+
+### Um achado de época (bônus) ou um frágil
+Um móvel com `PeriodFind`: nome, valor (R$), o bilhete do chefe e, se quiser, um som em loop
+enquanto é carregado. Não entra em objetivo; entregue no caminhão, soma ao pagamento da noite e
+aparece no bilhete da avaliação. **Frágil:** `Fragile` no móvel (e um `SoundVoice` de impacto com o
+som de vidro): cada pancada desconta R$ 5. As contas: `PeriodFindRules`; o `GameManager` fecha o
+pagamento no fim (`Pay`) e o save recebe o extra (`SaveData.Complete(capítulo, extra)`).
 
 ### Um tipo de som
 Um valor novo no `SoundType` (o próximo bit livre, ex.: `1 << 7`). Quem faz o som usa
@@ -266,6 +294,10 @@ e contínua, e troca para o trecho do momento nos sustos, visto do MEU boneco; c
 cama e a casa se calam (`AmbienceGain`, que todo `AmbientSound` obedece). Faixa trazida pela equipe (não gerada): `"externo": true` no catálogo,
 o `gerar_sons.py` nunca mexe. Fase nova = um `Soundtrack` com a faixa dela e o diretor na cena.
 Os porquês e os tempos da Casa do Espelho: LEVEL_DESIGN_FASE1.md §10.2.
+**A pianola** (Mansão): o componente `Pianola` toca a MESMA faixa da cama em 3D, no mesmo ponto
+(`PianolaRules`), e a cama 2D abaixa perto dela (`Pianola.BedDuck`); numa zona de silêncio (a
+Câmara) as duas param. As **frases de piano** por momento (aparição, etapa nova, âmbar, captura,
+amanhecer) ficam no `PianoPhrases`, que lê o que já chega pela rede (`GameManager.StageIndex`).
 
 ### Um marcador da história (pista, escolha)
 `SaveSystem.Data.SetFlag("achou-cartaz-teatro"); SaveSystem.Save();` e depois
@@ -305,7 +337,8 @@ Use um prefab de `Prefabs/Espelhos` (o `MirrorHouseBuilder` já põe o `MirrorRe
 vidro da moldura, material `MAT_ENV_Espelho`, pelo `Espelho Vidro.mat`, do shader `Espelho`). O
 reflexo é planar: uma câmera espelhada grava a cena numa textura, só neste computador. Para pesar
 pouco, só os **2 espelhos mais perto e na tela** refletem (meia resolução, sem sombras nem
-pós-processamento); os outros, e todos no modo cego, mostram o vidro escuro. O campo **Reflected
+pós-processamento); os outros, e todos no modo cego, mostram o vidro escuro. Espelho marcado como
+**Hero** reflete antes de qualquer comum que esteja na tela (na Mansão, o E1 e o E2 da escadaria). O campo **Reflected
 Layers** escolhe o que aparece no espelho: é o gancho para pistas que só existem no reflexo.
 
 ### Uma regra na sala de espera (líder, pronto, chat...)
