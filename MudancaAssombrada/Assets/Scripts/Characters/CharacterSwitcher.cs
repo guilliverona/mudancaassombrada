@@ -41,11 +41,12 @@ namespace MudancaAssombrada
         TuningFork fork;
         PlayerMovement movement;
         FurnitureCarrier carrier;
+        Hotbar hotbar;
 
         public int CurrentIndex => characterIndex.Value;
         public CharacterDefinition Current => CharacterRoster.Instance.Get(characterIndex.Value);
 
-        // Trocar de personagem no meio da partida (teclas 1, 2, 3) é só para TESTAR as mecânicas:
+        // Trocar de personagem no meio da partida (F1, F2, F3) é só para TESTAR as mecânicas:
         // no roteiro, cada jogador é um personagem fixo, escolhido na sala de espera.
         // #if: este código só existe no editor e em builds de desenvolvimento, nunca no jogo final.
         public static bool DebugSwitchingEnabled =>
@@ -63,6 +64,7 @@ namespace MudancaAssombrada
             fork = GetComponent<TuningFork>();
             movement = GetComponent<PlayerMovement>();
             carrier = GetComponent<FurnitureCarrier>();
+            hotbar = GetComponent<Hotbar>();
         }
 
         void OnEnable() => all.Add(this);
@@ -138,6 +140,9 @@ namespace MudancaAssombrada
             // Se a tela está escura (alguém aqui é cego), escurece também este boneco.
             if (EchoSystem.Instance != null) EchoSystem.Instance.RefreshNewRenderers();
 
+            // Hotbar: quantos espaços e a bengala da Cida vêm da ficha (quem decide é o host).
+            if (IsServer && hotbar != null && hotbar.IsSpawned) hotbar.ServerApplyKit();
+
             // Habilidades e sentidos: só no computador de quem controla este boneco.
             if (IsOwner) Become(character);
         }
@@ -160,7 +165,9 @@ namespace MudancaAssombrada
             if (!currentModel.TryGetComponent(out DollWalk walk))
                 walk = currentModel.AddComponent<DollWalk>(); // acha os ossos sozinho pelo Humanoid
             walk.UseClips(animations); // com os clipes do Mixamo, o Animator anima no lugar do código
-            walk.HoldsCane = character.canTap; // quem tem bengala na ficha a segura (camada "Bengala")
+            // Quem tem bengala na ficha a segura (camada "Bengala"); o HeldItems solta quando ela
+            // vai para o cinto (outro espaço da hotbar escolhido).
+            walk.HoldsCane = character.canTap;
             Walk = walk;
 
             // Com animação de verdade, a MINHA câmera segue a cabeça do modelo (não entra no pescoço

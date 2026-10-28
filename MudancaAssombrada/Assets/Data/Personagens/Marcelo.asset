@@ -24,6 +24,7 @@ MonoBehaviour:
   strength: 3
   carryNoise: 0.4
   stepVolume: 0.5
+  hotbarSlots: 2
   blind: 0
   deaf: 0
   canTap: 0

@@ -6,6 +6,8 @@ namespace MudancaAssombrada
     {
         None = 0,
         Flashlight = 1,
+        Battery = 2,  // um pacote de pilhas guardado: "Usar" recarrega a lanterna
+        Cane = 3,     // a bengala da Cida (vem da ficha, não se pega no chão)
     }
 
     // Onde a lanterna está: na mão (aponta para onde você olha), presa no colete (você carrega
@@ -17,26 +19,28 @@ namespace MudancaAssombrada
         Chest = 2,
     }
 
-    // O que a tecla da lanterna (L) faz agora.
-    public enum FlashlightKey
+    // O que a tecla própria de um item (L da lanterna, Espaço da bengala) faz agora.
+    public enum ItemKey
     {
         Nothing,
-        Toggle,            // liga/desliga a que está na mão ou no colete
-        TakeOutAndTurnOn,  // estava guardada: vai para a mão e já acende
+        Use,            // está na mão (ou no colete): usa (liga/desliga, bate a bengala)
+        TakeOutAndUse,  // estava guardado: vai para a mão (a lanterna, carregando: o colete) e já usa
     }
 
-    // As REGRAS da hotbar, sem cena nem rede: o que cada tecla faz, onde a lanterna fica.
-    // O Hotbar e o Flashlight (no Player) juntam os dados e perguntam aqui; os testes
-    // (Assets/Tests/EditMode/HotbarRulesTests.cs) conferem cada regra sem abrir uma fase.
+    // As REGRAS da hotbar, sem cena nem rede: o que cada tecla faz, onde a lanterna fica, o kit de
+    // cada personagem. O Hotbar, o Flashlight e o CaneTapper (no Player) juntam os dados e perguntam
+    // aqui; os testes (Assets/Tests/EditMode/HotbarRulesTests.cs) conferem cada regra sem abrir uma fase.
     //
     // Os espaços vão "empacotados" num uint: 8 bits por espaço (espaço 0 nos bits 0-7, espaço 1
     // nos 8-15...). Assim a barra inteira é UMA variável de rede, e não uma lista.
+    // 'slots' = quantos espaços ESTE personagem tem (o Marcelo, desajeitado com coisa pequena, tem 2).
     public static class HotbarRules
     {
-        public const int Slots = 3;
+        public const int Slots = 3;      // o máximo (as teclas e os quadradinhos da HUD)
         public const int EmptyHand = -1; // nenhum espaço escolhido: mão vazia
+        public const float FullCharge = 0.99f; // a partir daqui a lanterna conta como cheia
 
-        public static bool IsSlot(int slot) => slot >= 0 && slot < Slots;
+        public static bool IsSlot(int slot, int slots = Slots) => slot >= 0 && slot < slots && slot < Slots;
 
         public static HotbarItem Get(uint bar, int slot) =>
             IsSlot(slot) ? (HotbarItem)((bar >> (slot * 8)) & 0xFF) : HotbarItem.None;
@@ -49,30 +53,30 @@ namespace MudancaAssombrada
         }
 
         // O primeiro espaço com este item (ou -1). Com None, é o primeiro espaço livre.
-        public static int Find(uint bar, HotbarItem item)
+        public static int Find(uint bar, HotbarItem item, int slots = Slots)
         {
-            for (int i = 0; i < Slots; i++)
+            for (int i = 0; i < slots && i < Slots; i++)
                 if (Get(bar, i) == item) return i;
             return -1;
         }
 
-        public static int FirstEmpty(uint bar) => Find(bar, HotbarItem.None);
+        public static int FirstEmpty(uint bar, int slots = Slots) => Find(bar, HotbarItem.None, slots);
         public static bool Contains(uint bar, HotbarItem item) => item != HotbarItem.None && Find(bar, item) >= 0;
 
         // Tecla de número: segura aquele espaço; a mesma tecla de novo guarda (mão vazia).
-        public static int Press(int selected, int pressed)
+        public static int Press(int selected, int pressed, int slots = Slots)
         {
-            if (!IsSlot(pressed)) return selected;
+            if (!IsSlot(pressed, slots)) return selected;
             return pressed == selected ? EmptyHand : pressed;
         }
 
         // Rodinha / direcional: anda 'steps' espaços dando a volta. De mão vazia, começa pela ponta.
-        public static int Scroll(int selected, int steps)
+        public static int Scroll(int selected, int steps, int slots = Slots)
         {
-            if (steps == 0) return selected;
-            if (!IsSlot(selected)) return steps > 0 ? 0 : Slots - 1;
-            int next = (selected + steps) % Slots;
-            return next < 0 ? next + Slots : next;
+            if (steps == 0 || slots <= 0) return selected;
+            if (!IsSlot(selected, slots)) return steps > 0 ? 0 : slots - 1;
+            int next = (selected + steps) % slots;
+            return next < 0 ? next + slots : next;
         }
 
         public static HotbarItem InHand(uint bar, int selected) => Get(bar, selected);
@@ -80,6 +84,33 @@ namespace MudancaAssombrada
         // Mão livre (nada escolhido, ou o espaço escolhido está vazio)? Então o item que acabou de
         // chegar já vai para a mão.
         public static bool HandIsFree(uint bar, int selected) => InHand(bar, selected) == HotbarItem.None;
+
+        // O KIT do personagem, aplicado ao nascer, ao trocar de personagem (testes) e ao reiniciar:
+        //   - itens em espaços que ele não tem (Marcelo: o 3º) vão para um espaço livre, ou caem;
+        //   - quem tem bengala na ficha recebe a bengala (de preferência no espaço 1). Ela é a visão
+        //     da Cida: com a barra cheia, toma o lugar do item do espaço 1;
+        //   - quem não tem bengala na ficha perde a bengala.
+        public static uint ApplyKit(uint bar, int slots, bool hasCane)
+        {
+            for (int i = 0; i < Slots; i++)
+                if (Get(bar, i) == HotbarItem.Cane && !hasCane) bar = Set(bar, i, HotbarItem.None);
+
+            for (int i = slots; i < Slots; i++)
+            {
+                var item = Get(bar, i);
+                if (item == HotbarItem.None) continue;
+                bar = Set(bar, i, HotbarItem.None);
+                int free = FirstEmpty(bar, slots);
+                if (free >= 0) bar = Set(bar, free, item);
+            }
+
+            if (hasCane && Find(bar, HotbarItem.Cane, slots) < 0)
+            {
+                int free = Get(bar, 0) == HotbarItem.None ? 0 : FirstEmpty(bar, slots);
+                bar = Set(bar, free >= 0 ? free : 0, HotbarItem.Cane);
+            }
+            return bar;
+        }
 
         // Móvel nas mãos (primeira ponta ou outra ponta) manda o item da mão para o cinto. A lanterna
         // é a exceção boa: vai presa no colete e continua acesa.
@@ -89,12 +120,21 @@ namespace MudancaAssombrada
             return hasLoad ? FlashlightPlace.Chest : FlashlightPlace.Hand;
         }
 
-        public static FlashlightKey OnFlashlightKey(bool has, FlashlightPlace place, bool hasLoad)
+        // A tecla própria de um item faz o mesmo que a tecla do número + usar: guardado, ele é
+        // escolhido (e já usado). Assim o jogador nunca consegue por um caminho o que o outro nega.
+        public static ItemKey OnItemKey(bool has, bool inHand)
         {
-            if (!has) return FlashlightKey.Nothing;
-            if (place != FlashlightPlace.Stowed) return FlashlightKey.Toggle;
-            // Guardada e com o móvel nas mãos: não tem mão livre para tirar do cinto.
-            return hasLoad ? FlashlightKey.Nothing : FlashlightKey.TakeOutAndTurnOn;
+            if (!has) return ItemKey.Nothing;
+            return inHand ? ItemKey.Use : ItemKey.TakeOutAndUse;
         }
+
+        // Com o móvel nas mãos, a lanterna escolhida vai para o colete (PlaceOf): conta como "na mão".
+        public static ItemKey OnFlashlightKey(bool has, FlashlightPlace place) =>
+            OnItemKey(has, place != FlashlightPlace.Stowed);
+
+        // Trocar as pilhas guardadas: precisa de uma lanterna que não esteja cheia e das mãos livres
+        // (desatarraxar a tampa com um móvel nos braços, não dá).
+        public static bool CanReload(bool hasFlashlight, float charge01, bool hasLoad) =>
+            hasFlashlight && charge01 < FullCharge && !hasLoad;
     }
 }

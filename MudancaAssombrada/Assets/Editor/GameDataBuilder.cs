@@ -84,6 +84,7 @@ namespace MudancaAssombrada.Editor
             c.strength = 3f;
             c.carryNoise = 0.4f;
             c.stepVolume = 0.5f;
+            c.hotbarSlots = 2; // mãos enormes, desajeitado com coisa pequena
             c.whistle = true;
         });
 

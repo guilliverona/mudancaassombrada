@@ -8,7 +8,8 @@ namespace MudancaAssombrada
     // volta quando a fase reinicia.
     //   - Lanterna: vai para a hotbar (Flashlight.ServerGive), com a bateria cheia. Quem já tem uma
     //     (ou está com a hotbar cheia) não pega outra.
-    //   - Pilhas: recarregam um pedaço da lanterna de quem pega (precisa ter uma).
+    //   - Pilhas: vão para a hotbar (ocupam um espaço). Quem não tem lanterna também pode guardar
+    //     (para quando tiver). Com o pacote na mão, "Usar item" recarrega (Flashlight; quanto, lá).
     // A Cida vê a dica "Não preciso." (a vantagem dela: enxerga pelo eco, sem luz nenhuma).
     // ESCONDIDAS (startsHidden): começam invisíveis e só aparecem quando algo as revela (a gaveta
     // que abre sozinha, os livros que caem: o HouseScare chama ServerReveal).
@@ -21,8 +22,6 @@ namespace MudancaAssombrada
 
         [Tooltip("Ligado: é uma lanterna. Desligado: são pilhas.")]
         [SerializeField] bool givesFlashlight = true;
-        [Tooltip("Pilhas: quanto recarregam (0,4 = 40% da bateria).")]
-        [SerializeField, Range(0f, 1f)] float charge = 0.4f;
         [Tooltip("Ligado: começa escondida e só aparece com ServerReveal (um susto da casa larga a pilha).")]
         [SerializeField] bool startsHidden;
 
@@ -55,7 +54,7 @@ namespace MudancaAssombrada
         void OnTakenChanged(bool previous, bool current)
         {
             Show(Visible);
-            if (current) GameAudio.Play(givesFlashlight ? "lanterna_pega" : "pilhas_troca", transform.position);
+            if (current) GameAudio.Play(givesFlashlight ? "lanterna_pega" : "item_troca", transform.position);
         }
 
         void OnRevealedChanged(bool previous, bool current) => Show(Visible);
@@ -72,17 +71,11 @@ namespace MudancaAssombrada
             if (player.Character != null && player.Character.blind) return new InteractionPrompt("Não preciso.", false);
 
             var flashlight = player.GetComponent<Flashlight>();
-            if (flashlight == null) return InteractionPrompt.None;
-            if (givesFlashlight)
-            {
-                if (flashlight.Has) return new InteractionPrompt("Já tenho uma lanterna", false);
-                return player.TryGetComponent(out Hotbar hotbar) && !hotbar.HasRoom
-                    ? new InteractionPrompt("Lanterna (hotbar cheia)", false)
-                    : new InteractionPrompt("Pegar lanterna", true);
-            }
-            if (!flashlight.Has) return new InteractionPrompt("Pilhas (preciso de uma lanterna)", false);
-            return flashlight.Charge01 >= 0.99f ? new InteractionPrompt("Pilhas (bateria cheia)", false)
-                                                : new InteractionPrompt("Trocar as pilhas", true);
+            if (flashlight == null || !player.TryGetComponent(out Hotbar hotbar)) return InteractionPrompt.None;
+            if (givesFlashlight && flashlight.Has) return new InteractionPrompt("Já tenho uma lanterna", false);
+            string name = givesFlashlight ? "Lanterna" : "Pilhas";
+            return hotbar.HasRoom ? new InteractionPrompt(givesFlashlight ? "Pegar lanterna" : "Guardar pilhas", true)
+                                  : new InteractionPrompt($"{name} (hotbar cheia)", false);
         }
 
         public void Interact(PlayerInteractor player) => TakeRpc();
@@ -94,19 +87,14 @@ namespace MudancaAssombrada
             // O host confere de novo quem pediu (como no Interactable).
             if (!NetworkManager.ConnectedClients.TryGetValue(rpcParams.Receive.SenderClientId, out var client)) return;
             var player = client.PlayerObject;
-            if (player == null || !player.TryGetComponent(out Flashlight flashlight)) return;
+            if (player == null || !player.TryGetComponent(out Flashlight flashlight)
+                               || !player.TryGetComponent(out Hotbar hotbar)) return;
             if (player.TryGetComponent(out CharacterSwitcher who) && who.Current != null && who.Current.blind) return;
 
-            if (givesFlashlight)
-            {
-                if (flashlight.Has || !flashlight.ServerGive()) return; // já tem, ou a hotbar está cheia
-            }
-            else
-            {
-                if (!flashlight.Has) return;
-                flashlight.ServerCharge(charge);
-            }
-            taken.Value = true;
+            // Já tem lanterna, ou a hotbar está cheia: fica onde está.
+            bool took = givesFlashlight ? !flashlight.Has && flashlight.ServerGive()
+                                        : hotbar.ServerAdd(HotbarItem.Battery);
+            if (took) taken.Value = true;
         }
 
         // Só no host: a pilha escondida aparece (caiu da estante, a gaveta abriu).

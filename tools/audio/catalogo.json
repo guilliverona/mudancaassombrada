@@ -145,6 +145,7 @@
       "texto": "Picking up a heavy metal flashlight from a wooden crate, short handling rattle" },
     { "id": "pilhas_troca", "pasta": "Personagens", "variacoes": 1, "duracao": 1.5, "loop": false, "influencia": 0.7,
       "texto": "Unscrewing a flashlight cap and dropping new batteries inside, small metallic clicks, then screwing it shut" },
+    { "id": "item_troca", "pasta": "Personagens", "procedural": true },
 
     { "id": "diapasao_bate", "pasta": "Personagens", "variacoes": 1, "duracao": 4.0, "loop": false, "influencia": 0.7,
       "texto": "A metal tuning fork struck once, pure sustained musical note ringing and slowly fading out, close, clean, no reverb" },
@@ -290,6 +291,7 @@
     { "id": "lanterna_clique",          "camada": "pista",     "volume": 0.4,  "alcance": 5,  "intervaloMin": 0.1 },
     { "id": "lanterna_pega",            "camada": "pista",     "volume": 0.5,  "alcance": 6 },
     { "id": "pilhas_troca",             "camada": "pista",     "volume": 0.5,  "alcance": 6 },
+    { "id": "item_troca",               "camada": "pista",     "volume": 0.3,  "alcance": 4,  "intervaloMin": 0.08 },
 
     { "id": "diapasao_bate",            "camada": "pista",     "volume": 0.6,  "alcance": 18, "intervaloMin": 2 },
     { "id": "diapasao_vidro",           "camada": "pista",     "volume": 0.4,  "alcance": 12, "intervaloMin": 0.2 },

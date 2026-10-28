@@ -28,6 +28,7 @@ namespace MudancaAssombrada
         public static InputAction HotbarScroll { get; private set; }      // rodinha do mouse: passa de espaço
         public static InputAction HotbarNext { get; private set; }
         public static InputAction HotbarPrevious { get; private set; }
+        public static InputAction UseItem { get; private set; }           // usar o item da mão (trocar as pilhas)
         public static InputAction[] SelectCharacter { get; private set; } // F1, F2, F3... (troca de personagem para testes)
 
         static InputActionMap map;
@@ -84,6 +85,7 @@ namespace MudancaAssombrada
             HotbarScroll = map.AddAction("Trocar item", InputActionType.Value, "<Mouse>/scroll/y");
             HotbarNext = Button(map, "Próximo item", "<Gamepad>/dpad/right");
             HotbarPrevious = Button(map, "Item anterior", "<Gamepad>/dpad/left");
+            UseItem = Button(map, "Usar item", "<Mouse>/leftButton", "<Gamepad>/rightTrigger");
 
             // A troca de personagem (só em testes) foi para F1, F2, F3...: os números são da hotbar.
             SelectCharacter = new InputAction[9];

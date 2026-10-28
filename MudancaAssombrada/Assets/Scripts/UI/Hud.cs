@@ -185,7 +185,8 @@ namespace MudancaAssombrada
             UpdateHotbar(player.GetComponent<Hotbar>());
         }
 
-        // Três quadradinhos: o número da tecla e o item. O da mão ganha a borda de "selecionado".
+        // Um quadradinho por espaço do personagem (o Marcelo tem 2): o número da tecla e o item.
+        // O da mão ganha a borda de "selecionado".
         // Só aparece por uns segundos depois de trocar ou pegar algo, e some devagar (FadeSlow).
         void UpdateHotbar(Hotbar bar)
         {
@@ -199,6 +200,10 @@ namespace MudancaAssombrada
             var flashlight = bar.GetComponent<Flashlight>();
             for (int i = 0; i < hotbarSlots.Length && i < hotbarLabels.Length; i++)
             {
+                bool exists = i < bar.Count;
+                if (hotbarSlots[i].gameObject.activeSelf != exists) hotbarSlots[i].gameObject.SetActive(exists);
+                if (!exists) continue;
+
                 var item = bar.Get(i);
                 bool inHand = i == bar.Selected;
                 hotbarSlots[i].GetComponent<Outline>().effectColor = inHand ? Theme.HighlightColor : Theme.BorderColor;
@@ -210,6 +215,8 @@ namespace MudancaAssombrada
                 if (item == HotbarItem.Flashlight && flashlight != null)
                     sb.Append("Lanterna\n").Append(Colored($"{Mathf.CeilToInt(flashlight.Charge01 * 100f)}%",
                         flashlight.Charge01 < 0.2f ? Theme.DangerColor : Theme.MutedColor));
+                else if (item == HotbarItem.Battery) sb.Append("Pilhas");
+                else if (item == HotbarItem.Cane) sb.Append("Bengala");
                 SetText(hotbarLabels[i], sb.ToString());
                 hotbarLabels[i].color = inHand ? Theme.HighlightColor : Theme.TextColor;
             }
@@ -259,6 +266,9 @@ namespace MudancaAssombrada
                 sb.Append("\n[").Append(GameInput.KeyLabel(GameInput.Flashlight)).Append("] Lanterna ")
                   .Append(Colored($"{charge}%{state}", color));
             }
+            // Pilhas na mão e a lanterna pedindo carga: a dica do botão Usar.
+            if (flashlight != null && flashlight.CanReload)
+                sb.Append("\n[").Append(GameInput.KeyLabel(GameInput.UseItem)).Append("] Trocar as pilhas");
 
             // Trocar de personagem no meio da partida é só para TESTES (no roteiro, cada jogador
             // é um personagem fixo). Por isso a lista só aparece no editor / build de desenvolvimento.

@@ -47,12 +47,15 @@ namespace MudancaAssombrada
         [Tooltip("Alcance do som dos passos.")]
         [Range(0f, 2f)] public float stepVolume = 1f;
 
+        [Tooltip("Espaços da hotbar (itens pequenos: lanterna, pilhas). O Marcelo, desajeitado com coisa pequena, tem 2.")]
+        [Range(1, HotbarRules.Slots)] public int hotbarSlots = HotbarRules.Slots;
+
         [Header("Sentidos e habilidades")]
         [Tooltip("Tela escura: só enxerga pelo eco dos sons.")]
         public bool blind;
         [Tooltip("Não ouve nada (volume do jogo zerado).")]
         public bool deaf;
-        [Tooltip("Bengala: bate no chão e cria um eco grande.")]
+        [Tooltip("Bengala: bate no chão e cria um eco grande. Ocupa um espaço da hotbar (já nasce na mão).")]
         public bool canTap;
         [Tooltip("Vê os sons como anéis no chão.")]
         public bool vibrationVision;

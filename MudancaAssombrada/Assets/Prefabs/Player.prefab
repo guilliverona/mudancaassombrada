@@ -952,6 +952,8 @@ GameObject:
   - component: {fileID: 8846661384662322400}
   - component: {fileID: 6513554444087942537}
   - component: {fileID: 62019349352528400}
+  - component: {fileID: 5421429525489802057}
+  - component: {fileID: 6644249107261153440}
   - component: {fileID: 4339543430742910769}
   - component: {fileID: 4202566152706859166}
   - component: {fileID: 2332331131135969243}
@@ -1285,9 +1287,43 @@ MonoBehaviour:
   beam: {fileID: 254650978594259842}
   batterySeconds: 100
   flickerBelow: 0.2
+  batteryCharge: 0.4
   chestIntensity: 0.6
   chestBelowEyes: 0.35
   chestTilt: 12
+--- !u!114 &5421429525489802057
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7645197041336742590}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ac00d237a9bff134dac692a6e487f13f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.HeldItems
+  flashlightModel: {fileID: 919132149155446097, guid: b018b3600484c7a4996cdef7753d5418, type: 3}
+  flashlightGrip: {x: 0, y: 0.045, z: -0.04}
+  flashlightLens: {x: 0, y: 0.06, z: 0.16}
+  chestForward: 0.16
+  carry: {x: 0.2, y: -0.83, z: 0.27}
+  armFollowsLook: 0.5
+  steadiness: 0.15
+  elbowHint: {x: 0.45, y: 0, z: -1}
+--- !u!114 &6644249107261153440
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7645197041336742590}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 79813dc1a4ed381478b616665473c8e3, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.FirstPersonArm
+  viewOffset: {x: 0.17, y: -0.2, z: 0.25}
 --- !u!114 &4339543430742910769
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1320,16 +1356,16 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 2888404261
+  GlobalObjectIdHash: 0
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0
   Ownership: 1
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
-  m_InScenePlaced: 1
+  m_InScenePlaced: 0
   ActiveSceneSynchronization: 0
-  SceneMigrationSynchronization: 0
+  SceneMigrationSynchronization: 1
   SpawnWithObservers: 1
   DontDestroyWithOwner: 0
   AutoObjectParentSync: 1

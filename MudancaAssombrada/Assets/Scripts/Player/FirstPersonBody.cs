@@ -10,12 +10,16 @@ namespace MudancaAssombrada
     // que copia a pose do original todo frame e não faz sombra nem aparece no espelho.
     //
     // Fica no boneco ORIGINAL: se ele for desligado (troca de personagem), a cópia some junto.
+    // Ordem 200: copia a pose DEPOIS do IK do braço da lanterna (HeldItems, 100).
+    [DefaultExecutionOrder(200)]
     public class FirstPersonBody : MonoBehaviour
     {
         // Registro das partes de todas as cópias: o MirrorReflection as desliga enquanto desenha.
         public static readonly List<Renderer> Parts = new();
 
         GameObject copy;
+        // A cópia (o corpo que VOCÊ vê): o FirstPersonArm põe o braço da lanterna nela, preso à câmera.
+        public GameObject Copy => copy;
         PlayerMovement movement; // do dono: diz se o corpo está travado (caído/levantando)
         Transform[] source, target; // os mesmos ossos/partes, na mesma ordem, no original e na cópia
         Renderer[] sourceRenderers, targetRenderers;

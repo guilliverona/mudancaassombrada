@@ -500,6 +500,16 @@ MonoBehaviour:
     minGap: 0
     onBeat: 0
     important: 0
+  - id: item_troca
+    clips:
+    - {fileID: 8300000, guid: aacf70a9d6347e8479735b3cfd790a83, type: 3}
+    volume: 0.3
+    pitchVariation: 0.05
+    maxDistance: 4
+    layer: 2
+    minGap: 0.08
+    onBeat: 0
+    important: 0
   - id: diapasao_bate
     clips:
     - {fileID: 8300000, guid: f34b321626b1b134a90d55480daead35, type: 3}
