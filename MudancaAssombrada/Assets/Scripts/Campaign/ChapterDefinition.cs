@@ -41,6 +41,11 @@ namespace MudancaAssombrada
         [Tooltip("Quanto a empresa recebe ao concluir (para reformar o caminhão e comprar equipamentos).")]
         [Min(0)] public int payment = 100;
 
+        [Header("Filtro de cor (ScreenMood)")]
+        [Tooltip("LUT 2D em tira (ex.: 1024x32, sem compressão, sem sRGB). Vazio = cor normal.")]
+        public Texture colorLut;
+        [Range(0f, 1f)] public float colorLutContribution = 1f;
+
         [Header("Seu Valdemar")]
         [Tooltip("O bilhete que aparece no começo da fase.")]
         [TextArea(3, 8)] public string openingNote = "";

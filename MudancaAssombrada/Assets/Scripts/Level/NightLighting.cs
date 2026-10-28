@@ -53,6 +53,8 @@ namespace MudancaAssombrada
             if (sun == null)
                 foreach (var light in FindObjectsByType<Light>())
                     if (light.type == LightType.Directional) { sun = light; break; }
+            // O clima da tela (vinheta do perigo, LUT do capítulo) vem junto com a noite.
+            if (!GetComponent<ScreenMood>()) gameObject.AddComponent<ScreenMood>();
             RenderSettings.ambientMode = AmbientMode.Flat; // uma cor só, simples de controlar
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
