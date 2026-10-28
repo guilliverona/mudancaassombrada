@@ -28,8 +28,9 @@ está no [CLAUDE.md](CLAUDE.md), regra 6. Como rodar os testes também está lá
 | 6. Resgate de colega | `RescueRules` | `RescueRulesTests` | 12 | ✅ feito |
 | 7. Imitador: quando age | `ImitatorRules` | `ImitatorRulesTests` | 11 | ✅ feito |
 | 8. Testes de fumaça | — | `SmokeTests` (Play Mode) | 3 | ✅ feito |
-| 9. Mansão do Espelho | `ImitatorRules` (espelho pelo caminho), `SecretDoorRules`, `PortalRules`, `MirrorReflection.Priority` | `MansionRulesTests` | 18 | ✅ feito |
-| 10. Atmosfera da Mansão | `HouseScareRules`, `PianolaRules`, `PeriodFindRules`, `SaveData.Complete` (extra) | `AtmosphereRulesTests` | 16 | ✅ feito |
+| 9. Opções de vídeo | `VideoRules` | `VideoRulesTests` | 10 | ✅ feito |
+| 10. Mansão do Espelho | `ImitatorRules` (espelho pelo caminho), `SecretDoorRules`, `PortalRules`, `MirrorReflection.Priority` | `MansionRulesTests` | 18 | ✅ feito |
+| 11. Atmosfera da Mansão | `HouseScareRules`, `PianolaRules`, `PeriodFindRules`, `SaveData.Complete` (extra) | `AtmosphereRulesTests` | 16 | ✅ feito |
 
 ---
 
@@ -126,7 +127,7 @@ relógio e os segundos no espelho e pergunta a ela (`ReadyToAct`, `NextLurkTime`
 
 A máquina de estados inteira (andar, NavMesh, espelhos) fica fora: depende de cena.
 
-## 9. Mansão do Espelho ✅
+## 10. Mansão do Espelho ✅
 
 As regras novas da Fase 1 V1.2 (LEVEL_DESIGN_FASE1_MANSAO.md):
 - **Qual espelho (R03):** `ImitatorRules.NearestMirror`/`FarthestMirror` escolhem pelo caminho
@@ -138,7 +139,7 @@ As regras novas da Fase 1 V1.2 (LEVEL_DESIGN_FASE1_MANSAO.md):
   puxa aos 4 s; um colega a menos de 6 m zera a conta.
 - **Espelhos-herói (R04):** `MirrorReflection.Priority` põe os heróis à frente de um comum mais perto.
 
-## 10. Atmosfera da Mansão ✅
+## 11. Atmosfera da Mansão ✅
 
 As regras da Etapa 3 (LEVEL_DESIGN_FASE1_MANSAO.md §6 a §9):
 - **Sustos (R20):** `HouseScareRules`.

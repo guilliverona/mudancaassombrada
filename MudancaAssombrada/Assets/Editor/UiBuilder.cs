@@ -387,12 +387,19 @@ namespace MudancaAssombrada.Editor
         // O painel de Opções completo, já ligado ao script OptionsPanel (usado no Menu e na pausa).
         public static OptionsPanel CreateOptionsPanel(Transform parent)
         {
-            var panel = CreatePanel("Painel Opções", parent, 560);
+            var panel = CreatePanel("Painel Opções", parent, 820);
             var sensitivityText = CreateText("Sensibilidade (texto)", panel, "", BodySize);
             var sensitivitySlider = CreateSlider(panel, 0.2f, 3f);
             var volumeText = CreateText("Volume (texto)", panel, "", BodySize);
             var volumeSlider = CreateSlider(panel, 0f, 1f);
             var fullscreenToggle = CreateToggle(panel, "Tela cheia");
+            // Vídeo: os rótulos dos botões são reescritos pelo OptionsPanel ("Qualidade: Alta"...).
+            var qualityButton = CreateButton("Qualidade", panel);
+            var antialiasingButton = CreateButton("Antialiasing", panel);
+            var renderScaleText = CreateText("Resolução 3D (texto)", panel, "", BodySize);
+            var renderScaleSlider = CreateSlider(panel, 10f, 20f); // 50% a 100%, de 5 em 5
+            var vsyncToggle = CreateToggle(panel, "VSync");
+            var fpsButton = CreateButton("Limite de FPS", panel);
             var backButton = CreateButton("Voltar", panel, ButtonStyle.Ghost);
 
             var options = panel.gameObject.AddComponent<OptionsPanel>();
@@ -403,6 +410,12 @@ namespace MudancaAssombrada.Editor
             so.FindProperty("sensitivityValueText").objectReferenceValue = sensitivityText;
             so.FindProperty("volumeValueText").objectReferenceValue = volumeText;
             so.FindProperty("backButton").objectReferenceValue = backButton;
+            so.FindProperty("qualityButton").objectReferenceValue = qualityButton;
+            so.FindProperty("antialiasingButton").objectReferenceValue = antialiasingButton;
+            so.FindProperty("renderScaleSlider").objectReferenceValue = renderScaleSlider;
+            so.FindProperty("renderScaleValueText").objectReferenceValue = renderScaleText;
+            so.FindProperty("vsyncToggle").objectReferenceValue = vsyncToggle;
+            so.FindProperty("fpsButton").objectReferenceValue = fpsButton;
             so.ApplyModifiedPropertiesWithoutUndo();
             return options;
         }
