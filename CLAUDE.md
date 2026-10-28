@@ -139,10 +139,14 @@ tudo passa pelos serviços da Unity (Lobby + Relay), então precisa de internet.
 - **Clipe feito no Blender sobre um rig nosso** (ex.: `PegaBengala`): o FBX só tem o esqueleto já
   posado, então precisa do avatar do personagem (`OwnRigClips` no `ArtImportSettings`: Copy From Other
   + Bake Axis Conversion) e de um vazio ao lado do rig (sozinho na raiz, o Unity achata a hierarquia).
-  Mudou a regra? Apagar o `.meta` do clipe para reimportar.
+  Mudou a regra? Apagar o `.meta` do clipe para reimportar. O FBX do clipe precisa também dos
+  **mesmos encaixes** (`SOC_*`) do modelo: o avatar do Tiago mapeou o `SOC_Ear_L` como olho, e sem
+  ele o clipe não importa ("Transform hierarchy does not match"; o log mostra, o Unity não avisa).
 - **Medir animação em teste (batch):** sem câmera, o Animator não mexe os ossos (culling): usar
   `cullingMode = AlwaysAnimate`. IK depois da animação vai no `LateUpdate` com a pose real; o
   `GetIKPosition` do Animator pode não coincidir com a mão (ex.: meio do Levantar).
+- **Prop preso na mão por código:** a raiz do FBX chega com a rotação da importação (ex.: 90°, 180°);
+  girar ela direto deixa o objeto de lado. Pôr o FBX dentro de um vazio e girar o vazio (`HeldItems`).
 - **Normais da malha:** o Unity só desenha a frente da face. As prévias do Blender escondem o verso
   (`show_backface_culling`); peça montada vértice a vértice precisa de `recalc_face_normals`.
 - **Lados nos desenhos:** em várias fichas do Art Bible, o texto diz "direito" e o desenho mostra o

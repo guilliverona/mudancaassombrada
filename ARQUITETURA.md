@@ -236,20 +236,41 @@ segurado até o fim, a condição volta a `Normal` e o fantasma percebe que a v�
   máximo 6 marcas, e uma fraca nunca tira uma forte. O `VibrationRing` continua só para a chamada da bengala.
 
 ### Hotbar
-O `Hotbar` no Player guarda 3 itens pequenos (`HotbarItem`), empacotados num `uint` de rede que o
-host escreve; qual espaço está na mão é do dono (teclas 1-2-3, `GameInput.HotbarSlot`; rodinha e
-direcional para os lados passam de espaço; a mesma tecla de novo guarda). As regras ficam em
-`HotbarRules` (testes em `HotbarRulesTests`). Item novo: um nome no `HotbarItem`, dar com
-`ServerAdd` e o componente do item pergunta `InHand`/`HandsBusy`. Os números eram da troca de
-personagem de teste, que foi para F1-F3.
+O `Hotbar` no Player guarda até 3 itens pequenos (`HotbarItem`: lanterna, pilhas, bengala),
+empacotados num `uint` de rede que o host escreve; qual espaço está na mão é do dono (teclas 1-2-3,
+`GameInput.HotbarSlot`; rodinha e direcional para os lados passam de espaço; a mesma tecla de novo
+guarda). Quantos espaços vem da ficha (`hotbarSlots`: o Marcelo tem 2) e o **kit** (`ApplyKit`: a
+bengala da Cida no espaço 1, já na mão) é aplicado ao nascer, ao trocar de personagem e ao reiniciar.
+As regras ficam em `HotbarRules` (testes em `HotbarRulesTests`). A tecla própria de um item (L, Espaço)
+faz o mesmo que o número + usar (`OnItemKey`). "Usar item" (botão esquerdo / gatilho direito) usa o
+que está na mão (hoje: trocar as pilhas). O `HeldItems` mostra no boneco o que está na mão: com a
+lanterna **na mão**, o braço direito sobe: a camada "Lanterna" do Animator fecha os dedos no cabo
+(clipe `PegaLanterna`, gerado por `tools/blender/build_pega_lanterna.py` no rig do Tiago) e, por cima,
+um IK de dois ossos leva a mão para baixo e um pouco à frente do **ombro suavizado** (`carry`, em
+"braços": cada personagem na altura dele; correndo, a mão não sacode), o braço acompanha metade do
+olhar e o punho aponta a lanterna para onde o dono olha (`Flashlight.AimRotation`; o olhar vai pela
+rede). O giro em volta do antebraço vai para o antebraço (`SplitTwist`), e só o resto dobra o punho.
+Medido: com o punho reto, a pega só aponta para a frente com o antebraço quase em pé; erguida até o
+ombro, o punho dobrava 60-80° (o braço "torto"); ao lado do quadril, com o cotovelo rente ao corpo,
+~30°. Junto ao corpo, o antebraço entrava no Tiago e na barriga do Marcelo: o `carry` deixa o braço
+a 5-18 cm do corpo (pose aprovada pelas fotos em 28/10/2026). A luz sai da lente. Na SUA
+tela, as mãos não aparecem: o `FirstPersonArm` (ordem 300, depois do `FirstPersonBody`) encolhe o
+braço direito da cópia de primeira pessoa e leva a lanterna a um ponto preso à câmera (`viewOffset`),
+onde só a ponta aparece no canto de baixo (os olhos ficam 30-40 cm acima do ombro: pela mão de
+verdade, ela sairia da tela). As contas ficam em `HandPoseRules` (testes em `FlashlightArmRulesTests`). No colete, o modelo vai para o
+peito; a bengala da Cida some e solta a pega quando ela escolhe outro espaço. **Decisão:** carregar móvel não guarda a bengala (é a visão da Cida).
+Item novo: um nome no `HotbarItem`, dar com `ServerAdd` e o componente do item pergunta
+`InHand`/`HandsBusy`. A troca de personagem de teste foi para F1-F3. Trocar de espaço toca `item_troca`
+(som procedural, `tools/audio`).
 
 ### Lanterna, pilhas e coisas tocáveis
 A lanterna é o componente `Flashlight` no Player (tecla L, `GameInput.Flashlight`), mas só funciona
 depois de pegar uma: o host a põe na hotbar (`ServerGive`), o dono liga e gasta a bateria, e todos
 veem a luz falhando quando ela está fraca. Ela fica na **mão** (espaço escolhido), no **colete**
 (estava na mão e pegou um móvel: mais fraca, aponta para a frente do corpo) ou **guardada** (apaga);
-com ela guardada, a tecla L tira do cinto e acende. Os itens do chão são `FlashlightPickup` (lanterna ou
-pilhas, some ao pegar e volta no reinício). Um objeto que dá para **tocar** (o piano) é um
+com ela guardada, a tecla L tira do cinto e acende (carregando um móvel, direto no colete). Os itens do
+chão são `FlashlightPickup` (lanterna ou pilhas, some ao pegar e volta no reinício). As pilhas vão para
+a hotbar (ocupam um espaço) e recarregam com "Usar item" (`batteryCharge` no `Flashlight`, 40%). Um objeto que dá para **tocar** (o piano) é um
 `PlayableInstrument`: o host emite um `SoundEvent` de música e o `SoundVoice` do objeto diz o arquivo.
 Luz que treme (arandela, vela): `LightFlicker` na `Light`.
 Pilha **escondida**: `startsHidden` no `FlashlightPickup`; aparece quando algo chama `ServerReveal`
