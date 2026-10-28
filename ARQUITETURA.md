@@ -226,6 +226,15 @@ segurado até o fim, a condição volta a `Normal` e o fantasma percebe que a v�
   a bengala já revelou (`memoryStrength`, só peças sem `NetworkObject`), no Inspector do `EchoSystem`.
   Nenhum dos dois usa cor nem timbre, para não entregar pista. Zerar os três volta à tela 100% escura.
 
+### O que o Tiago vê (chão tremendo)
+- O `VibrationVision` mostra cada som como um pedaço de **chão tremendo** (`VibrationMark`, shader
+  `VibrationTremor`: entorta a imagem da tela com `_CameraOpaqueTexture`, ligada no `PC_RPAsset`, e põe
+  um brilho fraco para não sumir no escuro). É **uma marca por emissor**, que segue quem fez o som.
+- As regras ficam no `VibrationRules` (testado em `VibrationRulesTests`): fantasma, impacto e apito =
+  forte (vermelho, até 20 m); colegas, bengala, móvel arrastado e música da casa = fraco (amarelo, até
+  12 m); os próprios sons, voz e respiração = nada; outro andar (mais de 2,5 m de altura) = nada. No
+  máximo 6 marcas, e uma fraca nunca tira uma forte. O `VibrationRing` continua só para a chamada da bengala.
+
 ### Lanterna, pilhas e coisas tocáveis
 A lanterna é o componente `Flashlight` no Player (tecla L, `GameInput.Flashlight`), mas só funciona
 depois de pegar uma: o host decide quem tem (`ServerGive`), o dono liga e gasta a bateria, e todos
