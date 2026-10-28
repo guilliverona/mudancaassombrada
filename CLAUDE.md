@@ -147,6 +147,8 @@ tudo passa pelos serviços da Unity (Lobby + Relay), então precisa de internet.
   `GetIKPosition` do Animator pode não coincidir com a mão (ex.: meio do Levantar).
 - **Prop preso na mão por código:** a raiz do FBX chega com a rotação da importação (ex.: 90°, 180°);
   girar ela direto deixa o objeto de lado. Pôr o FBX dentro de um vazio e girar o vazio (`HeldItems`).
+- **Cookie de luz:** o tipo Cookie importa como um canal só (Alpha8); um PNG em tons de cinza com
+  transparência cheia vira facho liso. Usar `alphaSource = FromGrayScale` (`FlashlightCookieBuilder`).
 - **Normais da malha:** o Unity só desenha a frente da face. As prévias do Blender escondem o verso
   (`show_backface_culling`); peça montada vértice a vértice precisa de `recalc_face_normals`.
 - **Lados nos desenhos:** em várias fichas do Art Bible, o texto diz "direito" e o desenho mostra o

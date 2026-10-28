@@ -272,7 +272,11 @@ depois de pegar uma: o host a põe na hotbar (`ServerGive`), o dono liga e gasta
 veem a luz falhando quando ela está fraca. Ela fica na **mão** (espaço escolhido), no **colete**
 (estava na mão e pegou um móvel: mais fraca, aponta para a frente do corpo) ou **guardada** (apaga);
 com ela guardada, a tecla L tira do cinto e acende (carregando um móvel, direto no colete). Os itens do
-chão são `FlashlightPickup` (lanterna ou pilhas, some ao pegar e volta no reinício). As pilhas vão para
+chão são `FlashlightPickup` (lanterna ou pilhas, some ao pegar e volta no reinício). O **facho** tem
+desenho (miolo forte, faixa mais escura e o aro do refletor): o cookie `T_PRP_Lanterna_Facho.png`,
+gerado pelo `FlashlightCookieBuilder` a partir do `FlashlightBeamRules` (testes em
+`FlashlightBeamRulesTests`; mudou o desenho, recrie o Player). A **lente** da lanterna na mão acende
+e pisca junto com a luz (`Flashlight.LightLevel` → `HeldItems`, numa cópia do material só dela). As pilhas vão para
 a hotbar (ocupam um espaço) e recarregam com "Usar item" (`batteryCharge` no `Flashlight`, 40%). Um objeto que dá para **tocar** (o piano) é um
 `PlayableInstrument`: o host emite um `SoundEvent` de música e o `SoundVoice` do objeto diz o arquivo.
 Luz que treme (arandela, vela): `LightFlicker` na `Light`.

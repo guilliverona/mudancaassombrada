@@ -436,11 +436,14 @@ namespace MudancaAssombrada.Editor
             var beam = beamGo.GetComponent<Light>();
             beam.type = LightType.Spot;
             beam.spotAngle = 55f;
-            beam.innerSpotAngle = 25f;
             beam.range = 18f;
             beam.intensity = 6f; // forte o bastante para a casa escura: é ela que mostra o caminho
             beam.color = new Color(1f, 0.86f, 0.68f);
             beam.shadows = LightShadows.Soft;
+            // O desenho do facho (miolo, aro do refletor, riscos): FlashlightBeamRules. Com ele, o cone
+            // do spot só recorta a borda, então o miolo vai quase até ela.
+            beam.cookie = FlashlightCookieBuilder.Ensure();
+            beam.innerSpotAngle = 45f;
             player.AddComponent<Hotbar>(); // até 3 espaços (teclas 1-2-3): lanterna, pilhas, bengala
             EditorTools.SetReference(player.AddComponent<Flashlight>(), "beam", beam);
             // O que está na mão, visto no boneco: o modelo da lanterna e a bengala da Cida.

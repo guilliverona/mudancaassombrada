@@ -54,6 +54,8 @@ MATS = bc.Materials("MAT_PRP", {
     "Cera": ("#E6DCC4", 0.0, 0.6, 0.0),
     "Plastico": ("#2A2A30", 0.0, 0.5, 0.0),
     "Lente": ("#FFE8B0", 0.0, 0.2, 1.5),
+    "Borracha": ("#1A1A1E", 0.0, 0.9, 0.0),         # anéis de pega e a cordinha da lanterna
+    "FitaIsolante": ("#2E4A7A", 0.0, 0.45, 0.0),    # o remendo no cabo (a empresa não compra lanterna nova)
     # lombadas de livro (variam por prateleira, todas dessaturadas: o escuro é o padrão)
     "Livro1": ("#6E3A2A", 0.0, 0.8, 0.0),
     "Livro2": ("#3F5A5E", 0.0, 0.8, 0.0),
@@ -398,15 +400,40 @@ def build_arara(col):
 
 # ---------- Lanterna e pilhas (a luz que a equipe precisa gerir) ----------
 
+LANTERNA_EIXO = 0.055   # altura do eixo: a cabeça (raio 5,5 cm) encosta no chão, deitada
+
+
 def build_lanterna(col):
-    """Lanterna de mão (0,12 × 0,12 × 0,25 m), 3200 K. Deitada (o corpo corre em -Y = a frente):
-    é como ela fica no caminhão. Origem no meio da base."""
+    """Lanterna de mão barata da transportadora (0,11 × 0,11 × 0,25 m), 3200 K. Deitada (o corpo
+    corre em -Y = a frente, a lente): é como ela fica no caminhão. Origem no meio da base.
+
+    Tudo no MESMO eixo (a cabeça antiga era um cone inclinado e a borda dele cortava a lente).
+    Cabo de borracha com anéis de pega, remendo de fita isolante, botão de borracha embutido,
+    adesivo da empresa, cabeça de latão com aro em volta da lente, tampa das pilhas com cordinha.
+    O jogo usa: o meio do cabo (HeldItems.flashlightGrip: Y 0,03 → Unity Z −0,03, altura 0,055)
+    e a lente (Y −0,11 → Unity Z +0,11)."""
+    a = LANTERNA_EIXO
     p = bc.Part("SM_PRP_Lanterna", MATS)
-    p.tube((0, 0.12, 0.045), (0, -0.06, 0.045), 0.032, 0.032, "Plastico", "root", seg=14)   # cabo
-    p.tube((0, -0.06, 0.045), (0, -0.12, 0.06), 0.034, 0.055, "Latao", "root", seg=16)      # cabeça
-    p.tube((0, -0.12, 0.06), (0, -0.125, 0.06), 0.05, 0.05, "Lente", "root", seg=16)        # lente
-    p.box((0, 0.02, 0.08), (0.02, 0.03, 0.012), "Carimbo", "root")                         # botão
-    p.tube((0, 0.12, 0.045), (0, 0.13, 0.045), 0.028, 0.028, "Latao", "root", seg=12)       # tampa das pilhas
+    # cabo e tampa das pilhas
+    p.tube((0, 0.12, a), (0, -0.06, a), 0.032, 0.032, "Plastico", "root", seg=16)            # cabo
+    p.tube((0, 0.12, a), (0, 0.133, a), 0.030, 0.028, "Latao", "root", seg=12)              # tampa das pilhas
+    for y in (0.095, 0.075, 0.055):                                                          # anéis de pega
+        p.tube((0, y, a), (0, y - 0.006, a), 0.034, 0.034, "Borracha", "root", seg=16, caps=False)
+    p.tube((0, 0.005, a), (0, -0.03, a), 0.0335, 0.0335, "FitaIsolante", "root", seg=16, caps=False)  # remendo
+    # botão de borracha embutido no alto do cabo (a mão fecha logo atrás dele)
+    p.ellipsoid((0, 0.03, a + 0.03), (0.011, 0.016, 0.006), "Carimbo", "root", seg=8, rings=4)
+    # adesivo da transportadora na lateral: papel claro com a faixa vermelha da empresa
+    p.box((0.0322, 0.075, a), (0.001, 0.045, 0.02), "Papel", "root")
+    p.box((0.0328, 0.075, a), (0.001, 0.035, 0.005), "Carimbo", "root")
+    # cabeça: pescoço que abre, o aro (bezel) e a lente um pouco à frente do aro
+    p.tube((0, -0.06, a), (0, -0.095, a), 0.034, 0.052, "Latao", "root", seg=16, caps=False)  # pescoço
+    p.tube((0, -0.095, a), (0, -0.109, a), 0.055, 0.055, "Latao", "root", seg=16)             # aro
+    p.tube((0, -0.109, a), (0, -0.1105, a), 0.045, 0.045, "Lente", "root", seg=16)            # lente
+    # cordinha de pulso: uma volta presa na tampa
+    loop = [(0, 0.133, a + 0.012), (0, 0.15, a + 0.018), (0, 0.17, a + 0.008),
+            (0, 0.175, a - 0.012), (0, 0.16, a - 0.024), (0, 0.14, a - 0.018), (0, 0.133, a - 0.008)]
+    for i in range(len(loop) - 1):
+        p.tube(loop[i], loop[i + 1], 0.0025, 0.0025, "Borracha", "root", seg=5, caps=False)
     return p.to_static(col)
 
 
