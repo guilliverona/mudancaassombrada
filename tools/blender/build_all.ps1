@@ -7,7 +7,7 @@ $here = Split-Path -Parent $MyInvocation.MyCommand.Path
 $scripts = "cida", "tiago", "marcelo",                    # jogáveis
            "bibliotecario", "imitador", "maestrina",       # fantasmas
            "valdemar",                                     # o chefe
-           "props", "story_props", "furniture",            # objetos e mobília
+           "props", "story_props", "furniture", "epoca",   # objetos, mobília e os objetos de 1927 (Mansão)
            "env_kit"                                       # paredes, portas, pisos, molduras
 foreach ($c in $scripts) {
     Write-Host "== $c"

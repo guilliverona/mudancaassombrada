@@ -5,7 +5,8 @@ Rodar (fecha sozinho ao terminar; passe nomes depois de -- para gerar só alguns
 
 Saídas: Art/Source/Environment/<Nome>/ e MudancaAssombrada/Assets/Art/Environment/<Nome>/SM_ENV_<Nome>.fbx
 
-Medidas do Art Bible: pé-direito 2,80 m · porta 0,90 × 2,10 m · módulo de parede 2 × 2,8 m ·
+Medidas: pé-direito 3,20 m (Mansão do Espelho, LEVEL_DESIGN_FASE1_MANSAO.md D2) · porta 1,20 × 2,40 m ·
+módulo de parede 2 × 3,2 m ·
 piso 2 × 2 m · molduras de espelho S/M/L = 0,6 / 1,2 / 2,0 m (âncoras do Layer Mirror).
 Os módulos encaixam a cada 2 m: origem no meio da base, a parede corre em X e a frente
 (o lado de dentro da sala) é -Y.
@@ -19,7 +20,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import blockout_common as bc  # noqa: E402
 
-WALL_W, WALL_H, WALL_T = 2.0, 2.8, 0.15
+WALL_W, WALL_H, WALL_T = 2.0, 3.2, 0.15
 # Porta maior que a do Art Bible (0,90 × 2,10): o Marcelo tem 1,98 m e 0,90 de largura, e carrega
 # móveis por elas. Decisão de jogo (26/10/2026); a porta dupla também ficou com 2,40 de altura.
 DOOR_W, DOOR_H = 1.2, 2.4
@@ -43,11 +44,15 @@ MATS = bc.Materials("MAT_ENV", {
     "Chama": ("#FFC98A", 0.0, 0.3, 2.0),            # 3200 K: luz quente = segurança
     "VidroNoite": ("#1E2A3A", 0.6, 0.1, 0.0),       # clarabóia: o céu da noite
     "TabuaSolta": ("#3A2C22", 0.0, 0.85, 0.0),
+    "Veludo": ("#7A1E2E", 0.0, 0.85, 0.0),         # cortina do palco
+    "VeludoEscuro": ("#4A1220", 0.0, 0.9, 0.0),
+    "EspelhoPortal": ("#3A6A66", 1.0, 0.1, 0.6),  # o portal da Câmara: o único vidro ciano da casa
 })
 
 DOOR2_W = 1.6               # porta dupla (Art Bible): por onde passam os móveis de dupla
-FLOOR_H = 3.1               # piso do 1º andar: pé-direito 2,80 + laje 0,30
-STAIR_RUN, STAIR_W, STAIR_STEPS = 5.0, 1.6, 16  # 31,9° (o Art Bible pede no máximo 32°)
+FLOOR_H = 3.6               # piso do nível de cima: pé-direito 3,20 + laje 0,40
+SLAB_T = 0.4
+STAIR_RUN, STAIR_STEPS = 6.0, 20  # 20 degraus de 0,18 × 0,30: 31,0° (o Art Bible pede no máximo 32°)
 
 
 def wall_body(p, x0, x1, z0, z1, mat):
@@ -70,7 +75,7 @@ def wallpaper_stripes(p, x0, x1):
     """Listras finas no papel de parede (só do lado de dentro, -Y): dá leitura no eco."""
     x = x0 + 0.1
     while x < x1 - 0.05:
-        p.box((x, -WALL_T / 2 - 0.003, 1.45), (0.03, 0.004, 2.5), "PapelVinhoEscuro", "root")
+        p.box((x, -WALL_T / 2 - 0.003, WALL_H / 2 + 0.05), (0.03, 0.004, WALL_H - 0.3), "PapelVinhoEscuro", "root")
         x += 0.25
 
 
@@ -83,7 +88,7 @@ def build_parede_lisa(col):
 
 
 def build_parede_porta(col):
-    """Parede de 2 m com o vão da porta (0,9 × 2,1 m) no meio e a guarnição de madeira."""
+    """Parede de 2 m com o vão da porta (1,2 × 2,4 m) no meio e a guarnição de madeira."""
     p = bc.Part("SM_ENV_ParedePorta", MATS)
     half = DOOR_W / 2
     wall_body(p, -WALL_W / 2, -half, 0, WALL_H, "PapelVinho")
@@ -102,7 +107,7 @@ def build_parede_porta(col):
 
 
 def build_porta(col):
-    """Folha da porta (0,9 × 2,1 m) com almofadas e maçaneta. Origem na DOBRADIÇA (x = 0),
+    """Folha da porta (1,2 × 2,4 m) com almofadas e maçaneta. Origem na DOBRADIÇA (x = 0),
     para girar ao abrir; a porta corre para +X."""
     p = bc.Part("SM_ENV_Porta", MATS)
     w, h, t = DOOR_W - 0.02, DOOR_H - 0.01, 0.045
@@ -164,7 +169,7 @@ def build_moldura(name, height, col):
 
 
 def build_parede_porta_dupla(col):
-    """Parede de 2 m com vão de PORTA DUPLA (1,6 × 2,1 m): sobra só 0,2 m de cada lado.
+    """Parede de 2 m com vão de PORTA DUPLA (1,6 × 2,4 m): sobra só 0,2 m de cada lado.
     Os móveis de dupla (armário, penteadeira) passam por aqui (LEVEL_DESIGN_FASE1.md §6.2)."""
     p = bc.Part("SM_ENV_ParedePortaDupla", MATS)
     half = DOOR2_W / 2
@@ -180,11 +185,12 @@ def build_parede_porta_dupla(col):
     return p.to_static(col)
 
 
-def build_escada(col):
-    """O lance inteiro da escada do hall: 16 degraus, 5,0 m de avanço, sobe 3,10 m (31,9°),
-    1,60 m de largura (passa o armário em dupla). Origem no meio da base do 1º degrau;
-    a escada SOBE para a frente (-Y no Blender = +Z no Unity). Degraus maciços até o chão."""
-    p = bc.Part("SM_ENV_Escada", MATS)
+def build_escada(col, name="Escada", width=3.0):
+    """Um lance inteiro: 20 degraus, 6,0 m de avanço, sobe 3,60 m (31,0°). A escadaria nobre tem
+    3,0 m de largura; as de serviço, 2,0 m. Origem no meio da base do 1º degrau; a escada SOBE
+    para a frente (-Y no Blender = +Z no Unity). Degraus maciços até o chão."""
+    STAIR_W = width
+    p = bc.Part(f"SM_ENV_{name}", MATS)
     run, rise = STAIR_RUN / STAIR_STEPS, FLOOR_H / STAIR_STEPS
     for i in range(STAIR_STEPS):
         top = (i + 1) * rise
@@ -214,11 +220,11 @@ def build_guarda_corpo(col):
 
 
 def build_laje(col):
-    """Laje de 2 × 2 × 0,30 m: o piso do 1º andar visto de baixo (e o forro). Origem no meio do
-    TOPO: colocada em Y = 3,10, a face de baixo fica no teto do térreo (2,80)."""
+    """Laje de 2 × 2 × 0,40 m: o piso do nível de cima visto de baixo (e o forro). Origem no meio
+    do TOPO: colocada em Y = 3,60, a face de baixo fica no teto do térreo (3,20)."""
     p = bc.Part("SM_ENV_Laje", MATS)
-    p.box((0, 0, -0.15), (2.0, 2.0, 0.3), "Reboco", "root")
-    p.box((0, 0, -0.29), (2.0, 0.06, 0.02), "Rodape", "root")                # viga aparente
+    p.box((0, 0, -SLAB_T / 2), (2.0, 2.0, SLAB_T), "Reboco", "root")
+    p.box((0, 0, -SLAB_T + 0.01), (2.0, 0.06, 0.02), "Rodape", "root")       # viga aparente
     return p.to_static(col)
 
 
@@ -282,24 +288,73 @@ def build_tabua_solta(col):
     return p.to_static(col)
 
 
+def build_palco(col):
+    """Palco do Salão de Baile: tablado de 8,0 × 1,6 × 0,40 m com boca de cena e cortinas vermelhas
+    (a arte de referência). Origem no meio da frente do tablado, no chão; o palco fica para +Y
+    no Blender (= para trás no Unity: encosta na parede do fundo)."""
+    p = bc.Part("SM_ENV_Palco", MATS)
+    w, d, h = 8.0, 1.6, 0.4
+    p.box((0, d / 2, h / 2), (w, d, h), "Mogno", "root")
+    for i in range(int(w / 0.25)):
+        p.box((-w / 2 + 0.125 + i * 0.25, d / 2, h + 0.005), (0.24, d - 0.02, 0.01), "Tabua" if i % 2 else "TabuaClara", "root")
+    p.box((0, -0.01, h - 0.05), (w, 0.03, 0.1), "Dourado", "root")              # friso da boca de cena
+    for side in (-1, 1):                                                        # cortinas laterais, presas
+        for k in range(5):
+            x = side * (w / 2 - 0.25 - k * 0.22)
+            p.box((x, 0.15, h + 1.35), (0.2, 0.12 + 0.04 * (k % 2), 2.7), "Veludo" if k % 2 else "VeludoEscuro", "root")
+    for k in range(int(w / 0.4)):                                               # bambolina (a faixa de cima)
+        p.box((-w / 2 + 0.2 + k * 0.4, 0.1, h + 2.85), (0.38, 0.1 + 0.04 * (k % 2), 0.4), "Veludo", "root")
+    p.box((0, 0.05, h + 3.07), (w + 0.2, 0.12, 0.06), "Dourado", "root")
+    return p.to_static(col)
+
+
+def build_moldura_portal(col):
+    """O portal da Câmara Secreta: moldura GG (2,4 m) dourada, com o vidro ciano e rachado.
+    É o único vidro ciano da casa (Art Bible: ciano é do fantasma). Mesma montagem da moldura L."""
+    p = bc.Part("SM_ENV_MolduraPortal", MATS)
+    h = 2.4
+    w = h * 0.62
+    b = h * 0.08
+    t = 0.07
+    zc = h / 2
+    p.box((0, -t / 2 + 0.01, zc), (w - b, 0.01, h - b), "EspelhoPortal", "root")
+    for x in (-(w - b) / 2, (w - b) / 2):
+        p.box((x, 0, zc), (b, t, h), "Dourado", "root")
+    for z in (b / 2, h - b / 2):
+        p.box((0, 0, z), (w, t, b), "Dourado", "root")
+    for x in (-(w - b) / 2, (w - b) / 2):
+        for z in (b / 2, h - b / 2):
+            p.ellipsoid((x, -t / 2, z), (b * 0.5, b * 0.25, b * 0.5), "Dourado", "root", seg=10, rings=6)
+    p.ellipsoid((0, -t / 2, h + b * 0.4), (b * 1.6, b * 0.35, b * 0.9), "Dourado", "root", seg=12, rings=6)
+    cx, cz = -0.12, 1.4
+    for angle, length in ((10, 0.5), (80, 0.6), (150, 0.7), (210, 0.55), (280, 0.8), (330, 0.45)):
+        a = math.radians(angle)
+        p.box((cx + math.cos(a) * length / 2, -t / 2 + 0.003, cz + math.sin(a) * length / 2),
+              (length, 0.004, 0.014), "Trinca", "root", rot_y=-angle)
+    return p.to_static(col)
+
+
 # (nome, construtor, altura, enquadramento das prévias, meio do objeto em Y)
 PIECES = [
-    ("ParedeLisa", build_parede_lisa, 2.8, 3.0, 0.0),
-    ("ParedePorta", build_parede_porta, 2.8, 3.0, 0.0),
-    ("Porta", build_porta, 2.1, 2.3, 0.0),
+    ("ParedeLisa", build_parede_lisa, 3.2, 3.4, 0.0),
+    ("ParedePorta", build_parede_porta, 3.2, 3.4, 0.0),
+    ("Porta", build_porta, 2.4, 2.6, 0.0),
     ("PisoXadrez", build_piso_xadrez, 0.1, 2.4, 0.0),
     ("PisoTabuas", build_piso_tabuas, 0.1, 2.4, 0.0),
     ("MolduraS", lambda c: build_moldura("MolduraS", 0.6, c), 0.7, 0.8, 0.0),
     ("MolduraM", lambda c: build_moldura("MolduraM", 1.2, c), 1.3, 1.4, 0.0),
     ("MolduraL", lambda c: build_moldura("MolduraL", 2.0, c), 2.2, 2.3, 0.0),
-    ("ParedePortaDupla", build_parede_porta_dupla, 2.8, 3.0, 0.0),
-    ("Escada", build_escada, 3.1, 5.6, -2.5),
+    ("ParedePortaDupla", build_parede_porta_dupla, 3.2, 3.4, 0.0),
+    ("Escada", build_escada, 3.6, 6.6, -3.0),
+    ("EscadaServico", lambda c: build_escada(c, "EscadaServico", 2.0), 3.6, 6.6, -3.0),
     ("GuardaCorpo", build_guarda_corpo, 1.0, 2.2, 0.0),
-    ("Laje", build_laje, 0.3, 2.4, 0.0),
+    ("Laje", build_laje, 0.4, 2.4, 0.0),
     ("MolduraLRachada", build_moldura_rachada, 2.2, 2.3, 0.0),
     ("ArandelaGas", build_arandela, 0.45, 0.6, -0.07),
     ("ClaraboiaGaleria", build_claraboia, 0.25, 2.4, 0.0),
     ("TabuaSolta", build_tabua_solta, 0.05, 2.2, 0.0),
+    ("Palco", build_palco, 3.6, 8.4, 0.8),
+    ("MolduraPortal", build_moldura_portal, 2.7, 2.8, 0.0),
 ]
 
 
