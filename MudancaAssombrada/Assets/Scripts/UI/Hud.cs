@@ -36,6 +36,14 @@ namespace MudancaAssombrada
         [Tooltip("Os acontecimentos que VOCÊ percebeu (CueListener), com o sentido por onde chegaram.")]
         [SerializeField] Text cuesText;
 
+        [Header("Hotbar (embaixo, no meio)")]
+        [Tooltip("A barra inteira: aparece quando algo muda e some sozinha (a HUD é mínima).")]
+        [SerializeField] CanvasGroup hotbar;
+        [SerializeField] Image[] hotbarSlots;
+        [SerializeField] Text[] hotbarLabels;
+        [Tooltip("Segundos na tela depois da última troca de item.")]
+        [SerializeField] float hotbarShowSeconds = 3f;
+
         [Header("Regras de exibição")]
         [Tooltip("Abaixo disto (em segundos), o relógio fica na cor de perigo.")]
         [SerializeField] float dangerTime = 30f;
@@ -157,6 +165,7 @@ namespace MudancaAssombrada
                 staminaBar.SetActive(false);
                 hint.SetActive(false);
                 if (cuesText != null) cuesText.gameObject.SetActive(false);
+                UpdateHotbar(null);
                 return;
             }
 
@@ -173,6 +182,37 @@ namespace MudancaAssombrada
             UpdateHint(prompt);
             UpdateCharacter(player.Character);
             UpdateCues(player.Cues);
+            UpdateHotbar(player.GetComponent<Hotbar>());
+        }
+
+        // Três quadradinhos: o número da tecla e o item. O da mão ganha a borda de "selecionado".
+        // Só aparece por uns segundos depois de trocar ou pegar algo, e some devagar (FadeSlow).
+        void UpdateHotbar(Hotbar bar)
+        {
+            if (hotbar == null) return; // HUD antiga, sem a peça: recrie os prefabs
+
+            bool show = bar != null && !PauseMenu.IsOpen && !bar.IsEmpty
+                        && Time.time - bar.ChangedAt < hotbarShowSeconds;
+            hotbar.alpha = Mathf.MoveTowards(hotbar.alpha, show ? 1f : 0f, Time.unscaledDeltaTime / Theme.FadeSlow);
+            if (bar == null || hotbar.alpha <= 0f) return;
+
+            var flashlight = bar.GetComponent<Flashlight>();
+            for (int i = 0; i < hotbarSlots.Length && i < hotbarLabels.Length; i++)
+            {
+                var item = bar.Get(i);
+                bool inHand = i == bar.Selected;
+                hotbarSlots[i].GetComponent<Outline>().effectColor = inHand ? Theme.HighlightColor : Theme.BorderColor;
+                hotbarSlots[i].color = inHand ? Theme.RaisedColor : Theme.FieldColor;
+
+                sb.Clear();
+                sb.Append("<size=").Append(Theme.NoteSize - 4).Append('>')
+                  .Append(Colored(GameInput.KeyLabel(GameInput.HotbarSlot[i]), Theme.MutedColor)).Append("</size>\n");
+                if (item == HotbarItem.Flashlight && flashlight != null)
+                    sb.Append("Lanterna\n").Append(Colored($"{Mathf.CeilToInt(flashlight.Charge01 * 100f)}%",
+                        flashlight.Charge01 < 0.2f ? Theme.DangerColor : Theme.MutedColor));
+                SetText(hotbarLabels[i], sb.ToString());
+                hotbarLabels[i].color = inHand ? Theme.HighlightColor : Theme.TextColor;
+            }
         }
 
         void UpdateStamina(PlayerMovement movement)
@@ -213,8 +253,11 @@ namespace MudancaAssombrada
             {
                 int charge = Mathf.CeilToInt(flashlight.Charge01 * 100f);
                 Color color = flashlight.Charge01 < 0.2f ? Theme.DangerColor : flashlight.IsOn ? Theme.HighlightColor : Theme.MutedColor;
+                string state = flashlight.Place == FlashlightPlace.Stowed ? " (guardada)"
+                             : !flashlight.IsOn ? " (desligada)"
+                             : flashlight.Place == FlashlightPlace.Chest ? " (no colete)" : "";
                 sb.Append("\n[").Append(GameInput.KeyLabel(GameInput.Flashlight)).Append("] Lanterna ")
-                  .Append(Colored($"{charge}%{(flashlight.IsOn ? "" : " (desligada)")}", color));
+                  .Append(Colored($"{charge}%{state}", color));
             }
 
             // Trocar de personagem no meio da partida é só para TESTES (no roteiro, cada jogador
@@ -229,7 +272,8 @@ namespace MudancaAssombrada
                     string status = i == switcher.CurrentIndex ? " (você)"
                                   : CharacterSwitcher.IsTaken(i, switcher) ? " (ocupado)" : "";
                     sb.Append("\n<color=#").Append(ColorUtility.ToHtmlStringRGB(Theme.Muted(c.color))).Append('>')
-                      .Append('[').Append(i + 1).Append("] ").Append(c.displayName).Append("</color>").Append(status);
+                      .Append('[').Append(GameInput.KeyLabel(GameInput.SelectCharacter[i])).Append("] ")
+                      .Append(c.displayName).Append("</color>").Append(status);
                 }
                 sb.Append("</size>");
             }

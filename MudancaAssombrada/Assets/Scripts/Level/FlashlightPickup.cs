@@ -6,7 +6,8 @@ namespace MudancaAssombrada
 {
     // Uma LANTERNA no caminhão ou um pacote de PILHAS pela casa (Interagir). Some quando pego e
     // volta quando a fase reinicia.
-    //   - Lanterna: dá a lanterna (Flashlight), com a bateria cheia. Quem já tem uma não pega outra.
+    //   - Lanterna: vai para a hotbar (Flashlight.ServerGive), com a bateria cheia. Quem já tem uma
+    //     (ou está com a hotbar cheia) não pega outra.
     //   - Pilhas: recarregam um pedaço da lanterna de quem pega (precisa ter uma).
     // A Cida vê a dica "Não preciso." (a vantagem dela: enxerga pelo eco, sem luz nenhuma).
     // ESCONDIDAS (startsHidden): começam invisíveis e só aparecem quando algo as revela (a gaveta
@@ -73,8 +74,12 @@ namespace MudancaAssombrada
             var flashlight = player.GetComponent<Flashlight>();
             if (flashlight == null) return InteractionPrompt.None;
             if (givesFlashlight)
-                return flashlight.Has ? new InteractionPrompt("Já tenho uma lanterna", false)
-                                      : new InteractionPrompt("Pegar lanterna", true);
+            {
+                if (flashlight.Has) return new InteractionPrompt("Já tenho uma lanterna", false);
+                return player.TryGetComponent(out Hotbar hotbar) && !hotbar.HasRoom
+                    ? new InteractionPrompt("Lanterna (hotbar cheia)", false)
+                    : new InteractionPrompt("Pegar lanterna", true);
+            }
             if (!flashlight.Has) return new InteractionPrompt("Pilhas (preciso de uma lanterna)", false);
             return flashlight.Charge01 >= 0.99f ? new InteractionPrompt("Pilhas (bateria cheia)", false)
                                                 : new InteractionPrompt("Trocar as pilhas", true);
@@ -94,8 +99,7 @@ namespace MudancaAssombrada
 
             if (givesFlashlight)
             {
-                if (flashlight.Has) return;
-                flashlight.ServerGive();
+                if (flashlight.Has || !flashlight.ServerGive()) return; // já tem, ou a hotbar está cheia
             }
             else
             {

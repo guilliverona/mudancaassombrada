@@ -235,10 +235,20 @@ segurado até o fim, a condição volta a `Normal` e o fantasma percebe que a v�
   12 m); os próprios sons, voz e respiração = nada; outro andar (mais de 2,5 m de altura) = nada. No
   máximo 6 marcas, e uma fraca nunca tira uma forte. O `VibrationRing` continua só para a chamada da bengala.
 
+### Hotbar
+O `Hotbar` no Player guarda 3 itens pequenos (`HotbarItem`), empacotados num `uint` de rede que o
+host escreve; qual espaço está na mão é do dono (teclas 1-2-3, `GameInput.HotbarSlot`; rodinha e
+direcional para os lados passam de espaço; a mesma tecla de novo guarda). As regras ficam em
+`HotbarRules` (testes em `HotbarRulesTests`). Item novo: um nome no `HotbarItem`, dar com
+`ServerAdd` e o componente do item pergunta `InHand`/`HandsBusy`. Os números eram da troca de
+personagem de teste, que foi para F1-F3.
+
 ### Lanterna, pilhas e coisas tocáveis
 A lanterna é o componente `Flashlight` no Player (tecla L, `GameInput.Flashlight`), mas só funciona
-depois de pegar uma: o host decide quem tem (`ServerGive`), o dono liga e gasta a bateria, e todos
-veem a luz falhando quando ela está fraca. Os itens do chão são `FlashlightPickup` (lanterna ou
+depois de pegar uma: o host a põe na hotbar (`ServerGive`), o dono liga e gasta a bateria, e todos
+veem a luz falhando quando ela está fraca. Ela fica na **mão** (espaço escolhido), no **colete**
+(estava na mão e pegou um móvel: mais fraca, aponta para a frente do corpo) ou **guardada** (apaga);
+com ela guardada, a tecla L tira do cinto e acende. Os itens do chão são `FlashlightPickup` (lanterna ou
 pilhas, some ao pegar e volta no reinício). Um objeto que dá para **tocar** (o piano) é um
 `PlayableInstrument`: o host emite um `SoundEvent` de música e o `SoundVoice` do objeto diz o arquivo.
 Luz que treme (arandela, vela): `LightFlicker` na `Light`.

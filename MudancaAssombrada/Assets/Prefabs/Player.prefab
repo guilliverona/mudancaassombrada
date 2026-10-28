@@ -402,6 +402,7 @@ MonoBehaviour:
   crouchWalkBackThigh: 20
   crouchStepsPerMeter: 0.9
   crouchStepLift: 0.06
+  keepHandsAboveFloor: 1
 --- !u!1 &5320532007448000455
 GameObject:
   m_ObjectHideFlags: 0
@@ -949,6 +950,7 @@ GameObject:
   - component: {fileID: 4332664602266559773}
   - component: {fileID: 1531006138930205923}
   - component: {fileID: 8846661384662322400}
+  - component: {fileID: 6513554444087942537}
   - component: {fileID: 62019349352528400}
   - component: {fileID: 4339543430742910769}
   - component: {fileID: 4202566152706859166}
@@ -1152,10 +1154,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 03e363ed6a75a724e9918bf0ea03dba4, type: 3}
   m_Name: 
   m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.VibrationVision
-  ringLifetime: 2.5
+  tremorShader: {fileID: 0}
+  weakSeconds: 1.2
+  strongSeconds: 2.5
+  maxMarks: 6
   weakColor: {r: 1, g: 0.85, b: 0.3, a: 1}
   strongColor: {r: 1, g: 0.2, b: 0.3, a: 1}
-  visibleSounds: 377
 --- !u!114 &468701515564093837
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1252,6 +1256,19 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.SurfaceTag
   type: 6
+--- !u!114 &6513554444087942537
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7645197041336742590}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 27d31dbc2d4011a48b852b0fb826a260, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.Hotbar
+  ShowTopMostFoldoutHeaderGroup: 1
 --- !u!114 &62019349352528400
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1268,6 +1285,9 @@ MonoBehaviour:
   beam: {fileID: 254650978594259842}
   batterySeconds: 100
   flickerBelow: 0.2
+  chestIntensity: 0.6
+  chestBelowEyes: 0.35
+  chestTilt: 12
 --- !u!114 &4339543430742910769
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1300,7 +1320,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Unity.Netcode.Runtime::Unity.Netcode.NetworkObject
-  GlobalObjectIdHash: 59810418
+  GlobalObjectIdHash: 2888404261
   InScenePlacedSourceGlobalObjectIdHash: 0
   m_InScenePlacedDisabledByDefault: 0
   DeferredDespawnTick: 0

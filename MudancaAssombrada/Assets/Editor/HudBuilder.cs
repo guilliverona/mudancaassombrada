@@ -14,7 +14,7 @@ namespace MudancaAssombrada.Editor
     //   │          ┌ bilhete do Seu Valdemar ┐                 │
     //   │                        ·                             │
     //   │                   [E] Pegar Armário                  │
-    //   │ ▬▬▬▬ (estamina)                                      │
+    //   │ ▬▬▬▬ (estamina)        [1][2][3] (hotbar)            │
     //   └──────────────────────────────────────────────────────┘
     public static class HudBuilder
     {
@@ -80,6 +80,29 @@ namespace MudancaAssombrada.Editor
             cues.alignment = TextAnchor.LowerLeft;
             UiBuilder.Place(cues, Vector2.zero, Vector2.zero, new Vector2(Margin, Margin + 24), new Vector2(760, 180));
 
+            // --- Embaixo, no meio: a hotbar (3 espaços; aparece ao trocar de item e some sozinha) ---
+            const float SlotSize = 72f, SlotGap = 10f;
+            var hotbar = new GameObject("Hotbar", typeof(RectTransform), typeof(CanvasGroup));
+            hotbar.transform.SetParent(canvas, false);
+            float hotbarWidth = HotbarRules.Slots * SlotSize + (HotbarRules.Slots - 1) * SlotGap;
+            UiBuilder.Place(hotbar.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0, Margin), new Vector2(hotbarWidth, SlotSize));
+            var group = hotbar.GetComponent<CanvasGroup>();
+            group.alpha = 0f;
+            group.interactable = false;
+            group.blocksRaycasts = false;
+            var slots = new Object[HotbarRules.Slots];
+            var labels = new Object[HotbarRules.Slots];
+            for (int i = 0; i < HotbarRules.Slots; i++)
+            {
+                var slot = UiBuilder.CreateImage($"Espaço {i + 1}", hotbar.transform, FieldColor);
+                slot.gameObject.AddComponent<Outline>().effectColor = BorderColor;
+                UiBuilder.Place(slot, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(i * (SlotSize + SlotGap), 0), new Vector2(SlotSize, SlotSize));
+                var label = UiBuilder.CreateText("Item", slot.transform, "", NoteSize - 4);
+                UiBuilder.Stretch(label);
+                slots[i] = slot;
+                labels[i] = label;
+            }
+
             // --- Tela de fim de partida (cobre tudo) ---
             var endScreen = UiBuilder.CreateImage("Fim de Partida", canvas, new Color(0, 0, 0, 0.75f));
             UiBuilder.Stretch(endScreen);
@@ -104,6 +127,9 @@ namespace MudancaAssombrada.Editor
             EditorTools.SetReference(hud, "hintKey", keyText);
             EditorTools.SetReference(hud, "hintAction", action);
             EditorTools.SetReference(hud, "cuesText", cues);
+            EditorTools.SetReference(hud, "hotbar", group);
+            EditorTools.SetReferences(hud, "hotbarSlots", slots);
+            EditorTools.SetReferences(hud, "hotbarLabels", labels);
 
             // A HUD não tem botões: não precisa "ouvir" cliques (e assim não atrapalha a pausa).
             Object.DestroyImmediate(canvas.GetComponent<GraphicRaycaster>());
