@@ -1,3 +1,4 @@
+using System.Linq;
 using Unity.AI.Navigation;
 using Unity.Netcode;
 using UnityEditor;
@@ -77,7 +78,9 @@ namespace MudancaAssombrada.Editor
 
         // Cria e salva uma cena de fase: sistemas, luz, câmera de espera, chão, 3 marcadores de nascer,
         // a pasta de objetivos e o NavMesh. "buildHouse" (opcional) monta o resto antes do bake.
-        public static UnityEngine.SceneManagement.Scene NewLevelScene(string scenePath, System.Action buildHouse)
+        // "configureNavMesh" (opcional) ajusta o NavMesh antes do bake (ex.: resolução mais fina).
+        public static UnityEngine.SceneManagement.Scene NewLevelScene(string scenePath, System.Action buildHouse,
+                                                                      System.Action<NavMeshSurface> configureNavMesh = null)
         {
             string before = StableAssets.Snapshot(scenePath); // para não "sujar" o Git se sair igual
             EnsureSystemsPrefab();
@@ -119,7 +122,15 @@ namespace MudancaAssombrada.Editor
             var surface = navGo.AddComponent<NavMeshSurface>();
             surface.collectObjects = CollectObjects.All;
             surface.useGeometry = NavMeshCollectGeometry.PhysicsColliders;
+            configureNavMesh?.Invoke(surface);
+            // Os NavMeshObstacle (móveis, o relógio, o espelho-porta) são do jogo rodando: abrem o
+            // buraco onde a coisa ESTÁ. Ligados no bake, o buraco fica gravado no mapa para sempre,
+            // mesmo depois que o móvel sai dali (e o espelho-porta aberto continuaria fechando o vão).
+            var obstacles = Object.FindObjectsByType<UnityEngine.AI.NavMeshObstacle>().Where(o => o.enabled).ToArray();
+            foreach (var o in obstacles) o.enabled = false;
+            Debug.Log($"NavMesh: bake com {obstacles.Length} obstáculo(s) desligado(s): {string.Join(", ", obstacles.Select(o => o.name))}");
             surface.BuildNavMesh();
+            foreach (var o in obstacles) o.enabled = true;
             SaveNavMesh(surface, scenePath.Replace(".unity", "_NavMesh.asset"));
 
             EditorSceneManager.SaveScene(scene, scenePath);

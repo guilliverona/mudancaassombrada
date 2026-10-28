@@ -12,9 +12,9 @@ using UnityEngine.Events;
 namespace MudancaAssombrada.Editor
 {
     // Capítulo 1: A CASA DO ESPELHO (o Casarão Taborda, o Imitador). Cria os prefabs que a casa usa
-    // e a cena, seguindo o LEVEL_DESIGN_FASE1.md (planta da §6, cômodos da §7, móveis da §11).
-    // Depois de criada, a cena é sua: mova paredes, espelhos e móveis à vontade, e refaça o NavMesh
-    // (objeto "NavMesh" > Bake).
+    // e a cena. A planta é a MANSÃO DO ESPELHO V1.2 (LEVEL_DESIGN_FASE1_MANSAO.md), montada a partir
+    // de tools/level/mansao_v1_2.json no MirrorHouseBuilder.Mansao.cs. Depois de criada, a cena é sua:
+    // mova paredes, espelhos e móveis à vontade, e refaça o NavMesh (objeto "NavMesh" > Bake).
     //
     //   Assets/Prefabs/Casa       kit do Blender: paredes (lisa, porta, porta dupla), porta, pisos,
     //                             laje, escada, guarda-corpo, arandela, clarabóia, tábua solta, relógio
@@ -26,13 +26,11 @@ namespace MudancaAssombrada.Editor
     //
     // Como nos outros prefabs do mundo: só são criados se ainda NÃO existem.
     //
-    // A planta (grid de 2 m; +Z = fundo da casa, -Z = rua; ver o desenho no LEVEL_DESIGN_FASE1.md):
-    //   térreo (Y 0):  Sala de Ensaio | Hall dos Retratos (pé-direito duplo ao sul) | Sala de Jantar
-    //                  Copa           | Hall norte (sob a galeria: piano, relógio)  |
-    //                  Corredor dos Espelhos (16 m) atravessando o fundo
-    //   1º andar (Y 3,10, só Z 0..6): Camarim Grande | Galeria / Corredor dos Camarins | Camarim do Suplente
-    //   A escada sobe pela parede leste do hall (Z -5 → 0); o caminhão fica na rua, em Z = -12.
-    public static class MirrorHouseBuilder
+    // A planta (grid de 2 m; +Z = fundo da casa, -Z = rua; ver as plantas no LEVEL_DESIGN_FASE1_MANSAO.md):
+    //   térreo (Y 0): entrada, grande hall e escadaria (pé-direito duplo), jantar, cozinha, retratos,
+    //                 música, depósito, corredores; o caminhão no pátio leste
+    //   nível de cima (Y 3,6, sobre o morro): galeria dos espelhos, biblioteca, salão, camarins, câmara
+    public static partial class MirrorHouseBuilder
     {
         public const string SceneName = "CasaDoEspelho";
         public const string ScenePath = EditorTools.ScenesFolder + "/" + SceneName + ".unity";
@@ -44,7 +42,9 @@ namespace MudancaAssombrada.Editor
         const string FloorTilePath = "Assets/Prefabs/Casa/Piso Xadrez.prefab";
         const string PlankFloorPath = "Assets/Prefabs/Casa/Piso Tábuas.prefab";
         const string SlabPath = "Assets/Prefabs/Casa/Laje.prefab";
-        const string StairsPath = "Assets/Prefabs/Casa/Escada.prefab";
+        const string StairsPath = "Assets/Prefabs/Casa/Escadaria.prefab";          // a nobre, 3,0 m
+        const string ServiceStairsPath = "Assets/Prefabs/Casa/Escada de Serviço.prefab"; // 2,0 m
+        const string StagePath = "Assets/Prefabs/Cenário/Palco.prefab";
         const string RailingPath = "Assets/Prefabs/Casa/Guarda-corpo.prefab";
         const string SconcePath = "Assets/Prefabs/Casa/Arandela a Gás.prefab";
         const string SkylightPath = "Assets/Prefabs/Casa/Clarabóia.prefab";
@@ -56,6 +56,10 @@ namespace MudancaAssombrada.Editor
         const string VanityPath = "Assets/Prefabs/Móveis/Penteadeira.prefab";
         const string RackPath = "Assets/Prefabs/Móveis/Arara de Figurino.prefab";
         const string BigBoxPath = "Assets/Prefabs/Móveis/Caixa G.prefab";
+        const string SmallCarryBoxPath = "Assets/Prefabs/Móveis/Caixa de Figurinos.prefab";
+        const string TourTrunkPath = "Assets/Prefabs/Móveis/Baú-camarim.prefab";
+        const string CarryArmchairPath = "Assets/Prefabs/Móveis/Poltrona Coberta.prefab";
+        const string ReadingTablePath = "Assets/Prefabs/Móveis/Mesa de Leitura.prefab";
         const string PosterPath = "Assets/Prefabs/Relíquias/Cartaz do Teatro.prefab";
         const string RelicPosterPath = "Assets/Prefabs/Relíquias/Cartaz do Teatro (relíquia).prefab";
         const string PianoPath = "Assets/Prefabs/Cenário/Piano de Armário.prefab";
@@ -93,12 +97,13 @@ namespace MudancaAssombrada.Editor
         public const string ImitatorPath = "Assets/Prefabs/Fantasmas/Fantasma Imitador.prefab";
         public const string ClockPath = "Assets/Prefabs/Casa/Relógio de Pêndulo.prefab";
 
-        const float WallWidth = 2f, WallHeight = 2.8f, WallThickness = 0.15f; // o kit (tools/blender)
+        const float WallWidth = 2f, WallHeight = 3.2f, WallThickness = 0.15f; // o kit (tools/blender)
         // Portas maiores que as do Art Bible (0,90 × 2,10): o Marcelo (1,98 m, 0,90 de largura)
         // precisa passar, carregando móvel. Medidas do kit em tools/blender/build_env_kit_blockout.py.
         const float DoorWidth = 1.2f, DoorHeight = 2.4f, DoubleDoorWidth = 1.6f;
-        const float FloorY = 3.1f;            // piso do 1º andar: pé-direito 2,80 + laje 0,30
-        const float StairRun = 5f;            // a escada avança 5 m e sobe 3,10 m (31,8°)
+        const float FloorY = 3.6f;            // piso do nível de cima: pé-direito 3,20 + laje 0,40
+        const float SlabThickness = 0.4f;
+        const float StairRun = 6f;            // as escadas avançam 6 m e sobem 3,60 m (31,0°)
         const float ImitatorHeight = 2.3f;    // a ficha do Imitador (ART_BIBLE.md)
         const float Inside = WallThickness / 2 + 0.04f; // afasta da parede o que encosta nela (espelhos)
         const string ChapterPath = "Assets/Data/Capítulos/1 - A Casa do Espelho.asset";
@@ -126,9 +131,10 @@ namespace MudancaAssombrada.Editor
             LevelPrefabsBuilder.Build(DoorPath, false, () => KitPiece("Porta", "Environment/Porta/SM_ENV_Porta", DoorColliders));
             LevelPrefabsBuilder.Build(FloorTilePath, false, () => KitPiece("Piso Xadrez", "Environment/PisoXadrez/SM_ENV_PisoXadrez", null));
             LevelPrefabsBuilder.Build(PlankFloorPath, false, () => KitPiece("Piso Tábuas", "Environment/PisoTabuas/SM_ENV_PisoTabuas", null));
-            LevelPrefabsBuilder.Build(SlabPath, false, () => KitPiece("Laje", "Environment/Laje/SM_ENV_Laje",
-                r => Box(r, new Vector3(0, -0.15f, 0), new Vector3(2f, 0.3f, 2f))));
-            LevelPrefabsBuilder.Build(StairsPath, false, BuildStairs);
+            LevelPrefabsBuilder.Build(SlabPath, false, () => KitPiece("Laje", "Environment/Laje/SM_ENV_Laje", SlabColliders));
+            LevelPrefabsBuilder.Build(StairsPath, false, () => BuildStairs("Escadaria", "Environment/Escada/SM_ENV_Escada", 3f));
+            LevelPrefabsBuilder.Build(ServiceStairsPath, false, () => BuildStairs("Escada de Serviço", "Environment/EscadaServico/SM_ENV_EscadaServico", 2f));
+            LevelPrefabsBuilder.Build(StagePath, false, BuildStage);
             LevelPrefabsBuilder.Build(RailingPath, false, () => KitPiece("Guarda-corpo", "Environment/GuardaCorpo/SM_ENV_GuardaCorpo",
                 r => Box(r, new Vector3(0, 0.5f, 0), new Vector3(2f, 1f, 0.1f))));
             LevelPrefabsBuilder.Build(SconcePath, false, BuildSconce);
@@ -180,13 +186,19 @@ namespace MudancaAssombrada.Editor
             LevelPrefabsBuilder.Build(VanityPath, false, () => CarryProp("Penteadeira", "Props/Penteadeira/SM_PRP_Penteadeira", new Vector3(1.2f, 1.6f, 0.5f), 2.5f));
             LevelPrefabsBuilder.Build(RackPath, false, () => CarryProp("Arara de Figurino", "Props/AraraFigurino/SM_PRP_AraraFigurino", new Vector3(1.4f, 1.7f, 0.5f), 1.5f));
             LevelPrefabsBuilder.Build(BigBoxPath, false, () => CarryProp("Caixa G", "Props/CaixaG/SM_PRP_CaixaG", new Vector3(0.6f, 0.6f, 0.6f), 2f));
+            LevelPrefabsBuilder.Build(SmallCarryBoxPath, false, () => CarryProp("Caixa de Figurinos", "Props/CaixaP/SM_PRP_CaixaP", new Vector3(0.4f, 0.4f, 0.4f), 1f));
+            LevelPrefabsBuilder.Build(TourTrunkPath, false, () => CarryProp("Baú-camarim de Turnê", "Props/Bau/SM_PRP_Bau", new Vector3(0.9f, 0.7f, 0.5f), 2f));
+            LevelPrefabsBuilder.Build(CarryArmchairPath, false, () => CarryProp("Poltrona Coberta", "Props/MovelCobertoA/SM_PRP_MovelCobertoA", new Vector3(0.9f, 1.0f, 0.85f), 2f));
+            LevelPrefabsBuilder.Build(ReadingTablePath, false, () => CarryProp("Mesa de Leitura", "Props/MesaLeitura/SM_PRP_MesaLeitura", new Vector3(2.0f, 0.78f, 0.9f), 2.5f));
             LevelPrefabsBuilder.Build(PosterPath, false, BuildPoster);
             LevelPrefabsBuilder.Build(RelicPosterPath, false, BuildRelicPoster);
             LevelPrefabsBuilder.Build(ImitatorPath, false, BuildImitator);
 
+            BuildMansionPrefabs();
+
             UpgradeClock();
             UpgradeMirrors();
-            UpgradeDoorColliders();
+            UpgradeKitColliders();
             UpgradeSurfaceTags();
             LevelPrefabsBuilder.UpgradeGhost(ImitatorPath, breathes: false); // Imitador antigo ganha o que faltar
             AssetDatabase.SaveAssets();
@@ -227,37 +239,45 @@ namespace MudancaAssombrada.Editor
             Box(root, new Vector3(0, (WallHeight + DoorClearance) / 2, 0), new Vector3(opening, WallHeight - DoorClearance, WallThickness));
         }
 
-        // As portas cresceram (1,20 × 2,40) e a colisão de cima vai até 2,50: paredes com porta e a
-        // folha da porta feitas antes ganham as colisões novas, sem mexer no resto do prefab.
-        static void UpgradeDoorColliders()
+        // Laje de 0,40 m com a origem no topo: a colisão desce a espessura inteira.
+        static void SlabColliders(GameObject root) =>
+            Box(root, new Vector3(0, -SlabThickness / 2, 0), new Vector3(2f, SlabThickness, 2f));
+
+        // O kit muda de medida (portas de 1,20 × 2,40; depois pé-direito de 3,20 e laje de 0,40 da
+        // Mansão): os prefabs feitos antes ganham as colisões novas, sem mexer no resto do prefab.
+        // Compara com as caixas que o construtor faria hoje; só regrava o que está diferente.
+        static void UpgradeKitColliders()
         {
-            var doors = new (string path, System.Action<GameObject> colliders)[]
+            var kit = new (string path, System.Action<GameObject> colliders)[]
             {
+                (WallPlainPath, WallPlainColliders),
                 (WallDoorPath, r => WallOpeningColliders(r, DoorWidth)),
                 (WallDoubleDoorPath, r => WallOpeningColliders(r, DoubleDoorWidth)),
                 (DoorPath, DoorColliders),
+                (SlabPath, SlabColliders),
             };
-            foreach (var (path, colliders) in doors)
+            foreach (var (path, colliders) in kit)
             {
                 if (Load(path) == null) continue;
+                var expected = new GameObject("medida");
+                colliders(expected);
                 var root = PrefabUtility.LoadPrefabContents(path);
                 try
                 {
                     var before = root.GetComponents<BoxCollider>();
-                    bool isWall = path != DoorPath;
-                    float opening = path == WallDoorPath ? DoorWidth : DoubleDoorWidth;
-                    bool upToDate = isWall ? before.Any(b => Mathf.Approximately(b.center.y, (WallHeight + DoorClearance) / 2) &&
-                                                             Mathf.Approximately(b.size.x, opening))
-                                           : before.Any(b => Mathf.Approximately(b.size.y, DoorHeight));
+                    var want = expected.GetComponents<BoxCollider>();
+                    bool upToDate = before.Length == want.Length && want.All(w => before.Any(b =>
+                        Vector3.Distance(b.center, w.center) < 0.001f && Vector3.Distance(b.size, w.size) < 0.001f));
                     if (upToDate) continue;
                     foreach (var b in before) Object.DestroyImmediate(b);
                     colliders(root);
                     PrefabUtility.SaveAsPrefabAsset(root, path);
-                    Debug.Log($"Porta maior (1,20 × 2,40, colisão até 2,50): {path}");
+                    Debug.Log($"Colisão do kit atualizada (pé-direito {WallHeight}, laje {SlabThickness}, porta {DoorWidth} × {DoorHeight}): {path}");
                 }
                 finally
                 {
                     PrefabUtility.UnloadPrefabContents(root);
+                    Object.DestroyImmediate(expected);
                 }
             }
         }
@@ -366,6 +386,9 @@ namespace MudancaAssombrada.Editor
                 (VanityPath, SurfaceType.Wood), (PianoPath, SurfaceType.Wood), (GramophonePath, SurfaceType.Metal),
                 (LevelPrefabsBuilder.WardrobePath, SurfaceType.Wood), (LevelPrefabsBuilder.ChairPath, SurfaceType.Wood),
                 (DiningTablePath, SurfaceType.Wood), (DiningChairPath, SurfaceType.Wood), (TrunkPath, SurfaceType.Wood),
+                // Mansão
+                (TourTrunkPath, SurfaceType.Wood), (ReadingTablePath, SurfaceType.Wood), (CarryArmchairPath, SurfaceType.Fabric),
+                (StagePath, SurfaceType.Wood), (ShelfPath, SurfaceType.Wood), (BooksPath, SurfaceType.Fabric),
             };
             foreach (var (path, type) in tags)
             {
@@ -432,12 +455,13 @@ namespace MudancaAssombrada.Editor
         static void DoorColliders(GameObject root) =>
             Box(root, new Vector3(DoorWidth / 2, DoorHeight / 2, 0), new Vector3(DoorWidth, DoorHeight, 0.05f));
 
-        // A escada: o modelo tem degraus, mas quem anda pisa numa RAMPA invisível (31,8°, abaixo
-        // dos 45° que o jogador e o NavMesh sobem). Assim o fantasma também sobe, sem NavMeshLink.
+        // Uma escada: o modelo tem degraus, mas quem anda pisa numa RAMPA invisível (31,0°, abaixo
+        // dos 45° que o jogador e o NavMesh sobem). Assim o fantasma também sobe.
         // Debaixo da rampa, três blocos fecham o vão (ninguém entra embaixo da escada).
-        static GameObject BuildStairs()
+        // A escadaria nobre tem 3,0 m de largura; as de serviço, 2,0 m (o kit gera as duas).
+        static GameObject BuildStairs(string name, string art, float width)
         {
-            var root = KitPiece("Escada", "Environment/Escada/SM_ENV_Escada", null);
+            var root = KitPiece(name, art, null);
             float angle = Mathf.Atan2(FloorY, StairRun) * Mathf.Rad2Deg;
             float length = Mathf.Sqrt(FloorY * FloorY + StairRun * StairRun);
             var ramp = new GameObject("Rampa");
@@ -449,9 +473,21 @@ namespace MudancaAssombrada.Editor
             const float thickness = 1f;
             Vector3 up = ramp.transform.localRotation * Vector3.up;
             ramp.transform.localPosition = new Vector3(0, FloorY / 2, StairRun / 2) - up * (thickness / 2);
-            Box(ramp, Vector3.zero, new Vector3(1.6f, thickness, length));
-            foreach (var (from, height) in new[] { (1.6f, 0.95f), (3.2f, 1.95f), (4.2f, 2.55f) })
-                Box(root, new Vector3(0, height / 2, (from + StairRun) / 2), new Vector3(1.6f, height, StairRun - from));
+            Box(ramp, Vector3.zero, new Vector3(width, thickness, length));
+            // Os blocos ficam um pouco abaixo da rampa (5 cm): quem pisa, pisa na rampa.
+            foreach (float part in new[] { 0.32f, 0.64f, 0.84f })
+            {
+                float from = part * StairRun, height = from * FloorY / StairRun - 0.05f;
+                Box(root, new Vector3(0, height / 2, (from + StairRun) / 2), new Vector3(width, height, StairRun - from));
+            }
+            return root;
+        }
+
+        // O palco do Salão de Baile: tablado de 0,40 m (sobe-se andando: é menos que o degrau do
+        // jogador) e as cortinas da boca de cena, que não têm colisão.
+        static GameObject BuildStage()
+        {
+            var root = KitPiece("Palco", "Environment/Palco/SM_ENV_Palco", r => Box(r, new Vector3(0, 0.2f, 0.8f), new Vector3(8f, 0.4f, 1.6f)));
             return root;
         }
 
@@ -683,409 +719,10 @@ namespace MudancaAssombrada.Editor
         public static void BuildScene()
         {
             EnsurePrefabs();
-            LevelSceneTools.NewLevelScene(ScenePath, BuildHouse);
+            LevelSceneTools.NewLevelScene(ScenePath, BuildMansion, FineNavMesh);
             LinkChapter();
             EditorTools.UpdateBuildSettings();
             Debug.Log("Cena Casa do Espelho criada! Abra a cena Menu, aperte Play e escolha o capítulo 1.");
-        }
-
-        // O que cada módulo de 2 m de uma linha de paredes é.
-        enum W { Lisa, Porta, Dupla, Vao }
-
-        static void BuildHouse()
-        {
-            var house = new GameObject("Casa").transform;
-            BuildFloors(Group(house, "Pisos e Lajes"));
-            BuildWalls(Group(house, "Paredes"));
-            BuildStairsAndGallery(Group(house, "Escada e Galeria"));
-            var dressing = Group(house, "Cenário");
-            BuildDressing(dressing);
-            BuildLightItems(dressing);
-            DarkenNight();
-            BuildMirrors();
-            var furniture = PlaceFurniture();
-            BuildObjectives(furniture);
-            BuildRoomsAndSpawns();
-
-            // O Imitador começa no espelho E2 (hall, parede oeste). Aos 45 s ele atravessa o hall até
-            // o "palco" (o meio do hall, de frente para a escada e para a porta), faz a reverência e volta.
-            var imitator = Place(ImitatorPath, new Vector3(-2 + Inside + 0.8f, ImitatorHeight / 2f, -1.5f), 90, null);
-            var stage = new GameObject("Palco do Imitador (aparição)").transform;
-            stage.SetParent(house);
-            stage.position = new Vector3(1.4f, 0, -3f);
-            var so = new SerializedObject(imitator.GetComponent<GhostImitator>());
-            so.FindProperty("stage").objectReferenceValue = stage;
-            so.ApplyModifiedPropertiesWithoutUndo();
-            // Caminhão na rua, com a cabine para longe da casa
-            Place(LevelPrefabsBuilder.TruckPath, new Vector3(0, 0, -12f), 180, null);
-
-            AddAmbience(house);
-            AddClock(house);
-        }
-
-        static Transform Group(Transform parent, string name)
-        {
-            var t = new GameObject(name).transform;
-            t.SetParent(parent);
-            return t;
-        }
-
-        // Pisos: xadrez no térreo nobre (hall, ensaio, jantar), tábuas na copa, no corredor, no
-        // alpendre e no 1º andar. Lajes: o piso do 1º andar (com colisão: é onde se pisa lá em cima)
-        // e o forro de tudo. Pé-direito: 2,80 no térreo, 5,90 no hall sul (duplo).
-        static void BuildFloors(Transform parent)
-        {
-            for (int x = -7; x <= 7; x += 2)
-                for (int z = -5; z <= 5; z += 2)
-                {
-                    bool planks = z >= 5 || (x <= -3 && z >= 1); // corredor e copa
-                    Piece(planks ? PlankFloorPath : FloorTilePath, parent, new Vector3(x, 0, z), 0);
-
-                    bool hallSouth = x >= -1 && x <= 3 && z < 0;
-                    if (z > 0)
-                    {
-                        Piece(SlabPath, parent, new Vector3(x, FloorY, z), 0);          // piso do 1º andar
-                        Piece(PlankFloorPath, parent, new Vector3(x, FloorY, z), 0);
-                        if (!(x == 1 && z == 3)) Piece(SlabPath, parent, new Vector3(x, FloorY * 2, z), 0); // forro de cima
-                    }
-                    else if (hallSouth) Piece(SlabPath, parent, new Vector3(x, FloorY * 2, z), 0); // forro do hall (5,90)
-                    else Piece(SlabPath, parent, new Vector3(x, FloorY, z), 0);           // forro do térreo
-                }
-            foreach (int x in new[] { -1, 1 }) Piece(PlankFloorPath, parent, new Vector3(x, 0, -7), 0); // alpendre
-            Piece(SkylightPath, parent, new Vector3(1, FloorY * 2, 3), 0);
-        }
-
-        // Todas as paredes, módulo a módulo. A planta das portas é a §6.2 do LEVEL_DESIGN_FASE1.md,
-        // com um ajuste: P2 (hall → ensaio) e P10 (→ camarim do suplente) são DUPLAS. O fantasma só
-        // passa em vãos de pelo menos 1 m (raio 0,5 m do NavMesh); com porta simples ali, a Sala de
-        // Ensaio, a Copa e o Camarim do Suplente virariam ilhas onde o Imitador não chega a pé.
-        static void BuildWalls(Transform p)
-        {
-            var L = W.Lisa; var S = W.Porta; var D = W.Dupla;
-            // --- térreo (Y 0) ---
-            WallRow(p, true, -6, -8, 0, 0, L, L, L, L, D, L, L, L);    // frente (P1: entrada dupla)
-            WallRow(p, true, 6, -8, 0, 180, L, L, L, L, L, L, L, L);   // fundo do Corredor dos Espelhos
-            WallRow(p, false, -8, -6, 0, 90, L, L, L, L, L, L);        // oeste
-            WallRow(p, false, 8, -6, 0, -90, L, L, L, L, L, L);        // leste
-            WallRow(p, false, -2, -6, 0, 90, L, D, L, L, L);           // hall | ensaio e copa (P2)
-            WallRow(p, true, 0, -8, 0, 0, L, D, L);                    // ensaio | copa (P3)
-            WallRow(p, true, 4, -8, 0, 0, L, S, L, L, D, L, S, L);     // cômodos | corredor (P4, P5, P6)
-            WallRow(p, false, 4, -6, 0, -90, L, L, L, D, L);           // hall | jantar (P7)
-            // --- hall sul: a parte de cima do pé-direito duplo ---
-            WallRow(p, false, -2, -6, FloorY, 90, L, L, L);
-            WallRow(p, true, -6, -2, FloorY, 0, L, L, L);
-            WallRow(p, false, 4, -6, FloorY, -90, L, L, L);
-            // --- 1º andar (Y 3,10) ---
-            WallRow(p, true, 6, -8, FloorY, 180, L, L, L, L, L, L, L, S); // fundo (P12: porta de cenário)
-            WallRow(p, false, -8, 0, FloorY, 90, L, L, L);
-            WallRow(p, false, 8, 0, FloorY, -90, L, L, L);
-            WallRow(p, true, 0, -8, FloorY, 0, L, L, L);               // frente do Camarim Grande
-            WallRow(p, true, 0, 4, FloorY, 0, L, L);                   // frente do Camarim do Suplente
-            WallRow(p, false, -2, 0, FloorY, -90, D, L, S);            // camarim grande | galeria e corredor (P8, P11)
-            WallRow(p, true, 4, -2, FloorY, 0, L, D, L);               // galeria | corredor dos camarins (P9)
-            WallRow(p, false, 4, 0, FloorY, 90, L, L, D);              // corredor | camarim do suplente (P10)
-
-            // P12: a porta do fundo do camarim do suplente não abre (é cenário).
-            Piece(DoorPath, p, new Vector3(7 + DoorWidth / 2, FloorY, 6 - 0.05f), 180);
-        }
-
-        // Uma linha de paredes no grid: 'alongX' = corre em X (senão, em Z), na coordenada fixa 'line',
-        // começando em 'from' e indo de 2 em 2 m. yaw: para onde olha o lado do papel de parede.
-        static void WallRow(Transform parent, bool alongX, float line, float from, float y, float yaw, params W[] modules)
-        {
-            for (int i = 0; i < modules.Length; i++)
-            {
-                if (modules[i] == W.Vao) continue;
-                float c = from + 1 + 2 * i;
-                var pos = alongX ? new Vector3(c, y, line) : new Vector3(line, y, c);
-                string prefab = modules[i] == W.Lisa ? WallPlainPath : modules[i] == W.Porta ? WallDoorPath : WallDoubleDoorPath;
-                Piece(prefab, parent, pos, yaw);
-            }
-        }
-
-        // A escada sobe pela parede leste do hall (X 2,4..4,0, Z -5 → 0) até a galeria, que debruça
-        // sobre o hall com um peitoril (guarda-corpo) aberto só onde a escada chega.
-        static void BuildStairsAndGallery(Transform parent)
-        {
-            Piece(StairsPath, parent, new Vector3(3.2f, 0, -StairRun), 0);
-
-            // O NavMesh trata a lateral da rampa como parede e afasta 0,5 m (o raio do fantasma) dos
-            // dois lados: o pé da escada vira uma ilha. O link liga o chão do hall à rampa, um pouco
-            // acima do pé, para o Imitador conseguir subir e descer (os jogadores andam pela física).
-            var link = new GameObject("Link do Pé da Escada").AddComponent<NavMeshLink>();
-            link.transform.SetParent(parent);
-            link.startPoint = new Vector3(1.6f, 0f, -4.6f);
-            link.endPoint = new Vector3(3.2f, 0.62f, -4f);
-            link.width = 1f;
-            link.bidirectional = true;
-
-            // Corrimão no lado de dentro da escada (X 2,4), inclinado junto com ela. Começa 1 m acima
-            // do pé: o patamar entre a parede da frente e a escada (0,9 m) é estreito demais para
-            // entrar de lado carregando um armário (e o NavMesh, com raio 0,5 m, fecharia ali).
-            float angle = Mathf.Atan2(FloorY, StairRun);
-            float length = Mathf.Sqrt(FloorY * FloorY + StairRun * StairRun);
-            const float openFoot = 1f;
-            float piece = (length - openFoot) / 3;
-            for (int i = 0; i < 3; i++)
-            {
-                float t = openFoot + (i + 0.5f) * piece;
-                var rail = Place(RailingPath, new Vector3(2.4f, Mathf.Sin(angle) * t, -StairRun + Mathf.Cos(angle) * t),
-                                 0, "Corrimão da Escada");
-                rail.transform.rotation = Quaternion.Euler(0, -90, angle * Mathf.Rad2Deg);
-                rail.transform.localScale = new Vector3(piece / 2f, 1, 1);
-                rail.transform.SetParent(parent);
-            }
-
-            // Peitoril da galeria (Z 0, de X -2 até 2,4).
-            foreach (float x in new[] { -1f, 1f }) Piece(RailingPath, parent, new Vector3(x, FloorY, 0), 0);
-            var end = Place(RailingPath, new Vector3(2.2f, FloorY, 0), 0, "Guarda-corpo");
-            end.transform.localScale = new Vector3(0.2f, 1, 1);
-            end.transform.SetParent(parent);
-        }
-
-        // Cenário fixo, cômodo a cômodo (§7 e §11.2): o que dá personalidade e as âncoras da Cida.
-        static void BuildDressing(Transform p)
-        {
-            // Hall norte: o piano encostado na parede oeste (objeto de rede: fica na raiz da cena)
-            Place(PianoPath, new Vector3(-2 + Inside + 0.3f, 0, 2f), 90, "Piano");
-            // Sala de Ensaio: o gramofone no canto (fonte de ruído R1, objeto de rede: na raiz),
-            // manequins de figurino junto à parede do fundo
-            Place(GramophonePath, new Vector3(-7.3f, 0, -5.3f), 45, "Gramofone");
-            Piece(MannequinAPath, p, new Vector3(-7.3f, 0, -0.6f), 180);
-            Piece(MannequinBPath, p, new Vector3(-6.6f, 0, -0.6f), 180);
-            Piece(MannequinAPath, p, new Vector3(-3.6f, 0, -0.6f), 180);
-            Piece(MannequinBPath, p, new Vector3(-2.9f, 0, -0.6f), 180);
-            // Corredor dos Espelhos: três manequins, um com o colete da empresa
-            Piece(MannequinBPath, p, new Vector3(-7.2f, 0, 4.5f), 0);
-            Piece(MannequinCPath, p, new Vector3(3.0f, 0, 4.5f), 0);
-            // ...e o do meio TOMBA SOZINHO aos 2:40 (o "vento"), ao comprido do corredor (§8, MEC-10)
-            var falling = Place(MannequinAPath, new Vector3(-2.6f, 0, 4.5f), 0, "Manequim que Tomba");
-            falling.transform.SetParent(p);
-            falling.AddComponent<TimedTopple>();
-            falling.AddComponent<SoundVoice>().choices = new[] { new SoundChoice { type = SoundType.Impact, sound = "manequim_tomba" } };
-            // Copa: a pia com a torneira que pinga
-            Piece(SinkPath, p, new Vector3(-8 + Inside + 0.2f, 0, 2f), 90);
-            // Sala de Jantar: o lustre de cristal pendurado no forro
-            Piece(ChandelierPath, p, new Vector3(6f, WallHeight - 0.7f, -1f), 0);
-
-            // Hall dos Retratos: a galeria da Dona Herondina na parte alta das paredes (um virado para a parede)
-            Piece(PortraitGPath, p, new Vector3(-2 + Inside, 3.3f, -5f), 90);
-            Piece(PortraitMPath, p, new Vector3(-2 + Inside, 3.5f, -3f), 90);
-            Piece(PortraitGPath, p, new Vector3(-2 + Inside, 3.3f, -1f), 90);
-            Piece(PortraitMPath, p, new Vector3(-1f, 3.5f, -6 + Inside), 0);
-            Piece(PortraitPPath, p, new Vector3(3f, 3.7f, -6 + Inside), 0);
-            Piece(PortraitMPath, p, new Vector3(4 - Inside, 3.5f, -4f), -90);
-            Piece(PortraitGPath, p, new Vector3(4 - Inside - 0.05f, 3.3f, -1.6f), 90); // o retrato VAZIO, virado para a parede
-
-            // Luz: arandelas a gás (hall, corredor, camarim grande); o resto fica no escuro (§7).
-            // A do corredor é a fonte de ruído R3: assobia, falha, e afinada apaga (objeto de rede: na raiz).
-            Piece(SconcePath, p, new Vector3(-1f, 2.2f, -6 + Inside), 0);
-            Piece(SconcePath, p, new Vector3(3.4f, 2.2f, -6 + Inside), 0);
-            Place(CorridorSconcePath, new Vector3(-3f, 2.2f, 6 - Inside), 180, "Arandela do Corredor");
-            Piece(SconcePath, p, new Vector3(-2 - Inside, FloorY + 2.2f, 3f), -90);
-
-            BuildAbandonment(p);
-            BuildSoundMap(p);
-
-            // Corredor dos Camarins: as tábuas soltas (o piso que range vem no lote 2)
-            Piece(LoosePlankPath, p, new Vector3(0f, FloorY, 5f), 90);
-            Piece(LoosePlankPath, p, new Vector3(2.2f, FloorY, 4.8f), 90);
-        }
-
-        // A casa ficou fechada décadas: lençóis nos móveis, teias nos cantos, caliça, papel de parede
-        // caindo, janelas pregadas, a mesa de jantar ainda posta (para 9, com uma cadeira caída) e
-        // velas derretidas na frente dos espelhos. Nada disso entra no caminho dos móveis: o que
-        // fica no chão das rotas não tem colisão (as rotas são medidas depois de gerar a cena).
-        static void BuildAbandonment(Transform p)
-        {
-            float top = WallHeight - 0.02f, upTop = FloorY + WallHeight - 0.02f;
-
-            // --- Sala de Ensaio: a plateia abandonada ---
-            Piece(CoveredChairPath, p, new Vector3(-4.6f, 0, -5.3f), 0);
-            Piece(TrunkPath, p, new Vector3(-3.1f, 0, -5.45f), 0);
-            Piece(BoardedWindowPath, p, new Vector3(-8 + Inside, 1.0f, -5f), 90);
-            Piece(CobwebPath, p, new Vector3(-2 - Inside, top, -6 + Inside), 0);
-            Piece(PapersPath, p, new Vector3(-6.2f, 0, -2.2f), 30);
-
-            // --- Copa: estante encostada, caixotes empilhados, a janela pregada ---
-            Piece(ShelfPath, p, new Vector3(-2 - Inside - 0.2f, 0, 2.6f), -90);
-            Piece(SmallBoxPath, p, new Vector3(-7.4f, 0, 0.55f), 10);
-            Piece(SmallBoxPath, p, new Vector3(-7.35f, 0.4f, 0.6f), -15);
-            Piece(SmallBoxPath, p, new Vector3(-6.9f, 0, 0.5f), 35);
-            Piece(BoardedWindowPath, p, new Vector3(-8 + Inside, 1.2f, 3.3f), 90);
-            Piece(CobwebPath, p, new Vector3(-8 + Inside, top, 4 - Inside), 180);
-
-            // --- Hall dos Retratos ---
-            Piece(CoveredDresserPath, p, new Vector3(-1.45f, 0, 3.3f), 90);
-            Piece(PapersPath, p, new Vector3(0.4f, 0, -2.8f), 0);
-            Piece(PeelingPaperPath, p, new Vector3(2.7f, 0.9f, -6 + Inside), 0);
-            Piece(CandlesPath, p, new Vector3(-1.55f, 0, -0.45f), 0);                 // na frente do E2
-            Piece(CobwebPath, p, new Vector3(4 - Inside, FloorY + top, -6 + Inside), 0);
-
-            // --- Sala de Jantar: a mesa posta para 9 que ninguém tirou ---
-            Piece(DiningTablePath, p, new Vector3(6f, 0, -2.5f), 90);
-            Piece(DiningTablePath, p, new Vector3(6f, 0, -0.5f), 90);
-            foreach (float z in new[] { -3f, 0f })
-            {
-                Piece(DiningChairPath, p, new Vector3(5.25f, 0, z), 90);
-                Piece(DiningChairPath, p, new Vector3(6.75f, 0, z), -90);
-            }
-            Piece(DiningChairPath, p, new Vector3(6.75f, 0, -1.5f), -90);
-            Piece(FallenChairPath, p, new Vector3(4.9f, 0, -1.6f), 20);               // a cadeira que caiu
-            Piece(DiningChairPath, p, new Vector3(6f, 0, -4.1f), 0);                  // a cabeceira
-            Piece(BoardedWindowPath, p, new Vector3(8 - Inside, 1.0f, -4f), -90);
-            Piece(BoardedWindowPath, p, new Vector3(8 - Inside, 1.0f, 2.5f), -90);
-            Piece(CobwebPath, p, new Vector3(8 - Inside, top, 4 - Inside), -90);
-            Piece(PapersPath, p, new Vector3(5.2f, 0, 2.6f), 60);
-
-            // --- Corredor dos Espelhos: o caminho mais longo, com caliça caída do forro ---
-            Piece(RubblePath, p, new Vector3(7.2f, 0, 4.55f), 15);
-            Piece(PeelingPaperPath, p, new Vector3(-1.6f, 0.9f, 4 + Inside), 180);
-            Piece(PeelingPaperPath, p, new Vector3(3.4f, 0.9f, 4 + Inside), 180);
-
-            // --- Camarim Grande ---
-            Piece(CoveredDresserPath, p, new Vector3(-4.3f, FloorY, 0.4f), 0);
-            Piece(TrunkPath, p, new Vector3(-7.4f, FloorY, 5.6f), 0);
-            Piece(BoardedWindowPath, p, new Vector3(-8 + Inside, FloorY + 1.0f, 1.0f), 90);
-            Piece(PeelingPaperPath, p, new Vector3(-8 + Inside, FloorY + 0.9f, 5.0f), 90);
-
-            // --- Galeria e Corredor dos Camarins ---
-            Piece(PapersPath, p, new Vector3(-0.6f, FloorY, 2.4f), 0);
-            Piece(RubblePath, p, new Vector3(-1.2f, FloorY, 5.2f), -10);
-            Piece(CobwebPath, p, new Vector3(-2 + Inside, upTop, 6 - Inside), 180);
-
-            // --- Camarim do Suplente: o mais escuro, com as velas na frente do espelho rachado ---
-            Piece(CandlesPath, p, new Vector3(7.0f, FloorY, 1.9f), 0);
-            Piece(BoardedWindowPath, p, new Vector3(6f, FloorY + 1.0f, Inside), 0);
-            Piece(CobwebPath, p, new Vector3(8 - Inside, upTop, 6 - Inside), -90);
-            Piece(PapersPath, p, new Vector3(5.6f, FloorY, 4.4f), 120);
-        }
-
-        // As 2 lanternas no caminhão (num caixote, perto da lâmpada da caçamba) e 5 pacotes de
-        // pilhas pela casa. A bateria cheia dura 100 s; a noite, 300 s: não dá luz para todo mundo
-        // o tempo todo, e é isso que a equipe precisa gerir. Objetos de rede: ficam na RAIZ da cena.
-        static void BuildLightItems(Transform dressing)
-        {
-            Piece(SmallBoxPath, dressing, new Vector3(1.9f, 0, -9.4f), 0);
-            var lamp = new GameObject("Lâmpada do Caminhão");
-            lamp.transform.SetParent(dressing);
-            AddLight(lamp, new Vector3(1.9f, 1.2f, -9.4f), new Color(1f, 0.75f, 0.45f), 3.5f, 1.2f);
-            Place(FlashlightPath, new Vector3(1.78f, 0.4f, -9.4f), 0, "Lanterna 1");
-            Place(FlashlightPath, new Vector3(2.02f, 0.4f, -9.45f), 15, "Lanterna 2");
-
-            Place(BatteriesPath, new Vector3(-7.55f, 0.89f, 2.2f), 30, "Pilhas da Copa");                 // na pia
-            Place(BatteriesPath, new Vector3(-3.1f, 0.7f, -5.45f), -20, "Pilhas da Sala de Ensaio");      // no baú
-            Place(BatteriesPath, new Vector3(6.3f, 0.79f, 0.3f), 70, "Pilhas da Sala de Jantar");         // na ponta da mesa
-            Place(BatteriesPath, new Vector3(-3.3f, FloorY, 3.4f), 0, "Pilhas do Camarim Grande");
-            Place(BatteriesPath, new Vector3(2.9f, FloorY, 5.3f), 45, "Pilhas do Corredor dos Camarins");
-        }
-
-        // A noite nesta casa é mais escura que o padrão (ambiente e lua mais fracos), para a lanterna
-        // fazer diferença. Muda só a cópia da cena (os Sistemas da Fase das outras fases não mudam).
-        static void DarkenNight()
-        {
-            // A cena já nasce escura (a mesma noite que a NightLighting aplica em Play), para o
-            // editor mostrar o que o jogador vai ver.
-            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.012f, 0.014f, 0.026f);
-            RenderSettings.reflectionIntensity = 0.2f;
-            var night = Object.FindAnyObjectByType<NightLighting>();
-            if (night == null) return;
-            var so = new SerializedObject(night);
-            so.FindProperty("nightAmbient").colorValue = new Color(0.012f, 0.014f, 0.026f);
-            so.FindProperty("moonIntensity").floatValue = 0.12f;
-            so.ApplyModifiedPropertiesWithoutUndo();
-        }
-
-        // Os 9 espelhos da §7.3. E1 e E2 (parede oeste do hall) são os "heróis": a escada fica na
-        // parede da frente e quem sobe ou desce aparece neles. E7 é o espelho rachado do suplente.
-        static void BuildMirrors()
-        {
-            Place(MirrorLPath, new Vector3(-2 + Inside, 0, -4.5f), 90, "E1 Espelho do Hall (herói)");
-            Place(MirrorLPath, new Vector3(-2 + Inside, 0, -1.5f), 90, "E2 Espelho do Hall (herói)");
-            // E3 fica à esquerda da entrada: do lado direito ele fecharia o pé da escada.
-            Place(MirrorMPath, new Vector3(-1.2f, 0.5f, -6 + Inside), 0, "E3 Espelho da Entrada");
-            Place(MirrorLPath, new Vector3(-8 + Inside, 0, -3f), 90, "E4 Espelho de Ensaio");
-            Place(MirrorMPath, new Vector3(-6f, 0.5f, 6 - Inside), 180, "E5a Corredor");
-            Place(MirrorLPath, new Vector3(0f, 0, 6 - Inside), 180, "E5b Corredor");
-            Place(MirrorMPath, new Vector3(6f, 0.5f, 6 - Inside), 180, "E5c Corredor");
-            Place(MirrorLPath, new Vector3(-8 + Inside, FloorY, 3f), 90, "E6 Espelho do Camarim Grande");
-            Place(MirrorCrackedPath, new Vector3(8 - Inside, FloorY, 3f), -90, "E7 Espelho Rachado do Suplente");
-        }
-
-        // Os 8 móveis da §11.2, já separados pelas 3 etapas. Objetos de rede ficam na RAIZ da cena.
-        // (O armário de figurino tem 1,5 m no prefab do protótipo; a ficha do Art Bible diz 2,0 m.)
-        static Furniture[][] PlaceFurniture()
-        {
-            Furniture F(string path, Vector3 pos, float yaw, string name) => Place(path, pos, yaw, name).GetComponent<Furniture>();
-
-            var ground = new[]
-            {
-                F(LevelPrefabsBuilder.ChairPath, new Vector3(-5.5f, 0.3f, -3.5f), 0, "Cadeira de Plateia A"),
-                F(LevelPrefabsBuilder.ChairPath, new Vector3(-4.3f, 0.3f, -3.5f), 0, "Cadeira de Plateia B"),
-                // (1,6; -0,8) e não (1,5; -4,0) como no documento: lá ela fechava o pé da escada.
-                F(LevelPrefabsBuilder.BoxPath, new Vector3(1.6f, 0.25f, -0.8f), 0, "Caixa M"),
-                F(BigBoxPath, new Vector3(-4.5f, 0.3f, 2f), 0, "Caixa G"),
-            };
-            var dressingRooms = new[]
-            {
-                F(RackPath, new Vector3(-6.5f, FloorY + 0.85f, 1.1f), 90, "Arara de Figurino"),
-                F(VanityPath, new Vector3(-4f, FloorY + 0.8f, 4.5f), 180, "Penteadeira"),
-                F(LevelPrefabsBuilder.WardrobePath, new Vector3(-6.5f, FloorY + 0.75f, 4.8f), 180, "Armário de Figurino"),
-            };
-            var relic = new[]
-            {
-                F(RelicPosterPath, new Vector3(7.5f, FloorY + 0.5f, 4.6f), -90, "Cartaz do Teatro"),
-            };
-            return new[] { ground, dressingRooms, relic };
-        }
-
-        // As 3 etapas da §11.1 (no lugar do "entregar todos" que a fase vazia traz).
-        // Acha a pasta pelos objetivos que já estão nela: pelo nome não dá, a HUD também tem um "Objetivos".
-        static void BuildObjectives(Furniture[][] stages)
-        {
-            var old = Object.FindObjectsByType<DeliverFurnitureObjective>();
-            var root = old.Length > 0 ? old[0].transform.parent : new GameObject("Objetivos").transform;
-            foreach (var o in old) Object.DestroyImmediate(o.gameObject);
-
-            string[] labels = { "Tirar os móveis do térreo", "Esvaziar os camarins", "O cartaz do camarim do fundo" };
-            for (int stage = 0; stage < stages.Length; stage++)
-            {
-                var go = new GameObject($"Etapa {stage}: {labels[stage]}");
-                go.transform.SetParent(root);
-                var objective = go.AddComponent<DeliverFurnitureObjective>();
-                var so = new SerializedObject(objective);
-                so.FindProperty("label").stringValue = labels[stage];
-                so.FindProperty("stage").intValue = stage;
-                so.ApplyModifiedPropertiesWithoutUndo();
-                EditorTools.SetReferences(objective, "targets", stages[stage]);
-            }
-        }
-
-        // Cômodos com nome (para os avisos: "Tiago caiu no Camarim do Suplente!") e o nascimento no alpendre.
-        static void BuildRoomsAndSpawns()
-        {
-            var markers = GameObject.Find("Marcadores").transform;
-            float up = FloorY + WallHeight / 2;
-            LevelSceneTools.RoomMarker(markers, "Alpendre", new Vector3(0, 1.4f, -7), new Vector3(4, 2.8f, 2));
-            LevelSceneTools.RoomMarker(markers, "Hall dos Retratos", new Vector3(1, 2.95f, -3), new Vector3(6, 5.9f, 6));
-            LevelSceneTools.RoomMarker(markers, "Hall dos Retratos (norte)", new Vector3(1, 1.4f, 2), new Vector3(6, 2.8f, 4));
-            LevelSceneTools.RoomMarker(markers, "Sala de Ensaio", new Vector3(-5, 1.4f, -3), new Vector3(6, 2.8f, 6));
-            LevelSceneTools.RoomMarker(markers, "Copa", new Vector3(-5, 1.4f, 2), new Vector3(6, 2.8f, 4));
-            LevelSceneTools.RoomMarker(markers, "Sala de Jantar", new Vector3(6, 1.4f, -1), new Vector3(4, 2.8f, 10));
-            LevelSceneTools.RoomMarker(markers, "Corredor dos Espelhos", new Vector3(0, 1.4f, 5), new Vector3(16, 2.8f, 2));
-            LevelSceneTools.RoomMarker(markers, "Galeria", new Vector3(1, up, 2), new Vector3(6, 2.8f, 4));
-            LevelSceneTools.RoomMarker(markers, "Camarim Grande", new Vector3(-5, up, 3), new Vector3(6, 2.8f, 6));
-            LevelSceneTools.RoomMarker(markers, "Corredor dos Camarins", new Vector3(1, up, 5), new Vector3(6, 2.8f, 2));
-            LevelSceneTools.RoomMarker(markers, "Camarim do Suplente", new Vector3(6, up, 3), new Vector3(4, 2.8f, 6));
-
-            // A fase vazia nasce com 3 marcadores na frente; aqui eles vão para o alpendre, virados para a casa.
-            var spawns = markers.GetComponentsInChildren<SpawnPoint>();
-            for (int i = 0; i < spawns.Length; i++)
-            {
-                spawns[i].transform.position = new Vector3(-1 + i, 1f, -7f);
-                spawns[i].transform.rotation = Quaternion.identity;
-            }
         }
 
         // O clima da casa (AmbientSound 2D, igual em todo lugar) e o DIRETOR DE SOM com a trilha da
@@ -1142,10 +779,10 @@ namespace MudancaAssombrada.Editor
             return track;
         }
 
-        // Relógio de pêndulo no hall norte, encostado na parede leste e olhando para o hall.
-        public static void AddClock(Transform house)
+        // Relógio de pêndulo: o metrônomo da casa. A posição vem da planta (no hall da Mansão).
+        public static void AddClock(Transform house, Vector3 position, float yaw)
         {
-            Piece(ClockPath, house, new Vector3(4 - WallThickness / 2 - 0.17f, 0, 3.2f), -90);
+            Piece(ClockPath, house, position, yaw);
         }
 
         static AmbientSound Ambient(GameObject go, string sound, bool spatial, float volume)
@@ -1169,28 +806,6 @@ namespace MudancaAssombrada.Editor
             Ambient(go, sound, spatial: true, volume: 1f);
         }
 
-        // As âncoras e o piso que range (lote 2). O relógio (hall), o gramofone/cortina (ensaio), o
-        // piano (hall norte) e a arandela (corredor) já trazem o próprio som. O Camarim do Suplente
-        // fica SEM âncora: o único lugar da casa onde a Cida perde a referência.
-        static void BuildSoundMap(Transform p)
-        {
-            var anchors = Group(p, "Âncoras Sonoras");
-            Place(RadioPath, new Vector3(1.5f, 0f, -7.6f), 200, "Rádio do Seu Valdemar").transform.SetParent(anchors);
-            Anchor(anchors, "Torneira da Copa", "torneira_pingando", new Vector3(-7.6f, 1.0f, 2f));
-            Anchor(anchors, "Lustre da Sala de Jantar", "lustre_tilintando", new Vector3(6f, 2.4f, -1f));
-            Anchor(anchors, "Vento na Clarabóia", "vento_janelas", new Vector3(1f, FloorY * 2 - 0.5f, 3f));
-            Anchor(anchors, "Cabides do Camarim Grande", "cabides_metal", new Vector3(-6.5f, FloorY + 1.6f, 1.1f));
-
-            // Piso que range: o Corredor dos Camarins inteiro e três tábuas soltas na galeria.
-            var creaks = Group(p, "Piso que Range");
-            Creak(creaks, "Corredor dos Camarins", new Vector3(1f, FloorY, 5f), new Vector3(6f, 1.5f, 2f));
-            foreach (var (x, z) in new[] { (-1.2f, 1.6f), (0.6f, 2.8f), (2.2f, 1.2f) })
-            {
-                Piece(LoosePlankPath, creaks, new Vector3(x, FloorY, z), 90);
-                Creak(creaks, "Tábua da Galeria", new Vector3(x, FloorY, z), new Vector3(2f, 1.5f, 0.6f));
-            }
-        }
-
         static void Creak(Transform parent, string name, Vector3 position, Vector3 size)
         {
             var go = new GameObject($"Range: {name}");
@@ -1202,22 +817,26 @@ namespace MudancaAssombrada.Editor
         }
 
         // A ficha do capítulo aponta para esta cena (é assim que ele sai de "Em produção") e recebe
-        // os textos e a noite do LEVEL_DESIGN_FASE1.md (§3.4, §3.5, §5). Os textos só são trocados
-        // enquanto ainda forem o rascunho antigo: depois de reescritos no Inspector, ficam.
+        // os textos e a noite do planejamento (LEVEL_DESIGN_FASE1_MANSAO.md §10; o texto vem do
+        // LEVEL_DESIGN_FASE1.md §3.4). Os textos só são trocados enquanto ainda forem um rascunho
+        // conhecido (o antigo ou o da casa de antes): depois de reescritos no Inspector, ficam.
+        const float NightSeconds = 330f; // D6: a mansão é 3,8× a casa de antes
+
         static void LinkChapter()
         {
             var chapter = AssetDatabase.LoadAssetAtPath<ChapterDefinition>(ChapterPath);
             if (chapter == null) return;
             chapter.sceneName = SceneName;
-            if (chapter.openingNote.StartsWith("Casa de uma família de atores"))
+            if (Mathf.Approximately(chapter.nightDuration, 300f) || Mathf.Approximately(chapter.nightDuration, 180f))
+                chapter.nightDuration = NightSeconds;
+            if (chapter.openingNote.StartsWith("Casa de uma família de atores") || chapter.openingNote.Contains("no camarim do fundo"))
             {
-                chapter.nightDuration = 300f;
                 chapter.openingNote =
                     "TRANSPORTES DESCANSO ETERNO LTDA.\n" +
                     "ORDEM DE SERVIÇO Nº 014 — CASARÃO TABORDA\n\n" +
                     "Casa de família de teatro. Cuidado com os espelhos: são muitos e são velhos.\n" +
                     "Se alguém da equipe pedir ajuda com um móvel, confiram se a pessoa respira.\n\n" +
-                    "Tem um cartaz antigo no camarim do fundo. Esse vem junto.\n" +
+                    "Tem um cartaz antigo em algum lugar desta casa. Esse vem junto.\n" +
                     "Não está na lista. Vem junto.\n\n" +
                     "Não arranhem o piano.\n" +
                     "— V.";
