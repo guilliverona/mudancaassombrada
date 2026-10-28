@@ -84,6 +84,7 @@ namespace MudancaAssombrada.Editor
         static readonly Dictionary<string, string> OwnRigClips = new()
         {
             { "PegaBengala", "Assets/Art/Characters/Cida/SK_CHR_Cida.fbx" },
+            { "PegaLanterna", "Assets/Art/Characters/Tiago/SK_CHR_Tiago.fbx" }, // tools/blender/build_pega_lanterna.py
         };
 
         // Clipes que tocam uma vez só (transições): o resto fica em loop.

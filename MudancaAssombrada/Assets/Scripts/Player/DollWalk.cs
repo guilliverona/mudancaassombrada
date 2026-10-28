@@ -166,6 +166,7 @@ namespace MudancaAssombrada
             animator.enabled = true;
             clips = animator;
             caneLayer = animator.GetLayerIndex(CaneLayerName); // -1 = controller sem a camada (versão antiga)
+            flashlightLayer = animator.GetLayerIndex(FlashlightLayerName);
             CollectHandBones(animator);
             // Os clipes foram acertados para um corpo de tamanho 1 (AnimationBuilder.NaturalSpeed):
             // perna mais curta (a Cida) precisa de passos mais rápidos para andar o mesmo tanto.
@@ -178,6 +179,14 @@ namespace MudancaAssombrada
         const string CaneLayerName = "Bengala"; // = AnimationBuilder.CaneLayer
         int caneLayer = -1;
         float caneWeight;
+
+        // Segura a lanterna NA MÃO (hotbar)? Liga a camada "Lanterna": a mão direita fecha no cabo.
+        // Quem diz é o HeldItems, que também usa FlashlightWeight para levar o braço até a frente da
+        // câmera (IK) na mesma medida em que a pose entra e sai.
+        public bool HoldsFlashlight { get; set; }
+        public float FlashlightWeight { get; private set; }
+        const string FlashlightLayerName = "Lanterna"; // = AnimationBuilder.FlashlightLayer
+        int flashlightLayer = -1;
 
         // Mãos fora do chão (caído e levantando). Os clipes Cair/Levantar apoiam a palma pensando
         // num corpo médio: a mão grande do Marcelo (26 cm, com luva) entrava até 22 cm no chão.
@@ -361,6 +370,11 @@ namespace MudancaAssombrada
                     caneWeight = HandPoseRules.Smooth(caneWeight, target, 4f, Time.deltaTime);
                     clips.SetLayerWeight(caneLayer, caneWeight);
                 }
+                // Pega da lanterna (mão direita), pela mesma regra. O peso vale também sem a camada:
+                // o IK do HeldItems usa ele.
+                FlashlightWeight = HandPoseRules.Smooth(FlashlightWeight,
+                    HandPoseRules.FlashlightWeight(HoldsFlashlight, down, IsGettingUp), 4f, Time.deltaTime);
+                if (flashlightLayer >= 0) clips.SetLayerWeight(flashlightLayer, FlashlightWeight);
                 // Ritmo dos passos pelo tamanho do corpo, só andando: parado, caindo ou levantando,
                 // os clipes tocam no tempo original (senão a Cida respiraria e cairia acelerada).
                 float moving = down || IsGettingUp ? 0f

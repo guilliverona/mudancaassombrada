@@ -61,7 +61,7 @@ namespace MudancaAssombrada.Editor
             "Correr", "CorrerTras", "CorrerEsquerda", "CorrerDireita",
             "AgachadoParado", "AgachadoAndar", "AgachadoTras", "AgachadoDireita",
             "Cair", "Levantar",
-            "PegaBengala",
+            "PegaBengala", "PegaLanterna",
             // AgachadoEsquerda fica de fora: veio girado do Mixamo, usamos o AgachadoDireita espelhado.
         };
 
@@ -70,6 +70,13 @@ namespace MudancaAssombrada.Editor
         // Começa com peso 0; o DollWalk liga para quem tem bengala na ficha (HandPoseRules).
         public const string CaneLayer = "Bengala";
         const string CaneMaskPath = ClipsFolder + "MascaraBengala.mask";
+
+        // Camada "Lanterna": a pega da lanterna (tools/blender/build_pega_lanterna.py: a mão direita
+        // fechada em volta do cabo de 6,4 cm, o polegar por cima). Só os dedos direitos: o braço e o
+        // punho são do IK do HeldItems, que liga a camada quando a lanterna está na mão.
+        // Sem o clipe, usa a pega da bengala espelhada.
+        public const string FlashlightLayer = "Lanterna";
+        const string FlashlightMaskPath = ClipsFolder + "MascaraLanterna.mask";
 
         public static RuntimeAnimatorController EnsureController()
         {
@@ -85,7 +92,9 @@ namespace MudancaAssombrada.Editor
                 // ...ou se falta um parâmetro de uma versão mais nova (ex.: Ajuda, do resgate segurando a tecla).
                 bool upToDate = new[] { SideParam, RescueParam }.All(n => existing.parameters.Any(p => p.name == n))
                     // ...ou se foi feito para outra velocidade (ex.: o antigo andar a 4 m/s).
-                    && MaxForward(existing) == Run;
+                    && MaxForward(existing) == Run
+                    // ...ou se falta a camada da lanterna (versão de antes da hotbar).
+                    && (Clip("PegaBengala") == null || existing.layers.Any(l => l.name == FlashlightLayer));
                 if (upToDate && missing.Count == 0 && removed.Count == 0)
                     return existing;
                 AssetDatabase.DeleteAsset(ControllerPath);
@@ -143,6 +152,7 @@ namespace MudancaAssombrada.Editor
             Transition(crouched, standing, false);
             AddFalling(machine, standing, crouched);
             AddCaneLayer(controller);
+            AddFlashlightLayer(controller);
 
             AssetDatabase.SaveAssets();
             Debug.Log($"Animator dos jogadores criado: {ControllerPath}");
@@ -196,28 +206,41 @@ namespace MudancaAssombrada.Editor
 
         // A pega da bengala numa camada própria, com máscara: só o braço e os dedos esquerdos
         // obedecem a ela; o resto do corpo continua andando, correndo e agachando pela camada de baixo.
-        static void AddCaneLayer(AnimatorController controller)
+        static void AddCaneLayer(AnimatorController controller) =>
+            AddHoldLayer(controller, Clip("PegaBengala"), CaneLayer, CaneMaskPath, "Pega da bengala", mirror: false,
+                         AvatarMaskBodyPart.LeftArm, AvatarMaskBodyPart.LeftFingers);
+
+        // A pega da lanterna, só nos dedos direitos (sem o clipe: a da bengala espelhada).
+        static void AddFlashlightLayer(AnimatorController controller)
         {
-            var hold = Clip("PegaBengala");
+            var own = Clip("PegaLanterna");
+            AddHoldLayer(controller, own ?? Clip("PegaBengala"), FlashlightLayer, FlashlightMaskPath,
+                         "Pega da lanterna", mirror: own == null, AvatarMaskBodyPart.RightFingers);
+        }
+
+        static void AddHoldLayer(AnimatorController controller, AnimationClip hold, string name, string maskPath,
+                                 string stateName, bool mirror, params AvatarMaskBodyPart[] parts)
+        {
             if (hold == null) return;
 
-            var mask = AssetDatabase.LoadAssetAtPath<AvatarMask>(CaneMaskPath);
+            var mask = AssetDatabase.LoadAssetAtPath<AvatarMask>(maskPath);
             if (mask == null)
             {
                 mask = new AvatarMask();
-                AssetDatabase.CreateAsset(mask, CaneMaskPath);
+                AssetDatabase.CreateAsset(mask, maskPath);
             }
             for (var part = AvatarMaskBodyPart.Root; part < AvatarMaskBodyPart.LastBodyPart; part++)
-                mask.SetHumanoidBodyPartActive(part, part == AvatarMaskBodyPart.LeftArm || part == AvatarMaskBodyPart.LeftFingers);
+                mask.SetHumanoidBodyPartActive(part, System.Array.IndexOf(parts, part) >= 0);
             EditorUtility.SetDirty(mask);
 
-            controller.AddLayer(CaneLayer);
+            controller.AddLayer(name);
             var layers = controller.layers;
             var layer = layers[layers.Length - 1];
             layer.avatarMask = mask;
             layer.defaultWeight = 0f;
-            var state = layer.stateMachine.AddState("Pega da bengala");
+            var state = layer.stateMachine.AddState(stateName);
             state.motion = hold;
+            state.mirror = mirror; // só funciona em clipes Humanoid (a pega é)
             layer.stateMachine.defaultState = state;
             controller.layers = layers;
         }

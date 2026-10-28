@@ -14,3 +14,8 @@ foreach ($c in $scripts) {
     & $Blender --background --factory-startup --python (Join-Path $here "build_${c}_blockout.py") 2>&1 |
         Select-String -Pattern "TRIS|SAVED|Traceback|Error"
 }
+
+# Poses de mão feitas sobre o rig de um personagem (clipes em Assets/Art/Animations).
+Write-Host "== pega_lanterna"
+& $Blender --background --factory-startup --python (Join-Path $here "build_pega_lanterna.py") 2>&1 |
+    Select-String -Pattern "PUNHO|SAVED|Traceback|Error"
