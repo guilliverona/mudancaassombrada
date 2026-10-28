@@ -28,6 +28,10 @@ namespace MudancaAssombrada
         readonly NetworkVariable<float> timeLeft = new(0f, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         readonly NetworkVariable<MatchOutcome> outcome = new(MatchOutcome.Playing, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         readonly NetworkVariable<int> stars = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        // Em qual etapa a equipe está (0, 1, 2...): a pianola toca um tema a cada etapa nova.
+        readonly NetworkVariable<int> stageShown = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        // O pagamento da noite (capítulo + achados − frágeis batidos), só quando Outcome == Won.
+        readonly NetworkVariable<int> pay = new(0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
         // O texto dos objetivos já pronto, montado pelo host (só ele avalia os objetivos).
         // FixedString: texto de tamanho fixo, que dá para mandar pela rede.
         readonly NetworkVariable<FixedString512Bytes> objectiveText = new(default, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
@@ -46,6 +50,8 @@ namespace MudancaAssombrada
         public float NightProgress => MatchRules.NightProgress(timeLeft.Value, NightDuration);
         public MatchOutcome Outcome => outcome.Value;
         public int Stars => stars.Value; // 1 a 5, só quando Outcome == Won
+        public int StageIndex => stageShown.Value;
+        public int Pay => pay.Value;     // só quando Outcome == Won
         public string ObjectiveText => objectiveText.Value.ToString();
 
         void Awake()
@@ -98,7 +104,9 @@ namespace MudancaAssombrada
 
             timeLeft.Value = NightDuration;
             stageIndex = 0;
+            stageShown.Value = 0;
             stars.Value = 0;
+            pay.Value = 0;
             outcome.Value = MatchOutcome.Playing;
         }
 
@@ -146,6 +154,7 @@ namespace MudancaAssombrada
 
             if (!allDone) return;
             stageIndex = MatchRules.AdvanceStage(stageIndex, stages.Count, out bool won); // próxima etapa
+            stageShown.Value = stageIndex;
             if (won) End(MatchOutcome.Won);
         }
 
@@ -165,14 +174,32 @@ namespace MudancaAssombrada
             {
                 // Mais tempo sobrando = mais estrelas. Sem relógio: 5 estrelas.
                 stars.Value = MatchRules.Stars(timeLeft.Value, NightDuration);
-                ChapterCompletedRpc();
+                int payment = Chapter != null ? Chapter.payment : 0;
+                pay.Value = ServerNightPay(payment);
+                ChapterCompletedRpc(pay.Value - payment);
             }
             outcome.Value = o;
         }
 
+        // O que a noite paga: o capítulo, mais os achados de época entregues (D10), menos as pancadas
+        // nos frágeis (D13). As contas ficam na PeriodFindRules.
+        static int ServerNightPay(int payment)
+        {
+            var values = new List<int>();
+            foreach (var f in PeriodFind.All)
+            {
+                f.ServerMarkDelivered();
+                if (f.Delivered) values.Add(f.Value);
+            }
+            int hits = 0;
+            foreach (var f in Fragile.All) hits += f.Hits;
+            return PeriodFindRules.Pay(payment, values, hits, Fragile.DiscountPerHit);
+        }
+
         // SendTo.Everyone: cada jogador grava a conclusão no PRÓPRIO save.
+        // "extra" = o que a noite pagou além do capítulo (achados − frágeis).
         [Rpc(SendTo.Everyone)]
-        void ChapterCompletedRpc() => SaveSystem.CompleteChapter(Chapter);
+        void ChapterCompletedRpc(int extra) => SaveSystem.CompleteChapter(Chapter, extra);
 
         // Reiniciar SEM recarregar a cena: recarregar no meio de uma partida em rede
         // é complicado (todos precisam recarregar juntos e os objetos de rede renascer).
@@ -187,6 +214,12 @@ namespace MudancaAssombrada
             foreach (var i in Interactable.All) i.ServerReset();
             foreach (var o in Objective.All) o.ServerReset();
             foreach (var l in FlashlightPickup.All) l.ServerReset(); // lanternas e pilhas de volta ao lugar
+            foreach (var d in SecretMirrorDoor.All) d.ServerReset(); // o espelho-porta fecha de novo
+            foreach (var t in PortalTrap.All) t.ServerReset();
+            foreach (var s in HouseScare.All) s.ServerReset(); // o que caiu volta para o lugar
+            foreach (var w in DoorWeb.All) w.ServerReset();    // as teias de vão inteiras de novo
+            foreach (var f in PeriodFind.All) f.ServerReset();
+            foreach (var f in Fragile.All) f.ServerReset();
             foreach (var p in NetworkPlayer.All)
             {
                 if (p.Condition != null) p.Condition.ServerReset(); // todo mundo de pé de novo

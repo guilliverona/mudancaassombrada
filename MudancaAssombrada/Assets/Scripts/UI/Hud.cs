@@ -122,9 +122,27 @@ namespace MudancaAssombrada
                 sb.Append('\n').Append(Colored(character.displayName, Theme.Muted(character.color)))
                   .Append(": \"").Append(comment).Append('"');
             }
-            if (game.Chapter != null) sb.Append($"\n\nPagamento: R$ {game.Chapter.payment}");
+            AppendFinds();
+            if (game.Chapter != null) sb.Append($"\n\nPagamento: R$ {game.Pay}");
             sb.Append("\n— Seu Valdemar</size>");
             return sb.ToString();
+        }
+
+        // Os achados de época entregues (D10), com o comentário do chefe, e as pancadas nos frágeis (D13).
+        void AppendFinds()
+        {
+            int count = 0, extra = 0;
+            foreach (var f in PeriodFind.All)
+            {
+                if (!f.Delivered) continue;
+                count++;
+                extra += f.Value;
+                if (count <= 3 && !string.IsNullOrEmpty(f.Comment)) sb.Append($"\n{f.DisplayName}: \"{f.Comment}\"");
+            }
+            if (count > 0) sb.Append($"\nAchados de época: {count} (+R$ {extra})");
+            int hits = 0;
+            foreach (var f in Fragile.All) hits += f.Hits;
+            if (hits > 0) sb.Append($"\nFrágeis batidos: {hits} (−R$ {hits * Fragile.DiscountPerHit})");
         }
 
         // ---------- Jogador local ----------

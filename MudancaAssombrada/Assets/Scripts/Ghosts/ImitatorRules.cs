@@ -35,5 +35,29 @@ namespace MudancaAssombrada
 
         // Puxando: os colegas não salvaram a tempo? Então o espelho leva.
         public static bool PullDone(float pulled, float pullTime) => pulled >= pullTime;
+
+        // QUAL ESPELHO (R03, LEVEL_DESIGN_FASE1_MANSAO.md): numa casa de dois níveis, o espelho "mais
+        // perto" em linha reta pode estar no andar de cima, a 30 m andando. Por isso conta o caminho:
+        // pathLengths[i] = metros andando até o espelho i (negativo = não dá para chegar). Se nenhum
+        // tem caminho (uma cena sem NavMesh), vale a linha reta. Devolve a posição na lista (-1 = vazia).
+        public static int NearestMirror(float[] pathLengths, float[] straight) => PickMirror(pathLengths, straight, nearest: true);
+
+        // O mais LONGE andando (para onde ele foge desmascarado). Inalcançável não conta: fugir para
+        // um espelho aonde não se chega o deixaria preso no caminho.
+        public static int FarthestMirror(float[] pathLengths, float[] straight) => PickMirror(pathLengths, straight, nearest: false);
+
+        static int PickMirror(float[] path, float[] straight, bool nearest)
+        {
+            int best = -1;
+            for (int i = 0; i < path.Length; i++)
+            {
+                if (path[i] < 0) continue;
+                if (best < 0 || (nearest ? path[i] < path[best] : path[i] > path[best])) best = i;
+            }
+            if (best >= 0) return best;
+            for (int i = 0; i < straight.Length; i++)
+                if (best < 0 || (nearest ? straight[i] < straight[best] : straight[i] > straight[best])) best = i;
+            return best;
+        }
     }
 }

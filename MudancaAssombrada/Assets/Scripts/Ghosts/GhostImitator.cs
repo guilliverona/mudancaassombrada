@@ -53,6 +53,9 @@ namespace MudancaAssombrada
         [SerializeField] float appearAt = 45f;
         [Tooltip("Para onde ele anda na aparição (o meio do hall). Vazio = 4 m à frente, na direção de quem está mais perto.")]
         [SerializeField] Transform stage;
+        [Tooltip("Depois da reverência da aparição, ele volta por ESTE espelho (na Mansão: sai do E1, volta pelo E2). " +
+                 "Vazio = o mesmo de onde saiu.")]
+        [SerializeField] Mirror appearanceExit;
         [SerializeField] float performSpeed = 1.2f;  // devagar, teatral
         [SerializeField] float bowTime = 2f;         // a janela para apontar
         [Tooltip("Apontado na reverência, fica ofendido: a próxima espera no espelho é tantas vezes maior.")]
@@ -88,12 +91,13 @@ namespace MudancaAssombrada
         bool goingBack;       // em cena: voltando para o espelho (depois da reverência)
         bool bowThenBack;     // a reverência é a da aparição (depois volta andando) ou a da captura (some ali)
         bool offended;        // apontado na reverência: a próxima espera é maior
+        Vector3? pullPoint;   // saiu do PORTAL (sem disfarce): puxa de volta para ele, não para um espelho
 
         public override void ServerStart()
         {
             appeared = false;
             offended = false;
-            EnterMirror(GhostHideout.Nearest<Mirror>(transform.position));
+            EnterMirror(MirrorPaths.Nearest(transform.position));
         }
 
         // No espelho, quase não quer o corpo; fora dele (disfarçado, puxando, em cena), não larga por nada.
@@ -152,7 +156,7 @@ namespace MudancaAssombrada
             Ghost.Footsteps = false;
             Ghost.CatchesOnTouch = false;
             // Outro comportamento andou com o corpo (no Inquilino): volta para dentro do espelho mais perto.
-            if (mode is GhostState.InMirror or GhostState.Emerging) EnterMirror(GhostHideout.Nearest<Mirror>(transform.position));
+            if (mode is GhostState.InMirror or GhostState.Emerging) EnterMirror(MirrorPaths.Nearest(transform.position));
             else Ghost.ServerSetState(mode);
         }
 
@@ -206,7 +210,7 @@ namespace MudancaAssombrada
             Ghost.ServerSetDisguise(-1);
             SetMode(GhostState.Fleeing);
             Ghost.Agent.speed = fleeSpeed;
-            targetMirror = GhostHideout.Farthest<Mirror>(transform.position);
+            targetMirror = MirrorPaths.Farthest(transform.position);
             if (targetMirror != null) Ghost.Agent.SetDestination(targetMirror.ExitPoint);
         }
 
@@ -239,7 +243,7 @@ namespace MudancaAssombrada
                     timer -= Time.deltaTime;
                     if (timer > 0) break;
                     if (bowThenBack) GoBack();
-                    else EnterMirror(GhostHideout.Nearest<Mirror>(transform.position)); // some ali e reaparece no reflexo
+                    else EnterMirror(MirrorPaths.Nearest(transform.position)); // some ali e reaparece no reflexo
                     break;
 
                 case GhostState.Disguised:
@@ -258,7 +262,7 @@ namespace MudancaAssombrada
                         // Arrastando sozinho um móvel de dupla? "Deixa que eu pego a outra ponta!"
                         var load = Furniture.HeldBy(victim.OwnerClientId);
                         if (load != null && IsSoloDrag(load)) StartBait(load);
-                        else StartPull(ask: true);
+                        else StartPull(ask: Ghost.IsDisguised); // sem disfarce (o portal) ele não pede nada
                     }
                     break;
 
@@ -301,6 +305,7 @@ namespace MudancaAssombrada
             Release();
             Ghost.ServerSetDisguise(-1);
             copied = -1;
+            pullPoint = null;
             SetMode(GhostState.InMirror);
             if (Ghost.Agent.isOnNavMesh) Ghost.Agent.ResetPath();
             home = mirror;
@@ -342,6 +347,24 @@ namespace MudancaAssombrada
             dragSeen = SoloDragger() != null ? dragSeen + dt : 0f;
         }
 
+        // O PORTAL da Câmara Secreta (PortalTrap, R13): alguém ficou sozinho lá dentro. Ele sai pelo
+        // portal SEM disfarce (a forma de verdade) e puxa a vítima para dentro dele. Só se está quieto
+        // num espelho e a aparição já aconteceu. Devolve se aceitou.
+        public bool ServerAmbushFromPortal(NetworkPlayer target, Vector3 portalExit)
+        {
+            if (target == null || target.Condition.IsDown) return false;
+            if (mode is not (GhostState.InMirror or GhostState.Emerging) || AppearancePending) return false;
+            victim = target;
+            copied = -1;
+            pullPoint = portalExit;
+            Ghost.ServerTeleport(portalExit);
+            Ghost.ServerSetDisguise(-1);
+            SetMode(GhostState.Disguised);
+            Ghost.Agent.speed = approachSpeed;
+            timer = giveUpTime;
+            return true;
+        }
+
         // Escolhe a vítima e quem vai copiar, passa para o espelho mais perto dela e espera para sair.
         void PrepareAttack()
         {
@@ -363,7 +386,7 @@ namespace MudancaAssombrada
             if (model == null || victim == null) { victim = null; timer = 1f; return; } // ninguém conectado ainda
 
             copied = model.Character.CurrentIndex;
-            Hop(GhostHideout.Nearest<Mirror>(victim.transform.position));
+            Hop(MirrorPaths.Nearest(victim.transform.position));
             SetMode(GhostState.Emerging); // todos os computadores sabem: a fala "minha deixa..."
             timer = emergeDelay;
         }
@@ -389,7 +412,7 @@ namespace MudancaAssombrada
         {
             Release();
             SetMode(GhostState.Disguised);
-            targetMirror = GhostHideout.Nearest<Mirror>(transform.position);
+            targetMirror = MirrorPaths.Nearest(transform.position);
             if (targetMirror == null) { EnterMirror(null); return; }
             Ghost.Agent.speed = approachSpeed;
             Ghost.Agent.SetDestination(targetMirror.ExitPoint);
@@ -418,7 +441,8 @@ namespace MudancaAssombrada
         {
             appeared = true;
             goingBack = false;
-            targetMirror = home != null ? home : GhostHideout.Nearest<Mirror>(transform.position); // para onde volta depois
+            // Para onde volta depois: o espelho da saída marcado (o E2), ou o mesmo de onde saiu.
+            targetMirror = appearanceExit != null ? appearanceExit : home != null ? home : MirrorPaths.Nearest(transform.position);
             Vector3 spot = stage != null ? stage.position : FrontSpot();
             SetMode(GhostState.Performing);
             Ghost.Agent.speed = performSpeed;
@@ -495,12 +519,13 @@ namespace MudancaAssombrada
             }
             ClearBait();
 
-            targetMirror = GhostHideout.Nearest<Mirror>(transform.position);
-            if (targetMirror == null) { Ghost.ServerCatch(victim); EnterMirror(null); return; } // cena sem espelho: derruba direto
+            // Saiu do portal: leva a vítima para o portal. Senão, para o espelho mais perto ANDANDO.
+            targetMirror = pullPoint.HasValue ? null : MirrorPaths.Nearest(transform.position);
+            if (!pullPoint.HasValue && targetMirror == null) { Ghost.ServerCatch(victim); EnterMirror(null); return; } // cena sem espelho: derruba direto
             SetMode(GhostState.Pulling);
             pulled = 0f;
             Ghost.Agent.speed = pullSpeed;
-            Ghost.Agent.SetDestination(targetMirror.ExitPoint);
+            Ghost.Agent.SetDestination(pullPoint ?? targetMirror.ExitPoint);
             victim.Condition.ServerSet(PlayerState.Pulled, Ghost.NetworkObject); // a condição cuida do arrasto
             victim.Condition.ServerSetPullLeft(pullTime);
 

@@ -34,6 +34,15 @@ namespace MudancaAssombrada
         [SerializeField] LayerMask reflectedLayers = ~0;
         [Tooltip("Folga do corte atrás do vidro (evita que a moldura apareça no reflexo).")]
         [SerializeField] float clipOffset = 0.02f;
+        [Tooltip("Espelho HERÓI: na tela, reflete antes dos outros, mesmo mais longe (a escadaria da " +
+                 "Mansão: quem sobe se vê nos dois do topo, e o reflexo não fica pulando de espelho).")]
+        [SerializeField] bool hero;
+
+        public bool Hero { get => hero; set => hero = value; }
+
+        // A ordem de quem reflete (menor primeiro): os heróis à frente de qualquer comum, e entre
+        // iguais o mais perto. Os testes ficam em MansionRulesTests (R04).
+        public static float Priority(float distance, bool hero) => hero ? distance - 1000f : distance;
 
         static readonly int ReflectionTexId = Shader.PropertyToID("_ReflectionTex");
         static readonly int StrengthId = Shader.PropertyToID("_Strength");
@@ -126,7 +135,7 @@ namespace MudancaAssombrada
             foreach (var m in All)
             {
                 float d = m.Score(eye, planes);
-                if (d >= 0) chosen.Add((d, m));
+                if (d >= 0) chosen.Add((Priority(d, m.hero), m));
             }
             chosen.Sort((a, b) => a.distance.CompareTo(b.distance));
 

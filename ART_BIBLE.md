@@ -11,6 +11,10 @@ cabeça e mãos, fantasmas, cenários e props) é a referência principal:
 **[Art Bible completo](https://claude.ai/artifact/QRYrVZE3fR6YV9xz1jgzkX)**
 Cópia em PDF: [LINK](https://drive.google.com/drive/folders/1PjxH6G6GQJBmZjVnji4HFQb9Co_kUkIT?usp=sharing).
 
+**[Art Bible · Fase 1 · A Mansão do Espelho](https://claude.ai/artifact/TqLD6yDYTxboC8wwv89ivw)**: a nova
+planta da Fase 1 (V1.2), com plantas, corte, ambientes, espelhos, luz, objetos de época e riscos.
+O texto e as medidas estão no [LEVEL_DESIGN_FASE1_MANSAO.md](LEVEL_DESIGN_FASE1_MANSAO.md).
+
 Como o código está organizado: [ARQUITETURA.md](ARQUITETURA.md).
 Padrão visual da interface: [DESIGN.md](DESIGN.md).
 Ordem de implementação dos designs, em fases: [PLANEJAMENTO.md](PLANEJAMENTO.md).
@@ -168,6 +172,7 @@ a penteadeira e o cartaz do teatro, pelo `MirrorHouseBuilder` (Casa do Espelho).
 | Relógio de pêndulo (fora do Art Bible: decoração do ENV_01) | modelo 0,55 × 0,32 × 2,1 m + prefab fixo com o tique-taque, no hall da Casa do Espelho | — |
 | Abandono e luz (Casa do Espelho, depois do 1º Play) | poltrona e cômoda sob lençol, teia, entulho, janela com tábuas, papel descascando, baú, papéis no chão, velas · lanterna e pilhas · **portas maiores: simples 1,20 × 2,40, dupla 1,60 × 2,40** (o Marcelo passa; o Art Bible dizia 0,90 × 2,10) | — |
 | Casa do Espelho de dois andares ([LEVEL_DESIGN_FASE1.md](LEVEL_DESIGN_FASE1.md) §9) | kit: escada (lance de 16 degraus), guarda-corpo, parede com porta dupla, laje, moldura G rachada, arandela a gás, clarabóia, tábua solta · cenário: manequins A/B/C, gramofone, retratos P/M/G, lustre, pia com torneira · móvel: arara de figurino | folhas de porta dupla, pote de pó, livro de falas |
+| Objetos de 1927 (Mansão, [LEVEL_DESIGN_FASE1_MANSAO.md](LEVEL_DESIGN_FASE1_MANSAO.md) §8 e §11) | `build_epoca_blockout.py`, 19 modelos: cristaleira, telefone de parede, cadeira de balanço, rolos de pianola, cofre, máquina de escrever, lanterna mágica, espelho de pé (psiché), máquina de costura, biombo, talha de barro, lampião de querosene, fogão a lenha, bancada, pratos empilhados, aparador + gaveta, livros soltos e a teia de vão (de 60 a 1104 triângulos) | acabamento; refletor de palco (móvel); cadeira austríaca de palhinha |
 | Props de história | rádio, bilhete, nota fiscal, cartaz, partitura, diário, caixinha (`Props/`) | relíquias que pesam mais longe da porta; texto real nos bilhetes (decal) |
 | Biblioteca (ENV_03) | estante, pilha de livros, luminária verde, piso de tábuas | cena; piso que range |
 | Kit modular (ENV_01–04) | parede lisa, parede com porta, porta, piso xadrez, molduras de espelho S/M/L (`Environment/`) | cenas das casas; instrumentos do Conservatório |

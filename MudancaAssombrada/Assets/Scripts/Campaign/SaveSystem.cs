@@ -22,11 +22,13 @@ namespace MudancaAssombrada
         // Marcadores: "achou o cartaz do teatro", "esqueceu o diário"... O final alternativo
         // do roteiro ("Volte para buscar o resto") depende de marcadores assim.
         // Marca o capítulo como concluído e paga. Devolve false se já estava (repetir não paga de novo).
-        public bool Complete(ChapterDefinition chapter)
+        // "extra" = o que a noite rendeu além do combinado: achados de época (+) e frágeis batidos (−).
+        // O capítulo paga no mínimo zero: o desconto nunca tira do caixa.
+        public bool Complete(ChapterDefinition chapter, int extra = 0)
         {
             if (chapter == null || IsCompleted(chapter.id)) return false;
             completedChapters.Add(chapter.id);
-            money += chapter.payment;
+            money += System.Math.Max(0, chapter.payment + extra);
             return true;
         }
 
@@ -96,9 +98,9 @@ namespace MudancaAssombrada
         }
 
         // Chamado em TODOS os computadores quando a equipe conclui um capítulo.
-        public static void CompleteChapter(ChapterDefinition chapter)
+        public static void CompleteChapter(ChapterDefinition chapter, int extra = 0)
         {
-            if (Data.Complete(chapter)) Save();
+            if (Data.Complete(chapter, extra)) Save();
         }
 
         // Apaga o progresso (útil para testar a campanha do começo).

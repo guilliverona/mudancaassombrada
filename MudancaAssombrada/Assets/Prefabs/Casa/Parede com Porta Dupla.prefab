@@ -9,9 +9,9 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1978549613021315411}
-  - component: {fileID: 2030588525087569753}
-  - component: {fileID: 2204264940140851462}
-  - component: {fileID: 2882193710705675953}
+  - component: {fileID: 7218617243704338609}
+  - component: {fileID: 2754824431743697389}
+  - component: {fileID: 1293509926326275779}
   m_Layer: 0
   m_Name: Parede com Porta Dupla
   m_TagString: Untagged
@@ -35,7 +35,7 @@ Transform:
   - {fileID: 2839732004972776873}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!65 &2030588525087569753
+--- !u!65 &7218617243704338609
 BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -54,9 +54,9 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.19999999, y: 2.8, z: 0.15}
-  m_Center: {x: -0.9, y: 1.4, z: 0}
---- !u!65 &2204264940140851462
+  m_Size: {x: 0.19999999, y: 3.2, z: 0.15}
+  m_Center: {x: -0.9, y: 1.6, z: 0}
+--- !u!65 &2754824431743697389
 BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -75,9 +75,9 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 0.19999999, y: 2.8, z: 0.15}
-  m_Center: {x: 0.9, y: 1.4, z: 0}
---- !u!65 &2882193710705675953
+  m_Size: {x: 0.19999999, y: 3.2, z: 0.15}
+  m_Center: {x: 0.9, y: 1.6, z: 0}
+--- !u!65 &1293509926326275779
 BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -96,8 +96,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1.6, y: 0.29999995, z: 0.15}
-  m_Center: {x: 0, y: 2.65, z: 0}
+  m_Size: {x: 1.6, y: 0.70000005, z: 0.15}
+  m_Center: {x: 0, y: 2.85, z: 0}
 --- !u!1001 &2369588621679831618
 PrefabInstance:
   m_ObjectHideFlags: 0

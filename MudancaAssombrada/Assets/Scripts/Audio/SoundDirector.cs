@@ -65,6 +65,12 @@ namespace MudancaAssombrada
         // Quanto o clima e as âncoras tocam agora (1 = normal). O AmbientSound multiplica por isto.
         public static float AmbienceGain { get; private set; } = 1f;
         public static Moment Current { get; private set; }
+        public static SoundDirector Instance { get; private set; }
+
+        // Para a pianola tocar a MESMA faixa no mesmo ponto (R18): a cama está tocando, e onde.
+        public AudioClip Clip => clip;
+        public bool BedPlaying => bedOn && decks[deck] != null && decks[deck].isPlaying;
+        public float BedTime => decks[deck] != null ? decks[deck].time : bedTime;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetStatics()
@@ -74,7 +80,8 @@ namespace MudancaAssombrada
         }
 
         readonly AudioSource[] decks = new AudioSource[2]; // dois "toca-discos" para trocar com crossfade
-        readonly float[] deckTarget = new float[2], deckSpeed = new float[2];
+        // level = o volume de cada toca-discos antes da pianola (a cama abaixa perto dela: Pianola.BedDuck).
+        readonly float[] deckTarget = new float[2], deckSpeed = new float[2], level = new float[2];
         int deck;
         AudioClip clip;
         float baseVolume;
@@ -92,6 +99,7 @@ namespace MudancaAssombrada
 
         void Awake()
         {
+            Instance = this;
             for (int i = 0; i < decks.Length; i++)
             {
                 var source = gameObject.AddComponent<AudioSource>();
@@ -109,7 +117,11 @@ namespace MudancaAssombrada
             Restart();
         }
 
-        void OnDestroy() => AmbienceGain = 1f;
+        void OnDestroy()
+        {
+            AmbienceGain = 1f;
+            if (Instance == this) Instance = null;
+        }
 
         void Restart()
         {
@@ -318,7 +330,7 @@ namespace MudancaAssombrada
         {
             float target = baseVolume * volume;
             if (Mathf.Approximately(deckTarget[deck], target)) return;
-            float from = decks[deck].volume;
+            float from = level[deck];
             deckTarget[deck] = target;
             deckSpeed[deck] = Mathf.Max(0.001f, Mathf.Abs(target - from)) / Mathf.Max(0.01f, fade);
         }
@@ -346,7 +358,7 @@ namespace MudancaAssombrada
             deck = 1 - deck;
             var source = decks[deck];
             source.clip = clip;
-            source.volume = 0f;
+            source.volume = level[deck] = 0f;
             bedOn = sectionOn = false;
             return source;
         }
@@ -368,7 +380,7 @@ namespace MudancaAssombrada
         {
             if (decks[i] == null) return;
             deckTarget[i] = 0f;
-            deckSpeed[i] = Mathf.Max(0.01f, decks[i].volume) / Mathf.Max(0.01f, fade);
+            deckSpeed[i] = Mathf.Max(0.01f, level[i]) / Mathf.Max(0.01f, fade);
         }
 
         void UpdateFades()
@@ -377,8 +389,10 @@ namespace MudancaAssombrada
             for (int i = 0; i < decks.Length; i++)
             {
                 var s = decks[i];
-                s.volume = Mathf.MoveTowards(s.volume, deckTarget[i], deckSpeed[i] * dt);
-                if (deckTarget[i] <= 0f && s.volume <= 0f && s.isPlaying) s.Stop();
+                level[i] = Mathf.MoveTowards(level[i], deckTarget[i], deckSpeed[i] * dt);
+                // Perto da pianola a cama 2D abaixa: o mesmo piano passa a vir dela, em 3D (§7).
+                s.volume = level[i] * (bedOn && i == deck ? Pianola.BedDuck : 1f);
+                if (deckTarget[i] <= 0f && level[i] <= 0f && s.isPlaying) s.Stop();
             }
             // A casa some rápido e volta devagar (como o ouvido "procurando" o barulho de novo).
             float speed = ambienceTarget < AmbienceGain ? 1f / ambienceDrop : 1f / ambienceReturn;

@@ -32,6 +32,7 @@ achá-los e as regras de trabalho. Ver "Como manter este arquivo" no fim.
 | O que já foi feito, o que vem a seguir, decisões em aberto | [PLANEJAMENTO.md](PLANEJAMENTO.md) |
 | Testes automatizados: o que já tem, o que falta, em que ordem | [TESTES.md](TESTES.md) |
 | Level design da Fase 1: briefing com os números do jogo, para projetar fora do código | [LEVEL_DESIGN_FASE1_BRIEFING.md](LEVEL_DESIGN_FASE1_BRIEFING.md) |
+| Fase 1 V1.2: a nova planta (Mansão do Espelho, casa na encosta), plantas, riscos e decisões | [LEVEL_DESIGN_FASE1_MANSAO.md](LEVEL_DESIGN_FASE1_MANSAO.md) (texto e medidas: a fonte) e o [Art Bible da fase](https://claude.ai/artifact/TqLD6yDYTxboC8wwv89ivw) (pranchas desenhadas) |
 | Os designs completos (fichas com vistas, cabeça e mãos, cenários) | Art Bible completo (link no ART_BIBLE.md) |
 
 **Antes de começar qualquer tarefa:** ler a parte do documento que trata do assunto e a tabela
@@ -149,6 +150,13 @@ tudo passa pelos serviços da Unity (Lobby + Relay), então precisa de internet.
 - **NavMesh do fantasma (raio 0,5 m, altura 2 m):** vão com menos de 1 m ele não atravessa; a colisão
   de cima da porta precisa de folga (10 cm acima do vão; no 1º andar o arredondamento fecha); pé de
   escada estreito isola (usar `NavMeshLink`). Conferir rotas com `NavMesh.CalculatePath` num script temporário.
+  Porta simples de 1,20 m fecha na resolução padrão do bake: a Mansão usa voxel de 5 cm (`FineNavMesh`).
+  `NavMeshObstacle` ligado no bake grava o buraco para sempre: o `LevelSceneTools` desliga os obstáculos
+  só durante o bake. Num script temporário, eles recortam o NavMesh também no editor (desligar e
+  `RemoveData`/`AddData` para medir o mapa salvo). Fora do Play, `GhostHideout.All` fica vazio.
+- **Fotos de cena em batch:** sem `-nographics`, dá para renderizar a cena num RenderTexture. Desligar a
+  névoa da noite, senão a câmera de longe pinta tudo de bege. A pasta `Temp` é apagada ao sair (gravar em `Logs`).
+  A 1ª foto sai cinza, sem materiais: renderizar um quadro de aquecimento antes.
 - **Luz ambiente:** trocar `RenderSettings.ambientLight` não basta no URP; sem `DynamicGI.UpdateEnvironment()`
   a cena fica com o azul padrão do céu (a `NightLighting` já faz).
 - **Art Bible offline:** o PDF não abre aqui (falta o poppler). O `.html` salvo é um pacote: cada página
