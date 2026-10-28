@@ -80,28 +80,9 @@ namespace MudancaAssombrada.Editor
             cues.alignment = TextAnchor.LowerLeft;
             UiBuilder.Place(cues, Vector2.zero, Vector2.zero, new Vector2(Margin, Margin + 24), new Vector2(760, 180));
 
-            // --- Embaixo, no meio: a hotbar (3 espaços; aparece ao trocar de item e some sozinha) ---
-            const float SlotSize = 72f, SlotGap = 10f;
-            var hotbar = new GameObject("Hotbar", typeof(RectTransform), typeof(CanvasGroup));
-            hotbar.transform.SetParent(canvas, false);
-            float hotbarWidth = HotbarRules.Slots * SlotSize + (HotbarRules.Slots - 1) * SlotGap;
-            UiBuilder.Place(hotbar.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0, Margin), new Vector2(hotbarWidth, SlotSize));
-            var group = hotbar.GetComponent<CanvasGroup>();
-            group.alpha = 0f;
-            group.interactable = false;
-            group.blocksRaycasts = false;
-            var slots = new Object[HotbarRules.Slots];
-            var labels = new Object[HotbarRules.Slots];
-            for (int i = 0; i < HotbarRules.Slots; i++)
-            {
-                var slot = UiBuilder.CreateImage($"Espaço {i + 1}", hotbar.transform, FieldColor);
-                slot.gameObject.AddComponent<Outline>().effectColor = BorderColor;
-                UiBuilder.Place(slot, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(i * (SlotSize + SlotGap), 0), new Vector2(SlotSize, SlotSize));
-                var label = UiBuilder.CreateText("Item", slot.transform, "", NoteSize - 4);
-                UiBuilder.Stretch(label);
-                slots[i] = slot;
-                labels[i] = label;
-            }
+            // --- Embaixo, no meio: a hotbar (caixinhas com fita; aparece ao trocar de item e some sozinha) ---
+            var (group, slots, useHint, _, useAction) = BuildHotbar(canvas);
+            var icons = ItemIconBuilder.EnsureAll(); // ícones gerados dos modelos do jogo
 
             // --- Tela de fim de partida (cobre tudo) ---
             var endScreen = UiBuilder.CreateImage("Fim de Partida", canvas, new Color(0, 0, 0, 0.75f));
@@ -129,11 +110,122 @@ namespace MudancaAssombrada.Editor
             EditorTools.SetReference(hud, "cuesText", cues);
             EditorTools.SetReference(hud, "hotbar", group);
             EditorTools.SetReferences(hud, "hotbarSlots", slots);
-            EditorTools.SetReferences(hud, "hotbarLabels", labels);
+            EditorTools.SetReference(hud, "useHint", useHint);
+            EditorTools.SetReference(hud, "useHintAction", useAction);
+            EditorTools.SetReference(hud, "flashlightIcon", icons[0]);
+            EditorTools.SetReference(hud, "batteryIcon", icons[1]);
+            EditorTools.SetReference(hud, "caneIcon", icons[2]);
 
             // A HUD não tem botões: não precisa "ouvir" cliques (e assim não atrapalha a pausa).
             Object.DestroyImmediate(canvas.GetComponent<GraphicRaycaster>());
             return canvas.gameObject;
+        }
+
+        // A hotbar no estilo do menu (DESIGN.md: caixinha de mudança com fita, tecla na caixinha com
+        // borda como o [E]). Cada espaço é um HotbarSlotView; a Hud centraliza pelo número de espaços.
+        //
+        //       (mouse) ESQ Trocar as pilhas   ← dica do Usar (só com as pilhas na mão)
+        //     ▱▱▱      ▱▱▱      ▱▱▱            ← fita torta
+        //    ┌────┐   ┌────┐   ┌────┐
+        //    │ ic │   │ ic │   │    │          ← ícone
+        //    │▬▬▬ │   │    │   │    │          ← bateria (só a lanterna)
+        //    └────┘   └────┘   └────┘
+        //    [1]FRACA  [2]      [3]            ← tecla (e "FRACA" com a bateria acabando)
+        const float SlotSize = 64f, KeyRow = 26f;
+        static readonly float[] TapeTilt = { -3f, 2f, -1.5f };
+
+        static (CanvasGroup, Object[], GameObject, Text, Text) BuildHotbar(Transform canvas)
+        {
+            var root = new GameObject("Hotbar", typeof(RectTransform), typeof(CanvasGroup));
+            root.transform.SetParent(canvas, false);
+            UiBuilder.Place(root.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0, Margin), new Vector2(240, SlotSize + KeyRow + 48));
+            var group = root.GetComponent<CanvasGroup>();
+            group.alpha = 0f;
+            group.interactable = false;
+            group.blocksRaycasts = false;
+
+            var slots = new Object[HotbarRules.Slots];
+            for (int i = 0; i < HotbarRules.Slots; i++)
+            {
+                var slotGo = new GameObject($"Espaço {i + 1}", typeof(RectTransform));
+                slotGo.transform.SetParent(root.transform, false);
+                UiBuilder.Place(slotGo.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), Vector2.zero, new Vector2(SlotSize, SlotSize + KeyRow));
+
+                // A caixinha, acima da linha da tecla.
+                var box = UiBuilder.CreateImage("Caixa", slotGo.transform, FieldColor);
+                var border = box.gameObject.AddComponent<Outline>();
+                border.effectColor = BorderColor;
+                UiBuilder.Place(box, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0, KeyRow), new Vector2(SlotSize, SlotSize));
+
+                // O pedaço de fita torta em cima (só decoração: nunca atrás de texto).
+                var tape = UiBuilder.CreateImage("Fita", box.transform, TapeColor);
+                UiBuilder.Place(tape, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0, 1), new Vector2(40, 11));
+                tape.rectTransform.localRotation = Tilt(TapeTilt[i % TapeTilt.Length]);
+
+                var icon = UiBuilder.CreateImage("Ícone", box.transform, TextColor);
+                icon.preserveAspect = true;
+                UiBuilder.Place(icon, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0, 5), new Vector2(42, 42));
+
+                // A barrinha de bateria (só a lanterna), embaixo dentro da caixa.
+                var battery = UiBuilder.CreateImage("Bateria", box.transform, ShadowColor);
+                battery.gameObject.AddComponent<Outline>().effectColor = BorderColor;
+                UiBuilder.Place(battery, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0, 7), new Vector2(40, 5));
+                var fill = UiBuilder.CreateImage("Carga", battery.transform, TextColor);
+                UiBuilder.Stretch(fill); // a Hud muda onde ela termina (anchorMax.x), como a estamina
+
+                // A tecla numa caixinha com borda (o mesmo formato do [E] da dica de interação).
+                var keyBox = UiBuilder.CreateImage("Tecla", slotGo.transform, FieldColor);
+                keyBox.gameObject.AddComponent<Outline>().effectColor = BorderColor;
+                UiBuilder.Place(keyBox, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0, 0), new Vector2(22, 22));
+                var key = UiBuilder.CreateText("Número", keyBox.transform, (i + 1).ToString(), NoteSize);
+                key.font = GameFonts.Title;
+                key.verticalOverflow = VerticalWrapMode.Overflow; // a linha da Bebas é mais alta que a caixinha
+                UiBuilder.Stretch(key);
+
+                // "FRACA" ao lado da tecla quando a bateria está acabando (perigo sempre com palavra).
+                var low = UiBuilder.CreateText("Fraca", slotGo.transform, "FRACA", NoteSize);
+                low.font = GameFonts.Title;
+                low.color = DangerColor;
+                low.alignment = TextAnchor.MiddleLeft;
+                low.verticalOverflow = VerticalWrapMode.Overflow;
+                UiBuilder.Place(low, new Vector2(0.5f, 0f), new Vector2(0f, 0f), new Vector2(15, 0), new Vector2(60, 22));
+                low.gameObject.SetActive(false);
+
+                var view = slotGo.AddComponent<HotbarSlotView>();
+                EditorTools.SetReference(view, "box", box);
+                EditorTools.SetReference(view, "border", border);
+                EditorTools.SetReference(view, "icon", icon);
+                EditorTools.SetReference(view, "battery", battery.gameObject);
+                EditorTools.SetReference(view, "batteryFill", fill.rectTransform);
+                EditorTools.SetReference(view, "batteryFillImage", fill);
+                EditorTools.SetReference(view, "key", key);
+                EditorTools.SetReference(view, "low", low);
+                slots[i] = view;
+            }
+
+            // A dica do botão Usar, logo acima da barra: o mouse com o botão esquerdo aceso (MouseIconBuilder),
+            // "ESQ" e a ação. Pequena: é um lembrete, não um aviso.
+            var hint = new GameObject("Dica do Usar", typeof(RectTransform));
+            hint.transform.SetParent(root.transform, false);
+            UiBuilder.Place(hint.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0, KeyRow + SlotSize + 14), new Vector2(220, 26));
+            var mouse = UiBuilder.CreateImage("Mouse", hint.transform, Color.white);
+            mouse.sprite = MouseIconBuilder.Ensure();
+            mouse.preserveAspect = true;
+            UiBuilder.Place(mouse, new Vector2(0, 0.5f), new Vector2(0, 0.5f), Vector2.zero, new Vector2(17, 24));
+            var hintKey = UiBuilder.CreateText("Botão", hint.transform, "ESQ", NoteSize);
+            hintKey.font = GameFonts.Title;
+            hintKey.color = MutedColor;
+            hintKey.alignment = TextAnchor.MiddleLeft;
+            hintKey.verticalOverflow = VerticalWrapMode.Overflow;
+            UiBuilder.Place(hintKey, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(22, 0), new Vector2(30, 24));
+            var hintAction = UiBuilder.CreateText("Ação", hint.transform, "Trocar as pilhas", NoteSize);
+            hintAction.alignment = TextAnchor.MiddleLeft;
+            hintAction.color = HighlightColor;
+            hintAction.verticalOverflow = VerticalWrapMode.Overflow;
+            UiBuilder.Place(hintAction, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(52, 0), new Vector2(168, 24));
+            hint.SetActive(false);
+
+            return (group, slots, hint, hintKey, hintAction);
         }
     }
 }

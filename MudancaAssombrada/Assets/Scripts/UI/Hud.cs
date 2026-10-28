@@ -39,10 +39,25 @@ namespace MudancaAssombrada
         [Header("Hotbar (embaixo, no meio)")]
         [Tooltip("A barra inteira: aparece quando algo muda e some sozinha (a HUD é mínima).")]
         [SerializeField] CanvasGroup hotbar;
-        [SerializeField] Image[] hotbarSlots;
-        [SerializeField] Text[] hotbarLabels;
+        [Tooltip("Uma caixinha por espaço (até 3); a Hud mostra só as do personagem e centraliza.")]
+        [SerializeField] HotbarSlotView[] hotbarSlots;
+        [Tooltip("A dica do botão Usar, logo acima da barra: o mouse com o botão esquerdo aceso, \"ESQ\" " +
+                 "e a ação (pilhas na mão: \"Trocar as pilhas\").")]
+        [SerializeField] GameObject useHint;
+        [SerializeField] Text useHintAction;
+        [Tooltip("Ícones gerados dos modelos do jogo (ItemIconBuilder).")]
+        [SerializeField] Sprite flashlightIcon, batteryIcon, caneIcon;
         [Tooltip("Segundos na tela depois da última troca de item.")]
         [SerializeField] float hotbarShowSeconds = 3f;
+        [SerializeField] float hotbarSlotSize = 64f, hotbarSlotGap = 12f;
+        [Tooltip("Entrada suave: quantos pixels a barra sobe enquanto aparece.")]
+        [SerializeField] float hotbarSlide = 12f;
+        [Tooltip("Segundos que a caixinha brilha quando chega um item novo.")]
+        [SerializeField] float hotbarFlashSeconds = 0.6f;
+
+        Vector2 hotbarHome;                 // onde a barra fica quando inteira (a entrada parte daqui)
+        uint lastHotbar;                    // a barra no quadro anterior (para achar item novo)
+        readonly float[] gainedAt = { float.NegativeInfinity, float.NegativeInfinity, float.NegativeInfinity };
 
         [Header("Regras de exibição")]
         [Tooltip("Abaixo disto (em segundos), o relógio fica na cor de perigo.")]
@@ -51,6 +66,11 @@ namespace MudancaAssombrada
         // StringBuilder: monta textos grandes sem criar um monte de pedaços de texto no caminho.
         readonly StringBuilder sb = new();
         float noteHideTime = -1f; // < 0 = o bilhete ainda não apareceu nesta partida
+
+        void Awake()
+        {
+            if (hotbar != null) hotbarHome = ((RectTransform)hotbar.transform).anchoredPosition;
+        }
 
         void Update()
         {
@@ -185,42 +205,64 @@ namespace MudancaAssombrada
             UpdateHotbar(player.GetComponent<Hotbar>());
         }
 
-        // Um quadradinho por espaço do personagem (o Marcelo tem 2): o número da tecla e o item.
-        // O da mão ganha a borda de "selecionado".
-        // Só aparece por uns segundos depois de trocar ou pegar algo, e some devagar (FadeSlow).
+        // As caixinhas com fita (estilo do menu), uma por espaço do personagem e CENTRALIZADAS (o
+        // Marcelo tem 2): o ícone do item, a borda ectoplasma na mão, a barrinha de bateria da lanterna,
+        // a tecla embaixo, e a dica do botão Usar em cima quando as pilhas estão na mão.
+        // Aparece por uns segundos depois de trocar ou pegar algo (e enquanto dá para trocar as pilhas),
+        // subindo um pouco enquanto aparece, e some devagar (FadeSlow). Item novo: a caixinha acende.
+        // As contas ficam em HotbarHudRules.
         void UpdateHotbar(Hotbar bar)
         {
-            if (hotbar == null) return; // HUD antiga, sem a peça: recrie os prefabs
+            if (hotbar == null || hotbarSlots == null || hotbarSlots.Length == 0) return; // HUD antiga: recrie os prefabs
 
+            var flashlight = bar != null ? bar.GetComponent<Flashlight>() : null;
+            bool canReload = flashlight != null && flashlight.CanReload;
             bool show = bar != null && !PauseMenu.IsOpen && !bar.IsEmpty
-                        && Time.time - bar.ChangedAt < hotbarShowSeconds;
+                        && (Time.time - bar.ChangedAt < hotbarShowSeconds || canReload);
             hotbar.alpha = Mathf.MoveTowards(hotbar.alpha, show ? 1f : 0f, Time.unscaledDeltaTime / Theme.FadeSlow);
-            if (bar == null || hotbar.alpha <= 0f) return;
+            ((RectTransform)hotbar.transform).anchoredPosition =
+                hotbarHome + new Vector2(0f, HotbarHudRules.SlideOffset(hotbar.alpha, hotbarSlide));
+            if (bar == null) return;
 
-            var flashlight = bar.GetComponent<Flashlight>();
-            for (int i = 0; i < hotbarSlots.Length && i < hotbarLabels.Length; i++)
+            // Item novo em algum espaço: guarda a hora, para a caixinha acender.
+            uint packed = bar.Packed;
+            if (packed != lastHotbar)
             {
+                for (int i = 0; i < gainedAt.Length; i++)
+                    if (HotbarHudRules.Gained(lastHotbar, packed, i)) gainedAt[i] = Time.time;
+                lastHotbar = packed;
+            }
+            if (hotbar.alpha <= 0f) return;
+
+            for (int i = 0; i < hotbarSlots.Length; i++)
+            {
+                var slot = hotbarSlots[i];
                 bool exists = i < bar.Count;
-                if (hotbarSlots[i].gameObject.activeSelf != exists) hotbarSlots[i].gameObject.SetActive(exists);
+                if (slot.gameObject.activeSelf != exists) slot.gameObject.SetActive(exists);
                 if (!exists) continue;
 
+                slot.Rect.anchoredPosition = new Vector2(HotbarHudRules.SlotX(i, bar.Count, hotbarSlotSize, hotbarSlotGap), 0f);
                 var item = bar.Get(i);
-                bool inHand = i == bar.Selected;
-                hotbarSlots[i].GetComponent<Outline>().effectColor = inHand ? Theme.HighlightColor : Theme.BorderColor;
-                hotbarSlots[i].color = inHand ? Theme.RaisedColor : Theme.FieldColor;
+                float battery = item == HotbarItem.Flashlight && flashlight != null ? flashlight.Charge01 : -1f;
+                float flash = i < gainedAt.Length ? HotbarHudRules.Flash(Time.time - gainedAt[i], hotbarFlashSeconds) : 0f;
+                slot.Draw(IconFor(item), i == bar.Selected, battery, flash, GameInput.KeyLabel(GameInput.HotbarSlot[i]));
+            }
 
-                sb.Clear();
-                sb.Append("<size=").Append(Theme.NoteSize - 4).Append('>')
-                  .Append(Colored(GameInput.KeyLabel(GameInput.HotbarSlot[i]), Theme.MutedColor)).Append("</size>\n");
-                if (item == HotbarItem.Flashlight && flashlight != null)
-                    sb.Append("Lanterna\n").Append(Colored($"{Mathf.CeilToInt(flashlight.Charge01 * 100f)}%",
-                        flashlight.Charge01 < 0.2f ? Theme.DangerColor : Theme.MutedColor));
-                else if (item == HotbarItem.Battery) sb.Append("Pilhas");
-                else if (item == HotbarItem.Cane) sb.Append("Bengala");
-                SetText(hotbarLabels[i], sb.ToString());
-                hotbarLabels[i].color = inHand ? Theme.HighlightColor : Theme.TextColor;
+            // A dica do botão Usar, junto da barra (e não no canto da tela).
+            if (useHint != null)
+            {
+                if (useHint.activeSelf != canReload) useHint.SetActive(canReload);
+                if (canReload) SetText(useHintAction, "Trocar as pilhas"); // o mouse e o "ESQ" são fixos (HudBuilder)
             }
         }
+
+        Sprite IconFor(HotbarItem item) => item switch
+        {
+            HotbarItem.Flashlight => flashlightIcon,
+            HotbarItem.Battery => batteryIcon,
+            HotbarItem.Cane => caneIcon,
+            _ => null,
+        };
 
         void UpdateStamina(PlayerMovement movement)
         {
@@ -266,9 +308,6 @@ namespace MudancaAssombrada
                 sb.Append("\n[").Append(GameInput.KeyLabel(GameInput.Flashlight)).Append("] Lanterna ")
                   .Append(Colored($"{charge}%{state}", color));
             }
-            // Pilhas na mão e a lanterna pedindo carga: a dica do botão Usar.
-            if (flashlight != null && flashlight.CanReload)
-                sb.Append("\n[").Append(GameInput.KeyLabel(GameInput.UseItem)).Append("] Trocar as pilhas");
 
             // Trocar de personagem no meio da partida é só para TESTES (no roteiro, cada jogador
             // é um personagem fixo). Por isso a lista só aparece no editor / build de desenvolvimento.
