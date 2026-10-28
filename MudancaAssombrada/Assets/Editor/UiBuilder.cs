@@ -388,18 +388,35 @@ namespace MudancaAssombrada.Editor
         public static OptionsPanel CreateOptionsPanel(Transform parent)
         {
             var panel = CreatePanel("Painel Opções", parent, 820);
-            var sensitivityText = CreateText("Sensibilidade (texto)", panel, "", BodySize);
-            var sensitivitySlider = CreateSlider(panel, 0.2f, 3f);
-            var volumeText = CreateText("Volume (texto)", panel, "", BodySize);
-            var volumeSlider = CreateSlider(panel, 0f, 1f);
-            var fullscreenToggle = CreateToggle(panel, "Tela cheia");
+
+            // Fileira de abas no topo; o OptionsPanel liga uma página por vez.
+            var tabRow = new GameObject("Abas", typeof(RectTransform), typeof(HorizontalLayoutGroup));
+            tabRow.transform.SetParent(panel, false);
+            var rowLayout = tabRow.GetComponent<HorizontalLayoutGroup>();
+            rowLayout.spacing = 14;
+            rowLayout.childControlWidth = rowLayout.childControlHeight = true;
+            rowLayout.childForceExpandWidth = true;
+            var generalTab = CreateTab("Geral", tabRow.transform);
+            var videoTab = CreateTab("Vídeo", tabRow.transform);
+            SetHeight(tabRow, 72);
+
+            // Geral
+            var general = CreatePage("Página Geral", panel);
+            var sensitivityText = CreateText("Sensibilidade (texto)", general, "", BodySize);
+            var sensitivitySlider = CreateSlider(general, 0.2f, 3f);
+            var volumeText = CreateText("Volume (texto)", general, "", BodySize);
+            var volumeSlider = CreateSlider(general, 0f, 1f);
+
             // Vídeo: os rótulos dos botões são reescritos pelo OptionsPanel ("Qualidade: Alta"...).
-            var qualityButton = CreateButton("Qualidade", panel);
-            var antialiasingButton = CreateButton("Antialiasing", panel);
-            var renderScaleText = CreateText("Resolução 3D (texto)", panel, "", BodySize);
-            var renderScaleSlider = CreateSlider(panel, 10f, 20f); // 50% a 100%, de 5 em 5
-            var vsyncToggle = CreateToggle(panel, "VSync");
-            var fpsButton = CreateButton("Limite de FPS", panel);
+            var video = CreatePage("Página Vídeo", panel);
+            var fullscreenToggle = CreateToggle(video, "Tela cheia");
+            var qualityButton = CreateButton("Qualidade", video);
+            var antialiasingButton = CreateButton("Antialiasing", video);
+            var renderScaleText = CreateText("Resolução 3D (texto)", video, "", BodySize);
+            var renderScaleSlider = CreateSlider(video, 10f, 20f); // 50% a 100%, de 5 em 5
+            var vsyncToggle = CreateToggle(video, "VSync");
+            var fpsButton = CreateButton("Limite de FPS", video);
+
             var backButton = CreateButton("Voltar", panel, ButtonStyle.Ghost);
 
             var options = panel.gameObject.AddComponent<OptionsPanel>();
@@ -416,8 +433,46 @@ namespace MudancaAssombrada.Editor
             so.FindProperty("renderScaleValueText").objectReferenceValue = renderScaleText;
             so.FindProperty("vsyncToggle").objectReferenceValue = vsyncToggle;
             so.FindProperty("fpsButton").objectReferenceValue = fpsButton;
+            SetArray(so.FindProperty("tabButtons"), generalTab, videoTab);
+            SetArray(so.FindProperty("tabPages"), general.gameObject, video.gameObject);
             so.ApplyModifiedPropertiesWithoutUndo();
             return options;
+        }
+
+        // Uma aba: botão escuro com uma faixa em ectoplasma embaixo (o "Marcador"), acesa só na aba aberta.
+        static Button CreateTab(string label, Transform parent)
+        {
+            var button = CreateButton(label, parent);
+            var marker = CreateImage("Marcador", button.transform, HighlightColor);
+            marker.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
+            var rect = marker.rectTransform;
+            rect.anchorMin = new Vector2(0, 0);
+            rect.anchorMax = new Vector2(1, 0);
+            rect.pivot = new Vector2(0.5f, 0);
+            rect.anchoredPosition = Vector2.zero;
+            rect.sizeDelta = new Vector2(0, 5);
+            return button;
+        }
+
+        // Página de aba: coluna sem fundo que ocupa o espaço livre do painel.
+        static Transform CreatePage(string name, Transform parent)
+        {
+            var go = new GameObject(name, typeof(RectTransform), typeof(VerticalLayoutGroup), typeof(LayoutElement));
+            go.transform.SetParent(parent, false);
+            var layout = go.GetComponent<VerticalLayoutGroup>();
+            layout.spacing = 14;
+            layout.childAlignment = TextAnchor.UpperCenter;
+            layout.childControlWidth = layout.childControlHeight = true;
+            layout.childForceExpandWidth = true;
+            layout.childForceExpandHeight = false;
+            go.GetComponent<LayoutElement>().flexibleHeight = 1; // empurra o "Voltar" para o fim do painel
+            return go.transform;
+        }
+
+        static void SetArray(SerializedProperty array, params UnityEngine.Object[] items)
+        {
+            array.arraySize = items.Length;
+            for (int i = 0; i < items.Length; i++) array.GetArrayElementAtIndex(i).objectReferenceValue = items[i];
         }
 
         // Posiciona um elemento solto na tela (fora de painéis com layout).

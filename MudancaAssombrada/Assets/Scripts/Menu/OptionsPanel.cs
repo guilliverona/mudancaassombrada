@@ -25,11 +25,23 @@ namespace MudancaAssombrada
         [SerializeField] Text renderScaleValueText;
         [SerializeField] Toggle vsyncToggle;
 
+        [Header("Abas")]
+        // Cada botão de aba mostra a página de mesmo índice (aba 0 → página 0...).
+        // O marcador (filho "Marcador" do botão) é a faixa em ectoplasma embaixo da aba aberta.
+        [SerializeField] Button[] tabButtons;
+        [SerializeField] GameObject[] tabPages;
+
         // Quem abriu o painel escuta isto para saber quando voltar à tela anterior.
         public event Action Closed;
 
         void Awake()
         {
+            for (int i = 0; i < tabButtons.Length; i++)
+            {
+                int tab = i; // cópia: o "i" do for muda, e o clique precisa lembrar o valor de agora
+                tabButtons[i].onClick.AddListener(() => ShowTab(tab));
+            }
+
             sensitivitySlider.onValueChanged.AddListener(v => { GameSettings.MouseSensitivity = v; RefreshLabels(); });
             volumeSlider.onValueChanged.AddListener(v => { GameSettings.Volume = v; GameSettings.Apply(); RefreshLabels(); });
             fullscreenToggle.onValueChanged.AddListener(v => { GameSettings.Fullscreen = v; GameSettings.Apply(); });
@@ -63,7 +75,18 @@ namespace MudancaAssombrada
             fullscreenToggle.SetIsOnWithoutNotify(GameSettings.Fullscreen);
             renderScaleSlider.SetValueWithoutNotify(Mathf.Round(GameSettings.RenderScale * 20f));
             vsyncToggle.SetIsOnWithoutNotify(GameSettings.VSync);
+            ShowTab(0); // abre sempre na primeira aba
             RefreshLabels();
+        }
+
+        void ShowTab(int tab)
+        {
+            for (int i = 0; i < tabPages.Length; i++)
+            {
+                tabPages[i].SetActive(i == tab);
+                var marker = tabButtons[i].transform.Find("Marcador");
+                if (marker != null) marker.gameObject.SetActive(i == tab);
+            }
         }
 
         void RefreshLabels()
