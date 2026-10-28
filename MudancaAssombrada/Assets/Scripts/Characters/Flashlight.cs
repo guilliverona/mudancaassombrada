@@ -13,16 +13,16 @@ namespace MudancaAssombrada
     //     fraca. Quem carrega fica meio cego; quem está de mão livre ilumina o caminho para ele;
     //   - GUARDADA (outro espaço escolhido): apaga.
     // A tecla L liga/desliga; com a lanterna guardada, tira do cinto e já acende (carregando um
-    // móvel, vai direto para o colete, como pela tecla do número).
+    // móvel, vai direto para o cinto, como pela tecla do número).
     //
     // A BATERIA acaba: ligada, gasta (100 s de luz com a carga cheia); abaixo de 20% a luz começa
     // a falhar, cada vez mais; em 0 apaga sozinha. Pilhas espalhadas pela casa vão para a HOTBAR
     // (ocupam um espaço!); com o pacote na mão, "Usar item" recarrega um pedaço. Gerir a luz (ligar
     // só quando precisa, guardar pilha ou levar outra coisa) é parte do jogo.
-    // O modelo da lanterna na mão/no colete é do HeldItems.
+    // O modelo da lanterna na mão/no cinto é do HeldItems.
     //
     // REDE: o host decide QUEM tem lanterna (está na hotbar dele). Ligar, o lugar e a carga são do
-    // DONO (é ele que aperta a tecla e carrega o móvel); todos veem a luz acesa, falhando e no colete.
+    // DONO (é ele que aperta a tecla e carrega o móvel); todos veem a luz acesa, falhando e no cinto.
     public class Flashlight : NetworkBehaviour
     {
         [Tooltip("O spot de luz, preso na câmera (a lanterna aponta para onde o jogador olha).")]
@@ -34,12 +34,12 @@ namespace MudancaAssombrada
         [Tooltip("Quanto um pacote de pilhas recarrega (0,4 = 40% da bateria).")]
         [SerializeField, Range(0f, 1f)] float batteryCharge = 0.4f;
 
-        [Header("No colete (carregando um móvel)")]
-        [Tooltip("Fração da força da luz presa no colete.")]
+        [Header("No cinto (carregando um móvel)")]
+        [Tooltip("Fração da força da luz presa no cinto.")]
         [SerializeField, Range(0f, 1f)] float chestIntensity = 0.6f;
-        [Tooltip("Metros abaixo dos olhos onde fica o colete.")]
+        [Tooltip("Metros abaixo dos olhos onde fica o cinto.")]
         [SerializeField] float chestBelowEyes = 0.35f;
-        [Tooltip("Graus para baixo: no colete ela aponta um pouco para o chão, à frente.")]
+        [Tooltip("Graus para baixo: no cinto ela aponta um pouco para o chão, à frente.")]
         [SerializeField] float chestTilt = 12f;
 
         readonly NetworkVariable<bool> on = new(
@@ -122,7 +122,7 @@ namespace MudancaAssombrada
                         break;
                     case ItemKey.TakeOutAndUse:
                         hotbar.Select(hotbar.Find(HotbarItem.Flashlight));
-                        place.Value = HotbarRules.PlaceOf(true, busy); // carregando: direto no colete
+                        place.Value = HotbarRules.PlaceOf(true, busy); // carregando: direto no cinto
                         if (charge > 0f) SetOn(true);
                         break;
                 }
@@ -180,7 +180,7 @@ namespace MudancaAssombrada
         // A lente do modelo brilha junto (HeldItems).
         public float LightLevel { get; private set; }
 
-        // Depois de a câmera girar (PlayerMovement, no Update): no colete, o spot ignora o olhar
+        // Depois de a câmera girar (PlayerMovement, no Update): no cinto, o spot ignora o olhar
         // para cima/baixo e segue o corpo; na mão, volta para a câmera.
         void LateUpdate()
         {

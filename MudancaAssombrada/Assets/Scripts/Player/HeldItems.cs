@@ -31,8 +31,16 @@ namespace MudancaAssombrada
         [Tooltip("De onde sai a luz, no espaço do modelo: um pouco à frente da lente (o braço e a própria " +
                  "lanterna ficam atrás da luz e não fazem sombra nela).")]
         [SerializeField] Vector3 flashlightLens = new(0f, 0.055f, 0.14f);
-        [Tooltip("No colete: quantos metros à frente do osso do peito.")]
-        [SerializeField] float chestForward = 0.16f;
+        [Header("No cinto (carregando um móvel)")]
+        [Tooltip("De que lado da cintura a lanterna fica: +1 = DIREITO do personagem, −1 = esquerdo " +
+                 "(o Tiago tem a bolsa no quadril esquerdo).")]
+        [SerializeField] float beltSide = 1f;
+        [Tooltip("Metros para a frente (+) ou para trás (−) do meio do quadril, bem do lado da cintura.")]
+        [SerializeField] float beltForward = 0.02f;
+        [Tooltip("Graus para baixo: no cinto ela aponta um pouco para o chão, à frente.")]
+        [SerializeField] float beltTilt = 10f;
+        [Tooltip("Folga entre o corpo e o meio do cabo (o raio do cabo é 3,2 cm).")]
+        [SerializeField] float beltGap = 0.036f;
         [Tooltip("Cor e força do brilho da lente acesa (3200 K, como a luz). Os colegas veem de longe quem " +
                  "está com a luz ligada, e a lente pisca junto quando a bateria está fraca.")]
         [SerializeField, ColorUsage(false, true)] Color lensGlow = new Color(1f, 0.86f, 0.68f) * 4f;
@@ -59,7 +67,8 @@ namespace MudancaAssombrada
 
         // Achados no modelo atual (refeitos quando o personagem muda).
         DollWalk walk;
-        Transform chest, socket;
+        Transform hips, socket;
+        float beltWidth; // até onde vai o corpo na altura do cinto, do lado da lanterna (m)
         ArmBones arm;
         Vector3 steadyShoulder;                   // o ombro suavizado, no espaço do corpo
         bool hasSteadyShoulder;
@@ -149,7 +158,7 @@ namespace MudancaAssombrada
                 ArmRaised = true;
             }
 
-            if (place == FlashlightPlace.Stowed || (place == FlashlightPlace.Chest ? chest == null : !ArmRaised && socket == null))
+            if (place == FlashlightPlace.Stowed || (place == FlashlightPlace.Chest ? hips == null : !ArmRaised && socket == null))
             {
                 lantern.SetActive(false);
                 return;
@@ -157,7 +166,14 @@ namespace MudancaAssombrada
             lantern.SetActive(true);
             UpdateLens();
             if (place == FlashlightPlace.Chest)
-                PlaceLantern(chest.position + transform.forward * chestForward, flashlight.Beam.rotation, moveBeam: false);
+            {
+                // Bem do lado da cintura (direita), encostada no corpo; aponta para a frente e um pouco
+                // para baixo, e a luz sai dela (para os colegas e no seu reflexo, é o mesmo lugar).
+                Quaternion belt = transform.rotation * Quaternion.Euler(beltTilt, 0f, 0f);
+                Vector3 point = hips.position + transform.right * (Mathf.Sign(beltSide) * (beltWidth + beltGap))
+                              + transform.forward * beltForward;
+                PlaceLantern(point, belt, moveBeam: true);
+            }
             else
                 PlaceLantern(ArmRaised ? arm.FistCenter() : socket.position, aim, moveBeam: ArmRaised && weight > 0.99f);
             // Onde ela fica no CORPO: o FirstPersonArm pode levá-la para a sua tela depois, e o espelho
@@ -210,13 +226,13 @@ namespace MudancaAssombrada
             if (moveBeam) flashlight.Beam.SetPositionAndRotation(lantern.transform.TransformPoint(flashlightLens), rotation);
         }
 
-        // O modelo mudou (outro personagem, ou o boneco de blocos): acha o braço, o peito e a bengala.
+        // O modelo mudou (outro personagem, ou o boneco de blocos): acha o braço, o quadril e a bengala.
         // Procura no modelRoot inteiro: a cópia de primeira pessoa também tem bengala.
         void FindParts(DollWalk current)
         {
             walk = current;
             hasSteadyShoulder = false;
-            chest = socket = null;
+            hips = socket = null;
             arm = null;
             cane.Clear();
             if (walk == null) return;
@@ -228,8 +244,43 @@ namespace MudancaAssombrada
             var animator = walk.GetComponent<Animator>();
             if (animator == null || !animator.isHuman) return;
             arm = ArmBones.From(animator);
-            chest = animator.GetBoneTransform(HumanBodyBones.UpperChest);
-            if (chest == null) chest = animator.GetBoneTransform(HumanBodyBones.Chest);
+            hips = animator.GetBoneTransform(HumanBodyBones.Hips);
+            MeasureBelt(animator);
+        }
+
+        // Mede o corpo na altura do cinto (o osso do quadril), uma vez por personagem: até onde ele vai
+        // para o lado da lanterna. Sem os braços (eles também passam ali). HandPoseRules.BodySide.
+        // Só a faixa do meio (frente-trás) conta: a barriga do Marcelo e a bolsa do Tiago ficam fora.
+        void MeasureBelt(Animator animator)
+        {
+            beltWidth = 0f;
+            if (hips == null) return;
+            var armBones = new HashSet<Transform>();
+            foreach (var side in new[] { HumanBodyBones.LeftUpperArm, HumanBodyBones.RightUpperArm })
+            {
+                var top = animator.GetBoneTransform(side);
+                if (top != null) foreach (var t in top.GetComponentsInChildren<Transform>(true)) armBones.Add(t);
+            }
+
+            float hipsZ = transform.InverseTransformPoint(hips.position).z;
+            var sides = new List<Vector3>();  // X para a direita (esquerda = negativo)
+            var baked = new Mesh();
+            foreach (var skin in walk.GetComponentsInChildren<SkinnedMeshRenderer>())
+            {
+                skin.BakeMesh(baked, true);
+                var vertices = baked.vertices;
+                var weights = skin.sharedMesh.boneWeights;
+                for (int i = 0; i < vertices.Length; i++)
+                {
+                    if (i < weights.Length && armBones.Contains(skin.bones[weights[i].boneIndex0])) continue;
+                    Vector3 p = transform.InverseTransformPoint(skin.transform.TransformPoint(vertices[i]));
+                    if (Mathf.Abs(p.z - hipsZ - beltForward) <= 0.06f) sides.Add(p); // só o lado, perto do ponto
+                }
+            }
+            Destroy(baked);
+
+            float height = transform.InverseTransformPoint(hips.position).y;
+            beltWidth = HandPoseRules.BodySide(sides.ToArray(), height, band: 0.04f, side: Mathf.Sign(beltSide));
         }
 
         static Transform FindChild(Transform root, string name)

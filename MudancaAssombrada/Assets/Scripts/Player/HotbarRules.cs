@@ -10,7 +10,7 @@ namespace MudancaAssombrada
         Cane = 3,     // a bengala da Cida (vem da ficha, não se pega no chão)
     }
 
-    // Onde a lanterna está: na mão (aponta para onde você olha), presa no colete (você carrega
+    // Onde a lanterna está: na mão (aponta para onde você olha), presa no cinto (você carrega
     // um móvel: aponta para a frente do corpo, mais fraca) ou guardada no cinto (apagada).
     public enum FlashlightPlace : byte
     {
@@ -23,8 +23,8 @@ namespace MudancaAssombrada
     public enum ItemKey
     {
         Nothing,
-        Use,            // está na mão (ou no colete): usa (liga/desliga, bate a bengala)
-        TakeOutAndUse,  // estava guardado: vai para a mão (a lanterna, carregando: o colete) e já usa
+        Use,            // está na mão (ou no cinto): usa (liga/desliga, bate a bengala)
+        TakeOutAndUse,  // estava guardado: vai para a mão (a lanterna, carregando: o cinto) e já usa
     }
 
     // As REGRAS da hotbar, sem cena nem rede: o que cada tecla faz, onde a lanterna fica, o kit de
@@ -113,7 +113,7 @@ namespace MudancaAssombrada
         }
 
         // Móvel nas mãos (primeira ponta ou outra ponta) manda o item da mão para o cinto. A lanterna
-        // é a exceção boa: vai presa no colete e continua acesa.
+        // é a exceção boa: vai presa no cinto e continua acesa.
         public static FlashlightPlace PlaceOf(bool flashlightSelected, bool hasLoad)
         {
             if (!flashlightSelected) return FlashlightPlace.Stowed;
@@ -128,7 +128,7 @@ namespace MudancaAssombrada
             return inHand ? ItemKey.Use : ItemKey.TakeOutAndUse;
         }
 
-        // Com o móvel nas mãos, a lanterna escolhida vai para o colete (PlaceOf): conta como "na mão".
+        // Com o móvel nas mãos, a lanterna escolhida vai para o cinto (PlaceOf): conta como "na mão".
         public static ItemKey OnFlashlightKey(bool has, FlashlightPlace place) =>
             OnItemKey(has, place != FlashlightPlace.Stowed);
 

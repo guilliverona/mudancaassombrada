@@ -11,7 +11,7 @@ namespace MudancaAssombrada
     // Marcelo tem 2; a Cida já nasce com a bengala no espaço 1 (HotbarRules.ApplyKit).
     //
     // Móvel nas mãos manda o item para o cinto: ele continua escolhido, mas a mão está ocupada.
-    // Quem decide o que isso significa para cada item é o próprio item (a lanterna vai para o colete).
+    // Quem decide o que isso significa para cada item é o próprio item (a lanterna vai para o cinto).
     // As regras ficam em HotbarRules; aqui só junta teclas, rede e o que está em cada espaço.
     //
     // REDE: o host decide O QUE tem em cada espaço (pegar é dele, como um móvel) e quantos espaços

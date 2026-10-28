@@ -101,6 +101,28 @@ namespace MudancaAssombrada.Tests
             Assert.AreEqual(0f, Quaternion.Angle(giro, swing * twist), 0.1f);
         }
 
+        // --- Lanterna no cinto (carregando um móvel): encostada no lado esquerdo do corpo ---
+
+        [Test]
+        public void LadoDoCorpo_PegaOPontoMaisDeFora_NaAlturaDoCinto()
+        {
+            var corpo = new[]
+            {
+                new Vector3(-0.15f, 0.65f, 0f), new Vector3(-0.19f, 0.66f, 0.02f), // cintura, lado esquerdo
+                new Vector3(0.18f, 0.65f, 0f),                                     // lado direito: não conta
+                new Vector3(-0.30f, 1.10f, 0f),                                    // ombro, outra altura: não conta
+            };
+            Assert.AreEqual(0.19f, HandPoseRules.BodySide(corpo, height: 0.65f, band: 0.05f, side: -1f), Tol);
+            Assert.AreEqual(0.18f, HandPoseRules.BodySide(corpo, 0.65f, 0.05f, side: 1f), Tol);
+        }
+
+        [Test]
+        public void LadoDoCorpo_SemPontoNaAltura_DaZero()
+        {
+            var corpo = new[] { new Vector3(-0.2f, 1.5f, 0f) };
+            Assert.AreEqual(0f, HandPoseRules.BodySide(corpo, 0.65f, 0.05f, -1f), Tol);
+        }
+
         // --- Correndo: o alvo não pode sacudir junto com a cabeça ---
 
         [Test]
