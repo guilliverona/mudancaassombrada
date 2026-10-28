@@ -711,6 +711,221 @@ MonoBehaviour:
     minGap: 10
     onBeat: 0
     important: 1
+  - id: piano_glissando_descida
+    clips:
+    - {fileID: 8300000, guid: c6cef7a9d2c6f0345b0a15b76649e404, type: 3}
+    volume: 0.6
+    pitchVariation: 0.05
+    maxDistance: 30
+    layer: 4
+    minGap: 5
+    onBeat: 0
+    important: 0
+  - id: piano_tema_etapa
+    clips:
+    - {fileID: 8300000, guid: 5b0db00ea10b2484b8098126c473e0c1, type: 3}
+    - {fileID: 8300000, guid: 1224402950bf3ae4c9ffd354791ce214, type: 3}
+    - {fileID: 8300000, guid: c0973747e6e852d4d83d75c974b0c055, type: 3}
+    volume: 0.5
+    pitchVariation: 0.05
+    maxDistance: 25
+    layer: 4
+    minGap: 10
+    onBeat: 0
+    important: 0
+  - id: piano_acorde_captura
+    clips:
+    - {fileID: 8300000, guid: 01d31df0234318144a359f8d7366d6a8, type: 3}
+    volume: 0.6
+    pitchVariation: 0.05
+    maxDistance: 25
+    layer: 4
+    minGap: 4
+    onBeat: 0
+    important: 0
+  - id: piano_acorde_amanhecer
+    clips:
+    - {fileID: 8300000, guid: 3e6e2977317713f4fb767c68c7552183, type: 3}
+    volume: 0.6
+    pitchVariation: 0.05
+    maxDistance: 25
+    layer: 4
+    minGap: 10
+    onBeat: 0
+    important: 0
+  - id: pianola_mecanismo
+    clips:
+    - {fileID: 8300000, guid: b5f86bfa8979ab047936b80e343f2a8d, type: 3}
+    volume: 0.22
+    pitchVariation: 0.05
+    maxDistance: 6
+    layer: 0
+    minGap: 0
+    onBeat: 0
+    important: 0
+  - id: piano_tampa_bate
+    clips:
+    - {fileID: 8300000, guid: b37951e24d5f38f42bea30927ae281fa, type: 3}
+    volume: 0.75
+    pitchVariation: 0.05
+    maxDistance: 10
+    layer: 3
+    minGap: 5
+    onBeat: 0
+    important: 1
+  - id: livros_caem
+    clips:
+    - {fileID: 8300000, guid: 519076e72212a23438f64a9e9e989ffe, type: 3}
+    - {fileID: 8300000, guid: 251de401becd9494e99bad4a1cfecf43, type: 3}
+    volume: 0.7
+    pitchVariation: 0.05
+    maxDistance: 10
+    layer: 3
+    minGap: 5
+    onBeat: 0
+    important: 1
+  - id: pratos_quebram
+    clips:
+    - {fileID: 8300000, guid: 3c228bd3db5c8ea479b3f875cf980c9a, type: 3}
+    volume: 0.8
+    pitchVariation: 0.05
+    maxDistance: 12
+    layer: 3
+    minGap: 5
+    onBeat: 0
+    important: 1
+  - id: quadro_cai
+    clips:
+    - {fileID: 8300000, guid: 78fb06fb544018a47a0a91248196c60c, type: 3}
+    volume: 0.7
+    pitchVariation: 0.05
+    maxDistance: 9
+    layer: 3
+    minGap: 5
+    onBeat: 0
+    important: 1
+  - id: caixa_despenca
+    clips:
+    - {fileID: 8300000, guid: 00b102242a464814ca10720adcf9bfac, type: 3}
+    volume: 0.7
+    pitchVariation: 0.05
+    maxDistance: 10
+    layer: 3
+    minGap: 5
+    onBeat: 0
+    important: 1
+  - id: cadeira_balanco
+    clips:
+    - {fileID: 8300000, guid: 25e209d1e082fed4abe3f0cab3b0c5d7, type: 3}
+    volume: 0.55
+    pitchVariation: 0.05
+    maxDistance: 5
+    layer: 2
+    minGap: 5
+    onBeat: 0
+    important: 0
+  - id: gaveta_abre
+    clips:
+    - {fileID: 8300000, guid: 903bd8ede794e074dbc11b1d00e7db64, type: 3}
+    volume: 0.6
+    pitchVariation: 0.05
+    maxDistance: 5
+    layer: 2
+    minGap: 5
+    onBeat: 0
+    important: 0
+  - id: telefone_manivela
+    clips:
+    - {fileID: 8300000, guid: 859a8a35665c4874492f28f620bb5e7e, type: 3}
+    volume: 0.8
+    pitchVariation: 0.05
+    maxDistance: 14
+    layer: 3
+    minGap: 5
+    onBeat: 0
+    important: 1
+  - id: porta_bate
+    clips:
+    - {fileID: 8300000, guid: 3485c46b98849134cae4b42eddb0ee49, type: 3}
+    volume: 0.8
+    pitchVariation: 0.05
+    maxDistance: 12
+    layer: 3
+    minGap: 5
+    onBeat: 0
+    important: 1
+  - id: vela_apaga
+    clips:
+    - {fileID: 8300000, guid: 4062307bc59bbe24f8dc0748b6544ba1, type: 3}
+    volume: 0.5
+    pitchVariation: 0.05
+    maxDistance: 3
+    layer: 2
+    minGap: 1
+    onBeat: 0
+    important: 0
+  - id: teia_rasga
+    clips:
+    - {fileID: 8300000, guid: 9c7f42b48b1994d4090fd9ac2159d0cc, type: 3}
+    - {fileID: 8300000, guid: d33727cbb94e0f54faf96d62f4606b95, type: 3}
+    volume: 0.5
+    pitchVariation: 0.05
+    maxDistance: 3
+    layer: 2
+    minGap: 0.3
+    onBeat: 0
+    important: 0
+  - id: vidro_tilintando
+    clips:
+    - {fileID: 8300000, guid: edd38517687df5341abe586dbfe75ef3, type: 3}
+    volume: 0.35
+    pitchVariation: 0.05
+    maxDistance: 6
+    layer: 2
+    minGap: 0
+    onBeat: 0
+    important: 0
+  - id: fragil_bate
+    clips:
+    - {fileID: 8300000, guid: 73b18f0bcc06bb442b061bb5022b3c43, type: 3}
+    - {fileID: 8300000, guid: 234f25396f9531d458fd9cb0b0695c58, type: 3}
+    volume: 0.7
+    pitchVariation: 0.05
+    maxDistance: 8
+    layer: 2
+    minGap: 0.5
+    onBeat: 0
+    important: 0
+  - id: maquina_escrever
+    clips:
+    - {fileID: 8300000, guid: 40c34f59a7655bc46bf5e08e416bc623, type: 3}
+    volume: 0.6
+    pitchVariation: 0.05
+    maxDistance: 8
+    layer: 2
+    minGap: 5
+    onBeat: 0
+    important: 0
+  - id: maquina_costura_pedal
+    clips:
+    - {fileID: 8300000, guid: 0c78d20b42ae2a74284d437b7ab5057c, type: 3}
+    volume: 0.5
+    pitchVariation: 0.05
+    maxDistance: 6
+    layer: 2
+    minGap: 5
+    onBeat: 0
+    important: 0
+  - id: luminaria_clique
+    clips:
+    - {fileID: 8300000, guid: 8fd399b3591d25449b5d90355ac0d8dd, type: 3}
+    volume: 0.6
+    pitchVariation: 0.05
+    maxDistance: 6
+    layer: 2
+    minGap: 0.3
+    onBeat: 0
+    important: 0
   - id: trilha_casa_espelho
     clips:
     - {fileID: 8300000, guid: 85c14239d525db54bae2ace8b352d897, type: 3}
