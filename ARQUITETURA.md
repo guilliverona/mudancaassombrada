@@ -218,6 +218,22 @@ segurado até o fim, a condição volta a `Normal` e o fantasma percebe que a v�
   Quem desliga é um `Interactable` no mesmo objeto (o "Afinar" da Cida, com `holdSeconds` e `onlyFor`).
 - **Piso que range** (`CreakyFloor`): área (sem colisor) onde o passo vira rangido alto.
 - **Chamada** (`CaneCall`): segurar a bengala; marcador no chão para todos.
+- **Que desenho cada som faz** (`EchoRules`, testado em `EchoRulesTests`): bengala e diapasão = onda
+  cheia (no máximo 3 ao mesmo tempo); os outros sons = só um **ponto** onde nasceram; os próprios passos
+  e a própria respiração = nada (menos o passo forte da tábua que range). O mesmo emissor dentro de 0,4 s
+  reaproveita a onda. Só muda o desenho: os fantasmas ouvem todo `SoundEvent` igual.
+- **Tela quase escura**: um vulto cinza de perto (`nearRadius`/`nearStrength`) e um contorno fraco no que
+  a bengala já revelou (`memoryStrength`, só peças sem `NetworkObject`), no Inspector do `EchoSystem`.
+  Nenhum dos dois usa cor nem timbre, para não entregar pista. Zerar os três volta à tela 100% escura.
+
+### O que o Tiago vê (chão tremendo)
+- O `VibrationVision` mostra cada som como um pedaço de **chão tremendo** (`VibrationMark`, shader
+  `VibrationTremor`: entorta a imagem da tela com `_CameraOpaqueTexture`, ligada no `PC_RPAsset`, e põe
+  um brilho fraco para não sumir no escuro). É **uma marca por emissor**, que segue quem fez o som.
+- As regras ficam no `VibrationRules` (testado em `VibrationRulesTests`): fantasma, impacto e apito =
+  forte (vermelho, até 20 m); colegas, bengala, móvel arrastado e música da casa = fraco (amarelo, até
+  12 m); os próprios sons, voz e respiração = nada; outro andar (mais de 2,5 m de altura) = nada. No
+  máximo 6 marcas, e uma fraca nunca tira uma forte. O `VibrationRing` continua só para a chamada da bengala.
 
 ### Lanterna, pilhas e coisas tocáveis
 A lanterna é o componente `Flashlight` no Player (tecla L, `GameInput.Flashlight`), mas só funciona
