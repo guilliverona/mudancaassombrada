@@ -260,8 +260,11 @@ onde só a ponta aparece no canto de baixo (os olhos ficam 30-40 cm acima do omb
 verdade, ela sairia da tela). No espelho você se vê pelo corpo (`MirrorReflection.SetOwnBody`), então
 enquanto a câmera do reflexo desenha a lanterna volta para a mão do corpo (`FirstPersonArm.ShowInMirror`
 → `HeldItems.ShowLanternOnBody`). Algo novo preso à câmera precisa do mesmo cuidado.
-As contas ficam em `HandPoseRules` (testes em `FlashlightArmRulesTests`). No colete, o modelo vai para o
-peito; a bengala da Cida some e solta a pega quando ela escolhe outro espaço. **Decisão:** carregar móvel não guarda a bengala (é a visão da Cida).
+As contas ficam em `HandPoseRules` (testes em `FlashlightArmRulesTests`). No **cinto** (carregando um
+móvel), o modelo vai bem do lado DIREITO da cintura (`beltSide`; a bolsa do Tiago fica no esquerdo),
+encostado no corpo: o `HeldItems.MeasureBelt` mede uma vez, por personagem, até onde o corpo vai para
+esse lado na altura do quadril (sem os braços; `HandPoseRules.BodySide`), então ele encosta na cintura
+do Tiago e do Marcelo, cada um do seu tamanho. A luz sai dele; colegas e o seu reflexo veem o mesmo lugar. A bengala da Cida some e solta a pega quando ela escolhe outro espaço. **Decisão:** carregar móvel não guarda a bengala (é a visão da Cida).
 Item novo: um nome no `HotbarItem`, dar com `ServerAdd` e o componente do item pergunta
 `InHand`/`HandsBusy`. A troca de personagem de teste foi para F1-F3. Na HUD, cada espaço é um
 `HotbarSlotView` (caixinha com fita, ícone, bateria, tecla) e as contas da barra (centralizar,
@@ -274,9 +277,10 @@ bateria fraca, entrada suave, brilho de item novo) ficam em `HotbarHudRules` (te
 ### Lanterna, pilhas e coisas tocáveis
 A lanterna é o componente `Flashlight` no Player (tecla L, `GameInput.Flashlight`), mas só funciona
 depois de pegar uma: o host a põe na hotbar (`ServerGive`), o dono liga e gasta a bateria, e todos
-veem a luz falhando quando ela está fraca. Ela fica na **mão** (espaço escolhido), no **colete**
+veem a luz falhando quando ela está fraca. Ela fica na **mão** (espaço escolhido), no **cinto**
 (estava na mão e pegou um móvel: mais fraca, aponta para a frente do corpo) ou **guardada** (apaga);
-com ela guardada, a tecla L tira do cinto e acende (carregando um móvel, direto no colete). Os itens do
+com ela guardada, a tecla L tira e acende (carregando um móvel, direto no cinto). No código, o lugar
+"cinto" ainda se chama `FlashlightPlace.Chest` (era o colete). Os itens do
 chão são `FlashlightPickup` (lanterna ou pilhas, some ao pegar e volta no reinício). O **facho** tem
 desenho (miolo forte, faixa mais escura e o aro do refletor): o cookie `T_PRP_Lanterna_Facho.png`,
 gerado pelo `FlashlightCookieBuilder` a partir do `FlashlightBeamRules` (testes em

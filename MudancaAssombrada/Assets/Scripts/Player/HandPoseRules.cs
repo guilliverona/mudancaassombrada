@@ -26,7 +26,7 @@ namespace MudancaAssombrada
 
         // ---------- Braço da lanterna (camada "Lanterna" + IK no HeldItems) ----------
 
-        // Lanterna NA MÃO (não no colete, não guardada) e de pé: o braço direito sobe. Cair e levantar
+        // Lanterna NA MÃO (não no cinto, não guardada) e de pé: o braço direito sobe. Cair e levantar
         // usam o corpo inteiro, como na bengala.
         public static float FlashlightWeight(bool inHand, bool down, bool gettingUp) =>
             inHand && !down && !gettingUp ? 1f : 0f;
@@ -55,6 +55,18 @@ namespace MudancaAssombrada
             twist = len < 1e-6f ? Quaternion.identity
                                 : new Quaternion(twist.x / len, twist.y / len, twist.z / len, twist.w / len);
             swing = rotation * Quaternion.Inverse(twist);
+        }
+
+        // Lanterna no cinto: até onde vai o corpo para um lado ("side": −1 esquerda, +1 direita), na
+        // altura "height" (± "band"), com os pontos da malha no espaço do corpo (X para a direita, Y para
+        // cima). Quem chama tira os braços (eles também passam na altura do quadril). 0 = nenhum ponto.
+        // Assim a lanterna encosta na cintura do Tiago e na barriga do Marcelo, cada um do seu tamanho.
+        public static float BodySide(Vector3[] points, float height, float band, float side)
+        {
+            float best = 0f;
+            foreach (var p in points)
+                if (Mathf.Abs(p.y - height) <= band && p.x * side > best) best = p.x * side;
+            return best;
         }
 
         // O braço acompanha só PARTE do olhar para cima/baixo ("follow"); o punho faz o resto. Inteiro,

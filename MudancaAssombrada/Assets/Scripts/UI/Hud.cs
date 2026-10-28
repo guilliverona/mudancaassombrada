@@ -304,7 +304,7 @@ namespace MudancaAssombrada
                 Color color = flashlight.Charge01 < 0.2f ? Theme.DangerColor : flashlight.IsOn ? Theme.HighlightColor : Theme.MutedColor;
                 string state = flashlight.Place == FlashlightPlace.Stowed ? " (guardada)"
                              : !flashlight.IsOn ? " (desligada)"
-                             : flashlight.Place == FlashlightPlace.Chest ? " (no colete)" : "";
+                             : flashlight.Place == FlashlightPlace.Chest ? " (no cinto)" : "";
                 sb.Append("\n[").Append(GameInput.KeyLabel(GameInput.Flashlight)).Append("] Lanterna ")
                   .Append(Colored($"{charge}%{state}", color));
             }
