@@ -257,7 +257,10 @@ a 5-18 cm do corpo (pose aprovada pelas fotos em 28/10/2026). A luz sai da lente
 tela, as mãos não aparecem: o `FirstPersonArm` (ordem 300, depois do `FirstPersonBody`) encolhe o
 braço direito da cópia de primeira pessoa e leva a lanterna a um ponto preso à câmera (`viewOffset`),
 onde só a ponta aparece no canto de baixo (os olhos ficam 30-40 cm acima do ombro: pela mão de
-verdade, ela sairia da tela). As contas ficam em `HandPoseRules` (testes em `FlashlightArmRulesTests`). No colete, o modelo vai para o
+verdade, ela sairia da tela). No espelho você se vê pelo corpo (`MirrorReflection.SetOwnBody`), então
+enquanto a câmera do reflexo desenha a lanterna volta para a mão do corpo (`FirstPersonArm.ShowInMirror`
+→ `HeldItems.ShowLanternOnBody`). Algo novo preso à câmera precisa do mesmo cuidado.
+As contas ficam em `HandPoseRules` (testes em `FlashlightArmRulesTests`). No colete, o modelo vai para o
 peito; a bengala da Cida some e solta a pega quando ela escolhe outro espaço. **Decisão:** carregar móvel não guarda a bengala (é a visão da Cida).
 Item novo: um nome no `HotbarItem`, dar com `ServerAdd` e o componente do item pergunta
 `InHand`/`HandsBusy`. A troca de personagem de teste foi para F1-F3. Trocar de espaço toca `item_troca`

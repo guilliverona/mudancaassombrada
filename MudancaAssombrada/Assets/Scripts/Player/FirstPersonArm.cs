@@ -22,6 +22,9 @@ namespace MudancaAssombrada
                  "Medido em batch: olhando reto, só a ponta (a lente) aparece no canto de baixo, à direita.")]
         [SerializeField] Vector3 viewOffset = new(0.17f, -0.2f, 0.25f);
 
+        // Os do dono (um por computador): o espelho pede para a lanterna voltar ao corpo no reflexo.
+        static readonly System.Collections.Generic.List<FirstPersonArm> owners = new();
+
         HeldItems held;
         Flashlight flashlight;
 
@@ -35,9 +38,20 @@ namespace MudancaAssombrada
             flashlight = GetComponent<Flashlight>();
         }
 
+        void OnDisable() => owners.Remove(this);
+
+        // O espelho (MirrorReflection) mostra o seu corpo, não a primeira pessoa: enquanto a câmera do
+        // reflexo desenha (reflecting), a lanterna fica na mão do corpo, e não no lugar da sua tela.
+        public static void ShowInMirror(bool reflecting)
+        {
+            foreach (var arm in owners)
+                if (arm != null && arm.held != null) arm.held.ShowLanternOnBody(reflecting);
+        }
+
         void LateUpdate()
         {
             if (held == null || flashlight == null || !flashlight.IsOwner) return;
+            if (!owners.Contains(this)) owners.Add(this);
             FindCopyArm();
 
             bool holding = held.ArmRaised;
