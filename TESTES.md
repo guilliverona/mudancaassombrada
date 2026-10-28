@@ -28,6 +28,7 @@ está no [CLAUDE.md](CLAUDE.md), regra 6. Como rodar os testes também está lá
 | 6. Resgate de colega | `RescueRules` | `RescueRulesTests` | 12 | ✅ feito |
 | 7. Imitador: quando age | `ImitatorRules` | `ImitatorRulesTests` | 11 | ✅ feito |
 | 8. Testes de fumaça | — | `SmokeTests` (Play Mode) | 3 | ✅ feito |
+| 9. Opções de vídeo | `VideoRules` | `VideoRulesTests` | 10 | ✅ feito |
 
 ---
 
