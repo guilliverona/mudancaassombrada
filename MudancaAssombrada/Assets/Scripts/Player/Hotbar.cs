@@ -33,6 +33,8 @@ namespace MudancaAssombrada
         public HotbarItem InHand => HotbarRules.InHand(bar.Value, selected.Value);
         public bool HasRoom => HotbarRules.FirstEmpty(bar.Value, Count) >= 0;
         public bool IsEmpty => bar.Value == 0;
+        // A barra inteira empacotada (HotbarRules.Get): a HUD compara com a anterior para achar item novo.
+        public uint Packed => bar.Value;
         // Mãos ocupadas por um móvel (só vale no dono: é ele que sabe o que carrega).
         public bool HandsBusy => carrier != null && carrier.HasLoad;
         // Hora (Time.time) da última mudança: a HUD mostra a barra por uns segundos e depois some.

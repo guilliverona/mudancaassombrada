@@ -263,7 +263,12 @@ enquanto a câmera do reflexo desenha a lanterna volta para a mão do corpo (`Fi
 As contas ficam em `HandPoseRules` (testes em `FlashlightArmRulesTests`). No colete, o modelo vai para o
 peito; a bengala da Cida some e solta a pega quando ela escolhe outro espaço. **Decisão:** carregar móvel não guarda a bengala (é a visão da Cida).
 Item novo: um nome no `HotbarItem`, dar com `ServerAdd` e o componente do item pergunta
-`InHand`/`HandsBusy`. A troca de personagem de teste foi para F1-F3. Trocar de espaço toca `item_troca`
+`InHand`/`HandsBusy`. A troca de personagem de teste foi para F1-F3. Na HUD, cada espaço é um
+`HotbarSlotView` (caixinha com fita, ícone, bateria, tecla) e as contas da barra (centralizar,
+bateria fraca, entrada suave, brilho de item novo) ficam em `HotbarHudRules` (testes em
+`HotbarHudRulesTests`). Os ícones (`Assets/Art/Icons/T_ICO_*.png`) são fotografados dos modelos pelo
+`ItemIconBuilder` (precisa de placa de vídeo: rodar o Unity em batch SEM `-nographics`, ou o menu
+"Recriar Ícones da Hotbar"). Item novo na hotbar = um ícone novo na lista do `ItemIconBuilder`. Trocar de espaço toca `item_troca`
 (som procedural, `tools/audio`).
 
 ### Lanterna, pilhas e coisas tocáveis

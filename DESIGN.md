@@ -119,6 +119,15 @@ Nada de `OnGUI`: ele não segue o `Theme`.
 ## 5. HUD da partida
 
 - Mínima: cronômetro e móveis entregues num canto, pequenos, em `TextColor`.
+- **Hotbar** (embaixo, no meio): uma **caixinha de mudança** por espaço (`FieldColor`, contorno fino,
+  um pedaço de **fita** torta em cima), centralizada pelo número de espaços (o Marcelo tem 2). Dentro,
+  o **ícone** do item, gerado do próprio modelo do jogo (`ItemIconBuilder`: silhueta clara, pintada de
+  `TextColor`, ou ectoplasma na mão). A lanterna tem uma **barrinha de bateria**; abaixo de 20% ela
+  fica vermelha e aparece **FRACA** ao lado da tecla (perigo sempre com palavra). A tecla fica embaixo,
+  no formato da dica de tecla. Com as pilhas na mão, a dica de Usar aparece logo acima da barra,
+  pequena: o **ícone do mouse** com o botão esquerdo aceso em ectoplasma (desenhado por código:
+  `MouseIconRules` + `MouseIconBuilder`), **ESQ** e **Trocar as pilhas**. Ela aparece por 3 s depois de cada troca, subindo 12 px enquanto aparece (`FadeSlow`),
+  e some sozinha; item novo faz a caixinha acender em ectoplasma por um instante. Nada balança.
 - A informação importante fica **no mundo, não na tela**: ondas de eco,
   vibrações no chão, a sombra do fantasma.
 - Cada personagem percebe o mundo de um jeito. A HUD também:
