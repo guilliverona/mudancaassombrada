@@ -3,24 +3,23 @@
 import os, sys, runpy
 P = runpy.run_path(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'mansao_v1_2.py'), run_name='lib'); R, D, ST = P['R'], P['D'], P['STAIRS']
 LUZES, PILHAS = P['LUZES'], P['PILHAS']
+ACHADOS, LAMPIOES, QUEDAS, TEIAS = P['ACHADOS'], P['LAMPIOES'], P['QUEDAS'], P['TEIAS_VAO']
 S = 20; X0, X1, Z0, Z1 = -18, 24, -23, 21
 W, H = (X1-X0)*S, (Z1-Z0)*S
 px = lambda x: round((x-X0)*S, 1)
 pz = lambda z: round((Z1-z)*S, 1)
 FONT = 'font-family="IBM Plex Mono, monospace"'
 COR = {'EXT':'#1d2024','1':'#4a2328','2':'#5a4630','3':'#4e2a33','CO':'#3a2c30','8':'#47331f','9':'#33403c','10':'#552a2c',
-       '11':'#43293b','12':'#46372a','CL':'#1d4a50','14':'#263238','P':'#4e2a33','4':'#1d4a50','7':'#28432f','5':'#5a2030','6':'#5a3826','13':'#0f3d44'}
+       '11':'#43293b','12':'#46372a','CL':'#1d4a50','COE':'#3a2c30','CLE':'#1d4a50','14':'#263238','P':'#4e2a33','4':'#1d4a50','7':'#28432f','5':'#5a2030','6':'#5a3826','13':'#0f3d44'}
 NUM = {k: k for k in ('1','2','3','4','5','6','7','8','9','10','11','12','13','14')}
 NOME = {'EXT':'Calçada','1':'Entrada','2':'Grande Hall','3':'Escadaria','CO':'Corr. Oeste','8':'Sala de Jantar','9':'Cozinha','10':'Sala dos Retratos',
-        '11':'Sala de Música','12':'Depósito de Props','CL':'Galeria Leste','14':'Pátio · Caminhão','P':'Patamar','4':'Galeria dos Espelhos',
+        '11':'Sala de Música','12':'Depósito de Props','CL':'Corredor de Saída','COE':'Escada de Serviço','CLE':'Galeria Leste','14':'Pátio · Caminhão','P':'Patamar','4':'Galeria dos Espelhos',
         '7':'Biblioteca','5':'Salão de Baile · Palco','6':'Camarins · Figurinos','13':'Câmara'}
 # espelhos: nivel, x, z, 'h'|'v', tamanho, rótulo, tipo
-M = [(1,-2,11,'h',2.0,'E1','heroi'),(1,2,11,'h',2.0,'E2','heroi'),(1,7,11,'h',1.2,'E3','comum'),(0,16,-3,'v',1.2,'E4','comum'),
-     (1,-6,17,'v',2.0,'E5','comum'),(1,6.5,19,'h',0.6,'E6a','comum'),(1,11,19,'h',0.6,'E6b','comum'),(0,-6,-10,'v',2.0,'E7','comum'),
-     (0,9,7,'h',1.2,'E8','comum'),(1,14,15,'v',2.0,'E9','porta'),(0,-4,-14,'v',0.6,'E10','comum'),(0,12,-9,'h',1.2,'E11','comum'),
-     (0,-16,2,'v',1.2,'E12','comum'),(1,20,15,'v',2.4,'PORTAL','portal')]
+SZ = {'P': 0.6, 'M': 1.2, 'G': 2.0, 'porta': 2.0, 'portal': 2.4}
+M = [(e[1], e[2], e[3], 'h' if e[4] in (0, 180) else 'v', SZ[e[5]], e[0], e[6]) for e in P['ESPELHOS']]
 MC = {'heroi':'#FFFFFF','comum':'#BFD0D6','porta':'#E5687A','portal':'#7FE3C4'}
-DC = {'dupla':'#FFC98A','arco':'#FFC98A','aberto':'#FFC98A','carga':'#F08A3C','portão':'#F08A3C','simples':'#EEE7D8','coxia':'#EEE7D8','espelho-porta':'#E5687A'}
+DC = {'dupla':'#FFC98A','arco':'#FFC98A','aberto':'#FFC98A','carga':'#F08A3C','portão':'#F08A3C','vao':'#F08A3C','simples':'#EEE7D8','coxia':'#EEE7D8','espelho-porta':'#E5687A'}
 
 def rect(x0, x1, z0, z1, fill, stroke='#C9A24A', sw=3, extra=''):
     return f'<rect x="{px(x0)}" y="{pz(z1)}" width="{(x1-x0)*S}" height="{(z1-z0)*S}" fill="{fill}" stroke="{stroke}" stroke-width="{sw}" {extra}/>'
@@ -45,7 +44,7 @@ def doors(level):
     o = []
     for d in D:
         a = R[d[0]]
-        if a[1] != level: continue
+        if max(a[1], R[d[1]][1]) != level: continue   # entre níveis (poço/hall → galeria): no de cima
         x, z, w, t = d[3], d[4], d[2], d[5]; c = DC[t]
         vert = any(abs(x-v) < 1e-6 for v in (a[2], a[3])) and not any(abs(z-v) < 1e-6 for v in (a[4], a[5]))
         if vert: o.append(f'<line x1="{px(x)}" y1="{pz(z-w/2)}" x2="{px(x)}" y2="{pz(z+w/2)}" stroke="{c}" stroke-width="7"/>')
@@ -69,10 +68,11 @@ def room_labels(level):
         if r[1] != level: continue
         cx, cz = (r[2]+r[3])/2, (r[4]+r[5])/2
         w, d = r[3]-r[2], r[5]-r[4]
+        if k in ('COE', 'CLE'): continue   # o poço da escada: a escada desenhada já diz
         if k == 'CO':
             o.append(f'<text transform="translate({px(-5)},{pz(-4)}) rotate(-90)" fill="#EEE7D8" font-size="11" text-anchor="middle" {FONT}>Corredor Oeste · 2 m</text>'); continue
         if k == 'CL':
-            o.append(f'<text transform="translate({px(15)},{pz(-4)}) rotate(-90)" fill="#EEE7D8" font-size="11" text-anchor="middle" {FONT}>Galeria Leste · 2 m</text>'); continue
+            o.append(f'<text transform="translate({px(15)},{pz(-4)}) rotate(-90)" fill="#EEE7D8" font-size="11" text-anchor="middle" {FONT}>Corredor de Saída · 2 m</text>'); continue
         n = NUM.get(k); lab = (n+' · ' if n else '') + NOME[k]
         dz = {'3': 3.3, '2': -1.6, '4': 0.4, 'P': 0.2, '14': 2.6, '6': 1.5, '5': 0.5}.get(k, 0)
         o.append(text(cx, cz+dz, lab, 13 if w >= 8 else 11, '#EEE7D8', 700))
@@ -86,9 +86,40 @@ def lights_batt(level):
         if lv != level: continue
         o.append(f'<circle cx="{px(x)}" cy="{pz(z)}" r="{18 if t!="apagada" else 7}" fill="{LC[t]}" opacity="{0.22 if t!="apagada" else 0}"/>')
         o.append(f'<circle cx="{px(x)}" cy="{pz(z)}" r="5" fill="{LC[t]}" stroke="#131118" stroke-width="1.5"/>')
-    for lv, x, z, t in PILHAS:
+    for p in PILHAS:
+        lv, x, z, t = p[:4]
         if lv != level: continue
         o.append(f'<rect x="{px(x)-5}" y="{pz(z)-5}" width="10" height="10" rx="2" fill="{"#8CC79A" if t=="fixa" else "none"}" stroke="#8CC79A" stroke-width="2"/>')
+    return o
+
+# Etapa 3: achados de época (losango dourado), lampiões (círculo laranja), quedas (! vermelho)
+# e teias de vão (traço claro atravessando a porta).
+def epoca(level):
+    o = []
+    for nome, _, lv, x, z, _ in ACHADOS:
+        if lv != level: continue
+        o.append(f'<rect x="{px(x)-6}" y="{pz(z)-6}" width="12" height="12" fill="#C9A24A" stroke="#131118" stroke-width="1.5" transform="rotate(45 {px(x)} {pz(z)})"/>')
+        o.append(text(x, z, nome, 8, '#C9A24A', 600, 'middle', 18))
+    for lv, x, z in LAMPIOES:
+        if lv != level: continue
+        o.append(f'<circle cx="{px(x)}" cy="{pz(z)}" r="16" fill="#F08A3C" opacity="0.25"/>')
+        o.append(f'<circle cx="{px(x)}" cy="{pz(z)}" r="5" fill="#F08A3C" stroke="#131118" stroke-width="1.5"/>')
+    found = {a[0]: a for a in ACHADOS}
+    for q in QUEDAS:
+        if q['modelo'].startswith('achado:'):
+            a = found[q['modelo'][7:]]; lv, x, z = a[2], a[3] + 0.5, a[4] + 0.5
+        else:
+            lv, x, z = q['nivel'], q['x'], q['z']
+        if lv != level: continue
+        o.append(text(x, z, '!', 16, '#E5687A' if q.get('susto', True) else '#8CC79A', 800, 'middle', 6))
+    for a, b in TEIAS:
+        d = next(d for d in D if {a, b} == {d[0], d[1]})
+        lvs = set(P['levels'](d[0])) & set(P['levels'](d[1]))
+        if level not in lvs or min(lvs) != level: continue
+        x, z, w = d[3], d[4], d[2]
+        along_x = abs(z - R[d[0]][4]) < 1e-6 or abs(z - R[d[0]][5]) < 1e-6
+        x0, x1, z0, z1 = (x - w/2, x + w/2, z, z) if along_x else (x, x, z - w/2, z + w/2)
+        o.append(f'<line x1="{px(x0)}" y1="{pz(z0)}" x2="{px(x1)}" y2="{pz(z1)}" stroke="#D8D0BC" stroke-width="3" stroke-dasharray="3 2"/>')
     return o
 
 def plan_ground():
@@ -105,14 +136,14 @@ def plan_ground():
     o += steps(-1.5, 1.5, -1, 5, 20, '#7A1E2E'); o.append(text(0, 1.6, '↑', 20, '#FFC98A', 700))
     o += steps(-6, -4, 1, 7, 20, '#5a3a2a'); o.append(text(-5, 3.6, '↑', 16, '#FFC98A', 700))
     o += steps(14, 16, 1, 7, 20, '#1d6066'); o.append(text(15, 3.6, '↑', 16, '#FFC98A', 700))
-    o.append(f'<circle cx="{px(0)}" cy="{pz(-3)}" r="8" fill="#C9A24A"/>'); o.append(text(0.8, -3.25, 'relógio', 10, '#C9A24A', 600, 'start'))
+    o.append(f'<circle cx="{px(-3.6)}" cy="{pz(-3)}" r="8" fill="#C9A24A"/>'); o.append(text(-2.8, -3.25, 'relógio', 10, '#C9A24A', 600, 'start'))
     o.append(f'<circle cx="{px(0)}" cy="{pz(-6.5)}" r="12" fill="none" stroke="#FFC98A" stroke-width="2"/>'); o.append(text(1, -6.75, 'lustre', 10, '#FFC98A', 600, 'start'))
     o.append(rect(16.5, 19.5, -15.5, -10, '#3F5A5E', '#F08A3C', 3, 'rx="5"')); o.append(text(18, -13, 'caminhão', 10, '#EEE7D8'))
     for sx in (-1.2, 0, 1.2): o.append(f'<circle cx="{px(sx)}" cy="{pz(-19.3)}" r="6" fill="#7FE3C4"/>')
     o.append(text(0, -20.6, 'nascimento ×3', 10, '#7FE3C4'))
     o.append(rect(8, 10.5, -6.4, -5, '#0b0a0f', '#E9DFC8', 1)); o.append(text(9.25, -7.2, 'piano', 9, '#A79FAF'))
     o.append(rect(-13.5, -8.5, 1, 2.6, '#2a1a10', '#E9DFC8', 1)); o.append(text(-11, 0.2, 'mesa para 9', 9, '#A79FAF'))
-    o += room_labels(0) + doors(0) + mirrors(0) + lights_batt(0)
+    o += room_labels(0) + doors(0) + mirrors(0) + lights_batt(0) + epoca(0)
     o.append('</svg>'); return '\n'.join(o)
 
 def plan_upper():
@@ -132,7 +163,7 @@ def plan_upper():
     o.append(text(-2.75, 4.2, 'peitoril', 9, '#E9DFC8'))
     o.append(rect(-5, 3, 17.4, 19, '#7A1E2E', '#E9DFC8', 1)); o.append(text(-1, 16.6, 'palco + cortinas', 9, '#E9DFC8'))
     o.append(rect(15.6, 18.4, 11.8, 13.2, '#0b0a0f', '#7FE3C4', 1)); o.append(text(17, 12.25, 'cartaz', 9, '#7FE3C4'))
-    o += room_labels(1) + doors(1) + mirrors(1) + lights_batt(1)
+    o += room_labels(1) + doors(1) + mirrors(1) + lights_batt(1) + epoca(1)
     o.append('</svg>'); return '\n'.join(o)
 
 def section():
