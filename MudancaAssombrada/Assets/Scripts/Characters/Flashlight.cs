@@ -160,19 +160,25 @@ namespace MudancaAssombrada
         {
             bool lit = IsSpawned && Has && on.Value && place.Value != FlashlightPlace.Stowed;
             beam.enabled = lit;
+            LightLevel = 0f;
             if (!lit) return;
 
-            float k = place.Value == FlashlightPlace.Chest ? chestIntensity : 1f;
+            float flicker = 1f;
             float c = Charge01;
             if (c < flickerBelow)
             {
                 // Quanto mais vazia, mais escura e mais vezes ela "morre" por um instante.
                 float weak = 1f - c / flickerBelow;
                 float noise = Mathf.PerlinNoise(Time.time * 9f, NetworkObjectId * 0.37f);
-                k *= noise < weak * 0.55f ? 0.05f : Mathf.Lerp(1f, 0.5f, weak);
+                flicker = noise < weak * 0.55f ? 0.05f : Mathf.Lerp(1f, 0.5f, weak);
             }
-            beam.intensity = baseIntensity * k;
+            LightLevel = flicker;
+            beam.intensity = baseIntensity * flicker * (place.Value == FlashlightPlace.Chest ? chestIntensity : 1f);
         }
+
+        // A força da luz neste quadro (0 = apagada; abaixo de 1 = falhando com a bateria fraca).
+        // A lente do modelo brilha junto (HeldItems).
+        public float LightLevel { get; private set; }
 
         // Depois de a câmera girar (PlayerMovement, no Update): no colete, o spot ignora o olhar
         // para cima/baixo e segue o corpo; na mão, volta para a câmera.

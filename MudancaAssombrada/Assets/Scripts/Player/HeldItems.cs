@@ -26,13 +26,16 @@ namespace MudancaAssombrada
         [Tooltip("O modelo da lanterna (FBX). É criado como filho do Player e levado até a mão a cada quadro.")]
         [SerializeField] GameObject flashlightModel;
         [Tooltip("O ponto do modelo que fica na palma (o meio do cabo), em metros, no espaço do modelo " +
-                 "(medido no Unity: 26 cm de -0,13 a +0,13 em Z, lente em +Z, cabo a 4,5 cm do chão).")]
-        [SerializeField] Vector3 flashlightGrip = new(0f, 0.045f, -0.04f);
+                 "(build_lanterna: tudo no eixo a 5,5 cm do chão, lente em +Z a 0,11, cabo de −0,12 a +0,06).")]
+        [SerializeField] Vector3 flashlightGrip = new(0f, 0.055f, -0.03f);
         [Tooltip("De onde sai a luz, no espaço do modelo: um pouco à frente da lente (o braço e a própria " +
                  "lanterna ficam atrás da luz e não fazem sombra nela).")]
-        [SerializeField] Vector3 flashlightLens = new(0f, 0.06f, 0.16f);
+        [SerializeField] Vector3 flashlightLens = new(0f, 0.055f, 0.14f);
         [Tooltip("No colete: quantos metros à frente do osso do peito.")]
         [SerializeField] float chestForward = 0.16f;
+        [Tooltip("Cor e força do brilho da lente acesa (3200 K, como a luz). Os colegas veem de longe quem " +
+                 "está com a luz ligada, e a lente pisca junto quando a bateria está fraca.")]
+        [SerializeField, ColorUsage(false, true)] Color lensGlow = new Color(1f, 0.86f, 0.68f) * 4f;
 
         [Header("Braço da lanterna (IK)")]
         [Tooltip("Onde a mão fica em relação ao ombro, em BRAÇOS (direita, cima, frente × o tamanho do braço " +
@@ -82,7 +85,44 @@ namespace MudancaAssombrada
                 lantern.transform.SetParent(transform, false);
                 Instantiate(flashlightModel, lantern.transform, false);
                 lantern.SetActive(false);
+                lensMaterial = GlowingLens(lantern);
             }
+        }
+
+        static readonly int EmissionColorId = Shader.PropertyToID("_EmissionColor");
+        Material lensMaterial; // cópia só desta lanterna: as do caminhão não acendem
+
+        // Troca o material "Lente" (do Blender) por uma cópia com brilho ligado.
+        static Material GlowingLens(GameObject model)
+        {
+            foreach (var r in model.GetComponentsInChildren<Renderer>(true))
+            {
+                var materials = r.sharedMaterials;
+                for (int i = 0; i < materials.Length; i++)
+                {
+                    if (materials[i] == null || !materials[i].name.Contains("Lente")) continue;
+                    var glow = new Material(materials[i]) { name = "Lente (acesa)" };
+                    glow.EnableKeyword("_EMISSION");
+                    glow.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
+                    glow.SetColor(EmissionColorId, Color.black);
+                    materials[i] = glow;
+                    r.sharedMaterials = materials;
+                    return glow;
+                }
+            }
+            return null;
+        }
+
+        void UpdateLens()
+        {
+            if (lensMaterial == null) return;
+            float glow = FlashlightBeamRules.LensGlow(flashlight.IsOn, flashlight.LightLevel);
+            lensMaterial.SetColor(EmissionColorId, lensGlow * glow);
+        }
+
+        void OnDestroy()
+        {
+            if (lensMaterial != null) Destroy(lensMaterial);
         }
 
         void LateUpdate()
@@ -115,6 +155,7 @@ namespace MudancaAssombrada
                 return;
             }
             lantern.SetActive(true);
+            UpdateLens();
             if (place == FlashlightPlace.Chest)
                 PlaceLantern(chest.position + transform.forward * chestForward, flashlight.Beam.rotation, moveBeam: false);
             else
