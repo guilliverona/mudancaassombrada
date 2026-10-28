@@ -218,6 +218,13 @@ segurado até o fim, a condição volta a `Normal` e o fantasma percebe que a v�
   Quem desliga é um `Interactable` no mesmo objeto (o "Afinar" da Cida, com `holdSeconds` e `onlyFor`).
 - **Piso que range** (`CreakyFloor`): área (sem colisor) onde o passo vira rangido alto.
 - **Chamada** (`CaneCall`): segurar a bengala; marcador no chão para todos.
+- **Que desenho cada som faz** (`EchoRules`, testado em `EchoRulesTests`): bengala e diapasão = onda
+  cheia (no máximo 3 ao mesmo tempo); os outros sons = só um **ponto** onde nasceram; os próprios passos
+  e a própria respiração = nada (menos o passo forte da tábua que range). O mesmo emissor dentro de 0,4 s
+  reaproveita a onda. Só muda o desenho: os fantasmas ouvem todo `SoundEvent` igual.
+- **Tela quase escura**: um vulto cinza de perto (`nearRadius`/`nearStrength`) e um contorno fraco no que
+  a bengala já revelou (`memoryStrength`, só peças sem `NetworkObject`), no Inspector do `EchoSystem`.
+  Nenhum dos dois usa cor nem timbre, para não entregar pista. Zerar os três volta à tela 100% escura.
 
 ### Lanterna, pilhas e coisas tocáveis
 A lanterna é o componente `Flashlight` no Player (tecla L, `GameInput.Flashlight`), mas só funciona

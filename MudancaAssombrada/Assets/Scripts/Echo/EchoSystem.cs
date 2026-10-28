@@ -15,6 +15,11 @@ namespace MudancaAssombrada
         // 4 s, e cada superfície responde com o seu timbre (SurfaceTag) enquanto ela passa.
         const float TuningSpeed = 2f;
         const float TuningMaxRadius = 8f;
+        // Ponto (EchoWave.Spot): os sons que não são da Cida só brilham onde nasceram, sem varrer a sala.
+        const float SpotMaxRadius = 1.2f;
+        const float SpotSpeed = 4f;
+        // No máximo isto de ondas cheias (bengala/diapasão) ao mesmo tempo: a 4ª tira a mais fraca.
+        const int MaxFullWaves = 3;
 
         [SerializeField] Shader echoShader;
         [SerializeField] float waveSpeed = 7f;      // metros por segundo
@@ -22,6 +27,15 @@ namespace MudancaAssombrada
         [SerializeField] Color echoColor = new Color(0.55f, 0.8f, 1f);
         [Tooltip("Quais tipos de som viram onda na tela de quem enxerga pelo eco.")]
         [SerializeField] SoundType visibleSounds = SoundType.Everything;
+        [Header("Visão de perto e memória")]
+        [Tooltip("Raio (m) do vulto sem cor em volta da Cida: o 'tato', só o que está quase encostado nela.")]
+        [SerializeField] float nearRadius = 1.5f;
+        [Tooltip("Quanto clareia o vulto de perto (0 = tela 100% escura, como antes).")]
+        [Range(0f, 0.5f)] [SerializeField] float nearStrength = 0.06f;
+        [Tooltip("Força do contorno que fica no que a bengala acabou de revelar (0 = sem memória).")]
+        [Range(0f, 0.5f)] [SerializeField] float memoryStrength = 0.1f;
+        [Tooltip("Segundos até o contorno da memória sumir: ela precisa bater a bengala de novo.")]
+        [SerializeField] float memorySeconds = 4f;
 
         // A instância da fase atual (null no menu, onde não há eco).
         // É um "serviço da cena": existe um só, e os outros scripts falam com ele por aqui.
@@ -33,6 +47,9 @@ namespace MudancaAssombrada
             public Vector3 origin;
             public float radius, maxRadius, intensity, speed;
             public bool tuning;
+            public EchoWave wave;
+            public GameObject source; // para juntar sons repetidos do mesmo emissor
+            public float born;        // Time.time de quando nasceu
         }
 
         // Ruído em volta de quem está jogando neste computador (0 = silêncio, 1 = colado numa fonte
@@ -50,10 +67,22 @@ namespace MudancaAssombrada
         readonly List<Tagged> tagged = new();
         static readonly int TimbreId = Shader.PropertyToID("_Timbre");
 
+        // Memória: as peças fixas da casa (sem NetworkObject: nem jogador, nem fantasma, nem móvel)
+        // ficam com um contorno fraco depois que a bengala passa por elas, e ele APAGA em memorySeconds.
+        struct Remembered
+        {
+            public Renderer renderer;
+            public Material[] materials;
+            public float lastWave; // quando nasceu a última onda que passou aqui (para marcar uma vez por onda)
+        }
+        readonly List<Remembered> remembered = new();
+        static readonly int RevealedId = Shader.PropertyToID("_Revealed");
+
         readonly Pulse[] pulses = new Pulse[MaxPulses];
         readonly Vector4[] pulseData = new Vector4[MaxPulses];
         readonly Vector4[] settingsData = new Vector4[MaxPulses];
-        int nextSlot; // ondas novas substituem a mais antiga (fila circular)
+        readonly float[] slotStrength = new float[MaxPulses]; // força atual de cada vaga (0 = livre)
+        readonly EchoWave[] slotWave = new EchoWave[MaxPulses];
 
         // Guarda os materiais originais para poder "devolver a visão" depois.
         readonly Dictionary<Renderer, Material[]> originalMaterials = new();
@@ -69,6 +98,8 @@ namespace MudancaAssombrada
         static readonly int ColorId = Shader.PropertyToID("_EchoColor");
         static readonly int RingWidthId = Shader.PropertyToID("_EchoRingWidth");
         static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
+        static readonly int ListenerId = Shader.PropertyToID("_EchoListener");
+        static readonly int NearId = Shader.PropertyToID("_EchoNear");
 
         void Awake()
         {
@@ -105,18 +136,59 @@ namespace MudancaAssombrada
             SoundEmitted?.Invoke(sound);
 
             if (Instance == null || !sound.Is(Instance.visibleSounds)) return;
+            Instance.Draw(sound);
+        }
+
+        // Escolhe o desenho (EchoRules), junta com uma onda recente do mesmo emissor ou acha uma vaga.
+        void Draw(SoundEvent sound)
+        {
+            var wave = EchoRules.Classify(sound.Type, sound.Intensity, IsMine(sound.Source));
+            if (wave == EchoWave.None) return;
+
             // Num lugar barulhento a onda vai menos longe (só no desenho: a regra do fantasma não muda).
             float range = sound.Range * Mathf.Lerp(1f, 1f / 3f, NoiseLevel);
             bool tuning = sound.Is(SoundType.Tuning);
-            Instance.pulses[Instance.nextSlot] = new Pulse
+            var pulse = new Pulse
             {
                 origin = sound.Position,
-                maxRadius = tuning ? Mathf.Min(range, TuningMaxRadius) : range,
+                maxRadius = wave == EchoWave.Spot ? Mathf.Min(range, SpotMaxRadius)
+                          : tuning ? Mathf.Min(range, TuningMaxRadius) : range,
                 intensity = sound.Intensity,
-                speed = tuning ? TuningSpeed : Instance.waveSpeed,
+                speed = wave == EchoWave.Spot ? SpotSpeed : tuning ? TuningSpeed : waveSpeed,
                 tuning = tuning,
+                wave = wave,
+                source = sound.Source,
+                born = Time.time,
             };
-            Instance.nextSlot = (Instance.nextSlot + 1) % MaxPulses; // % = resto da divisão: 7 -> 0
+
+            // Mesmo emissor logo depois: reaproveita a vaga em vez de abrir outra onda.
+            for (int i = 0; i < MaxPulses; i++)
+            {
+                ref Pulse p = ref pulses[i];
+                if (p.intensity <= 0 || p.source == null) continue;
+                if (!EchoRules.ShouldMergeWave(wave, p.source == sound.Source, p.wave == wave, Time.time - p.born)) continue;
+                pulse.intensity = Mathf.Max(pulse.intensity, p.intensity);
+                Put(i, pulse);
+                return;
+            }
+
+            int slot = EchoRules.ChooseSlot(slotStrength, slotWave, wave, MaxFullWaves);
+            if (slot >= 0) Put(slot, pulse);
+        }
+
+        void Put(int slot, Pulse pulse)
+        {
+            pulses[slot] = pulse;
+            slotStrength[slot] = pulse.intensity;
+            slotWave[slot] = pulse.wave;
+        }
+
+        // O boneco DESTE computador? (Sem rede, testando sozinho, o único jogador conta como meu.)
+        static bool IsMine(GameObject source)
+        {
+            if (source == null) return false;
+            if (NetworkPlayer.Local != null) return source == NetworkPlayer.Local.gameObject;
+            return source.TryGetComponent(out NetworkPlayer _);
         }
 
         void Update()
@@ -132,13 +204,19 @@ namespace MudancaAssombrada
                 {
                     p.radius += p.speed * Time.deltaTime;
                     if (p.radius >= p.maxRadius) p.intensity = 0; // a onda morreu
+                    // Onda cheia de forma (a bengala) passando por uma peça da casa: ela fica na memória.
+                    else if (p.wave == EchoWave.Full && !p.tuning) Reveal(p.origin, p.radius, p.born);
                 }
 
                 // A onda enfraquece conforme se espalha (e mais rápido no meio do barulho).
                 float fade = p.intensity > 0 ? p.intensity * (1f - p.radius / p.maxRadius) * (1f - NoiseLevel * 0.5f) : 0f;
                 pulseData[i] = new Vector4(p.origin.x, p.origin.y, p.origin.z, p.radius);
                 // y = é do diapasão? z = velocidade (o shader calcula há quanto tempo a onda passou).
-                settingsData[i] = new Vector4(fade, p.tuning ? 1f : 0f, p.speed, 0);
+                // y: 0 = onda de forma, 1 = diapasão, 2 = ponto.
+                float kind = p.wave == EchoWave.Spot ? 2f : p.tuning ? 1f : 0f;
+                settingsData[i] = new Vector4(fade, kind, p.speed, p.maxRadius);
+                slotStrength[i] = fade;
+                slotWave[i] = fade > 0 ? p.wave : EchoWave.None;
             }
 
             // Envia tudo para a placa de vídeo. Todos os materiais Echo leem isto.
@@ -146,6 +224,8 @@ namespace MudancaAssombrada
             Shader.SetGlobalVectorArray(SettingsId, settingsData);
             Shader.SetGlobalColor(ColorId, echoColor);
             Shader.SetGlobalFloat(RingWidthId, ringWidth * (1f + NoiseLevel * 2f));
+            if (cam != null) Shader.SetGlobalVector(ListenerId, cam.transform.position);
+            Shader.SetGlobalVector(NearId, new Vector4(nearRadius, nearStrength, memoryStrength, memorySeconds));
 
             // Timbres que mudam sozinhos (o espelho com o Imitador dentro).
             for (int i = 0; i < tagged.Count; i++)
@@ -184,6 +264,7 @@ namespace MudancaAssombrada
                     if (pair.Key != null) pair.Key.sharedMaterials = pair.Value;
                 originalMaterials.Clear();
                 tagged.Clear();
+                remembered.Clear();
             }
         }
 
@@ -212,6 +293,27 @@ namespace MudancaAssombrada
                 }
                 r.sharedMaterials = echoMats;
                 if (tag != null) tagged.Add(new Tagged { tag = tag, materials = echoMats, applied = timbre });
+                if (r.GetComponentInParent<Unity.Netcode.NetworkObject>() == null)
+                {
+                    foreach (var mat in echoMats) mat.SetFloat(RevealedId, -1000f); // nunca revelado
+                    remembered.Add(new Remembered { renderer = r, materials = echoMats, lastWave = -1f });
+                }
+            }
+        }
+
+        // Marca na memória as peças da casa que a frente da onda acabou de alcançar. O material guarda
+        // o HORÁRIO (no relógio do shader, _Time.y) e o shader apaga o contorno com o tempo.
+        void Reveal(Vector3 origin, float radius, float waveBorn)
+        {
+            float sqr = radius * radius;
+            for (int i = 0; i < remembered.Count; i++)
+            {
+                var m = remembered[i];
+                if (m.lastWave == waveBorn || m.renderer == null) continue;
+                if ((m.renderer.bounds.ClosestPoint(origin) - origin).sqrMagnitude > sqr) continue;
+                foreach (var mat in m.materials) mat.SetFloat(RevealedId, Time.timeSinceLevelLoad);
+                m.lastWave = waveBorn;
+                remembered[i] = m;
             }
         }
     }
