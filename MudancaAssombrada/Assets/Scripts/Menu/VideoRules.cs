@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 namespace MudancaAssombrada
@@ -80,6 +82,32 @@ namespace MudancaAssombrada
         // -1 = sem limite. Com VSync ligado quem manda é o monitor, então o limite fica de fora.
         public static int TargetFrameRate(bool vsync, int fpsIndex) =>
             vsync ? -1 : FpsValues[ClampIndex(fpsIndex, FpsValues.Length, DefaultFps)];
+
+        // --- Resolução da janela ---
+
+        // O monitor repete cada tamanho uma vez por taxa de atualização: aqui fica um de cada,
+        // do menor para o maior.
+        public static Vector2Int[] UniqueSizes(IEnumerable<Vector2Int> sizes) =>
+            sizes.Distinct().OrderBy(s => s.x).ThenBy(s => s.y).ToArray();
+
+        // Posição da resolução salva na lista. Não achou (nunca salvou, outro monitor): a maior,
+        // que é a nativa. Lista vazia: -1 (aí o jogo não mexe na resolução).
+        public static int ResolutionIndex(IList<Vector2Int> sizes, Vector2Int saved)
+        {
+            int found = sizes.IndexOf(saved);
+            return found >= 0 ? found : sizes.Count - 1;
+        }
+
+        // --- Brilho ---
+
+        // O brilho é a exposição do pós-processamento, em EV: +1 dobra a luz, -1 corta pela metade.
+        // Mais que isso estraga o escuro da casa (e o susto) ou vira breu.
+        public const float MaxBrightness = 1f;
+
+        public static float ClampBrightness(float ev) => Mathf.Clamp(ev, -MaxBrightness, MaxBrightness);
+
+        // Para o texto do painel: 0 EV = 100%.
+        public static int BrightnessPercent(float ev) => Mathf.RoundToInt(Mathf.Pow(2f, ClampBrightness(ev)) * 100f);
 
         // --- Ajudantes dos botões ---
 

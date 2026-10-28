@@ -397,8 +397,13 @@ namespace MudancaAssombrada.Editor
             rowLayout.childControlWidth = rowLayout.childControlHeight = true;
             rowLayout.childForceExpandWidth = true;
             var generalTab = CreateTab("Geral", tabRow.transform);
-            var videoTab = CreateTab("Vídeo", tabRow.transform);
-            SetHeight(tabRow, 72);
+            var screenTab = CreateTab("Tela", tabRow.transform);
+            var graphicsTab = CreateTab("Gráficos", tabRow.transform);
+            // Mesma altura dos outros botões (64). Sem o flexibleHeight = 0 a fileira dividia a
+            // sobra do painel com a página e as abas cresciam (passavam de 250 px).
+            SetHeight(tabRow, 64);
+            tabRow.GetComponent<LayoutElement>().flexibleHeight = 0;
+            rowLayout.childForceExpandHeight = false;
 
             // Geral
             var general = CreatePage("Página Geral", panel);
@@ -407,15 +412,20 @@ namespace MudancaAssombrada.Editor
             var volumeText = CreateText("Volume (texto)", general, "", BodySize);
             var volumeSlider = CreateSlider(general, 0f, 1f);
 
-            // Vídeo: os rótulos dos botões são reescritos pelo OptionsPanel ("Qualidade: Alta"...).
-            var video = CreatePage("Página Vídeo", panel);
-            var fullscreenToggle = CreateToggle(video, "Tela cheia");
-            var qualityButton = CreateButton("Qualidade", video);
-            var antialiasingButton = CreateButton("Antialiasing", video);
-            var renderScaleText = CreateText("Resolução 3D (texto)", video, "", BodySize);
-            var renderScaleSlider = CreateSlider(video, 10f, 20f); // 50% a 100%, de 5 em 5
-            var vsyncToggle = CreateToggle(video, "VSync");
-            var fpsButton = CreateButton("Limite de FPS", video);
+            // Tela e Gráficos: os rótulos dos botões são reescritos pelo OptionsPanel ("Qualidade: Alta"...).
+            var screen = CreatePage("Página Tela", panel);
+            var fullscreenToggle = CreateToggle(screen, "Tela cheia");
+            var resolutionButton = CreateButton("Resolução", screen);
+            var brightnessText = CreateText("Brilho (texto)", screen, "", BodySize);
+            var brightnessSlider = CreateSlider(screen, -10f, 10f); // -1 a +1 EV, de 0,1 em 0,1
+            var vsyncToggle = CreateToggle(screen, "VSync");
+            var fpsButton = CreateButton("Limite de FPS", screen);
+
+            var graphics = CreatePage("Página Gráficos", panel);
+            var qualityButton = CreateButton("Qualidade", graphics);
+            var antialiasingButton = CreateButton("Antialiasing", graphics);
+            var renderScaleText = CreateText("Resolução 3D (texto)", graphics, "", BodySize);
+            var renderScaleSlider = CreateSlider(graphics, 10f, 20f); // 50% a 100%, de 5 em 5
 
             var backButton = CreateButton("Voltar", panel, ButtonStyle.Ghost);
 
@@ -433,8 +443,11 @@ namespace MudancaAssombrada.Editor
             so.FindProperty("renderScaleValueText").objectReferenceValue = renderScaleText;
             so.FindProperty("vsyncToggle").objectReferenceValue = vsyncToggle;
             so.FindProperty("fpsButton").objectReferenceValue = fpsButton;
-            SetArray(so.FindProperty("tabButtons"), generalTab, videoTab);
-            SetArray(so.FindProperty("tabPages"), general.gameObject, video.gameObject);
+            so.FindProperty("resolutionButton").objectReferenceValue = resolutionButton;
+            so.FindProperty("brightnessSlider").objectReferenceValue = brightnessSlider;
+            so.FindProperty("brightnessValueText").objectReferenceValue = brightnessText;
+            SetArray(so.FindProperty("tabButtons"), generalTab, screenTab, graphicsTab);
+            SetArray(so.FindProperty("tabPages"), general.gameObject, screen.gameObject, graphics.gameObject);
             so.ApplyModifiedPropertiesWithoutUndo();
             return options;
         }

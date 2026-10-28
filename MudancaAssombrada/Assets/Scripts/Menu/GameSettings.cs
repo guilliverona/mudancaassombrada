@@ -73,6 +73,25 @@ namespace MudancaAssombrada
             set => PlayerPrefs.SetInt(FpsKey, value);
         }
 
+        // Guardamos o TAMANHO (e não a posição na lista), porque a lista muda de um monitor para outro.
+        // 0x0 = nunca escolheu: fica a nativa.
+        const string ResolutionWidthKey = "resolucaoLargura";
+        const string ResolutionHeightKey = "resolucaoAltura";
+        const string BrightnessKey = "brilho";
+
+        public static Vector2Int Resolution
+        {
+            get => new Vector2Int(PlayerPrefs.GetInt(ResolutionWidthKey, 0), PlayerPrefs.GetInt(ResolutionHeightKey, 0));
+            set { PlayerPrefs.SetInt(ResolutionWidthKey, value.x); PlayerPrefs.SetInt(ResolutionHeightKey, value.y); }
+        }
+
+        // Exposição em EV (0 = normal). Ver VideoRules.ClampBrightness.
+        public static float Brightness
+        {
+            get => VideoRules.ClampBrightness(PlayerPrefs.GetFloat(BrightnessKey, 0f));
+            set => PlayerPrefs.SetFloat(BrightnessKey, VideoRules.ClampBrightness(value));
+        }
+
         public static string PlayerName
         {
             get => PlayerPrefs.GetString(NameKey, "Carregador");
@@ -88,7 +107,7 @@ namespace MudancaAssombrada
         // Aplica o que dá para aplicar na hora.
         public static void Apply()
         {
-            Screen.fullScreen = Fullscreen;
+            VideoSettings.ApplyScreen();
             AudioListener.volume = Muted ? 0f : Volume;
             VideoSettings.Apply();
         }

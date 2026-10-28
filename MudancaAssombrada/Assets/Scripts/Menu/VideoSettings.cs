@@ -1,3 +1,4 @@
+using System.Linq;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -32,8 +33,44 @@ namespace MudancaAssombrada
             }
 
             cameraAa = ToUrp(resolved.cameraAa);
+            BrightnessOverride().postExposure.Override(GameSettings.Brightness);
             QualitySettings.vSyncCount = GameSettings.VSync ? 1 : 0;
             Application.targetFrameRate = VideoRules.TargetFrameRate(GameSettings.VSync, GameSettings.FpsLimit);
+        }
+
+        // As resoluções do monitor, uma de cada tamanho (do menor para o maior).
+        public static Vector2Int[] Resolutions() =>
+            VideoRules.UniqueSizes(Screen.resolutions.Select(r => new Vector2Int(r.width, r.height)));
+
+        // Resolução + tela cheia. Só chama o SetResolution se algo mudou: ele pisca a tela,
+        // e o GameSettings.Apply roda em outros momentos (troca de personagem...).
+        public static void ApplyScreen()
+        {
+            var sizes = Resolutions();
+            int index = VideoRules.ResolutionIndex(sizes, GameSettings.Resolution);
+            var mode = GameSettings.Fullscreen ? FullScreenMode.FullScreenWindow : FullScreenMode.Windowed;
+            if (index < 0) { Screen.fullScreenMode = mode; return; }
+
+            var size = sizes[index];
+            if (Screen.width != size.x || Screen.height != size.y || Screen.fullScreenMode != mode)
+                Screen.SetResolution(size.x, size.y, mode);
+        }
+
+        // Um Volume global, por cima dos das casas (prioridade alta), que só mexe na exposição.
+        // Os outros efeitos de cada casa continuam valendo: o Volume só sobrescreve o que marca.
+        static ColorAdjustments brightness;
+
+        static ColorAdjustments BrightnessOverride()
+        {
+            if (brightness != null) return brightness;
+            var go = new GameObject("Brilho (opções)");
+            Object.DontDestroyOnLoad(go); // vale no menu e em todas as casas
+            var volume = go.AddComponent<Volume>();
+            volume.isGlobal = true;
+            volume.priority = 1000;
+            volume.profile = ScriptableObject.CreateInstance<VolumeProfile>();
+            brightness = volume.profile.Add<ColorAdjustments>();
+            return brightness;
         }
 
         // A cópia do asset do URP que pode ser mexida à vontade.
@@ -59,8 +96,11 @@ namespace MudancaAssombrada
         {
             // Só a câmera que vai para a tela: a do espelho desenha numa textura e tem regra própria.
             if (camera.cameraType != CameraType.Game || camera.targetTexture != null) return;
-            if (camera.TryGetComponent(out UniversalAdditionalCameraData data) && data.antialiasing != cameraAa)
-                data.antialiasing = cameraAa;
+            // A câmera do jogador não vem com os dados do URP salvos: GetUniversalAdditionalCameraData
+            // cria se faltar. O pós-processamento precisa estar ligado para o brilho (e o FXAA/SMAA/TAA).
+            var data = camera.GetUniversalAdditionalCameraData();
+            data.renderPostProcessing = true;
+            data.antialiasing = cameraAa;
         }
 
         // Devolve o asset original (senão o Editor sairia do Play ainda usando a cópia).

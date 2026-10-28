@@ -24,6 +24,9 @@ namespace MudancaAssombrada
         [SerializeField] Slider renderScaleSlider;
         [SerializeField] Text renderScaleValueText;
         [SerializeField] Toggle vsyncToggle;
+        [SerializeField] Button resolutionButton;
+        [SerializeField] Slider brightnessSlider;
+        [SerializeField] Text brightnessValueText;
 
         [Header("Abas")]
         // Cada botão de aba mostra a página de mesmo índice (aba 0 → página 0...).
@@ -57,6 +60,20 @@ namespace MudancaAssombrada
             renderScaleSlider.wholeNumbers = true;
             renderScaleSlider.onValueChanged.AddListener(v => ChangeVideo(() => GameSettings.RenderScale = v / 20f));
             vsyncToggle.onValueChanged.AddListener(v => ChangeVideo(() => GameSettings.VSync = v));
+            // De 0,1 em 0,1 EV: o slider vai de -10 a 10 e o brilho é valor/10.
+            brightnessSlider.wholeNumbers = true;
+            brightnessSlider.onValueChanged.AddListener(v => ChangeVideo(() => GameSettings.Brightness = v / 10f));
+            resolutionButton.onClick.AddListener(NextResolution);
+        }
+
+        void NextResolution()
+        {
+            var sizes = VideoSettings.Resolutions();
+            if (sizes.Length == 0) return;
+            int index = VideoRules.ResolutionIndex(sizes, GameSettings.Resolution);
+            GameSettings.Resolution = sizes[VideoRules.Next(index, sizes.Length)];
+            GameSettings.Apply();
+            RefreshLabels();
         }
 
         // Toda mudança de vídeo: guarda, aplica na hora e atualiza os textos.
@@ -75,6 +92,7 @@ namespace MudancaAssombrada
             fullscreenToggle.SetIsOnWithoutNotify(GameSettings.Fullscreen);
             renderScaleSlider.SetValueWithoutNotify(Mathf.Round(GameSettings.RenderScale * 20f));
             vsyncToggle.SetIsOnWithoutNotify(GameSettings.VSync);
+            brightnessSlider.SetValueWithoutNotify(Mathf.Round(GameSettings.Brightness * 10f));
             ShowTab(0); // abre sempre na primeira aba
             RefreshLabels();
         }
@@ -106,6 +124,13 @@ namespace MudancaAssombrada
             antialiasingButton.interactable = !VideoRules.UsesStp(scale);
             SetLabel(fpsButton, "Limite de FPS: " + (GameSettings.VSync ? "VSync" : VideoRules.FpsNames[GameSettings.FpsLimit]));
             fpsButton.interactable = !GameSettings.VSync;
+            brightnessValueText.text = $"Brilho: {VideoRules.BrightnessPercent(GameSettings.Brightness)}%";
+
+            var sizes = VideoSettings.Resolutions();
+            int index = VideoRules.ResolutionIndex(sizes, GameSettings.Resolution);
+            // No Editor a lista pode vir vazia (quem manda é a janela Game): mostra o tamanho atual.
+            var size = index >= 0 ? sizes[index] : new Vector2Int(Screen.width, Screen.height);
+            SetLabel(resolutionButton, $"Resolução: {size.x} × {size.y}");
         }
 
         // O rótulo é o primeiro texto do botão (como o UiBuilder monta).
