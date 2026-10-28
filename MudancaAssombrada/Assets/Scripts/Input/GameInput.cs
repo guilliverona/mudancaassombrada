@@ -24,7 +24,11 @@ namespace MudancaAssombrada
         public static InputAction Fork { get; private set; }       // diapasão da Cida
         public static InputAction Pause { get; private set; }
         public static InputAction Restart { get; private set; }
-        public static InputAction[] SelectCharacter { get; private set; } // teclas 1, 2, 3... (troca de personagem para testes)
+        public static InputAction[] HotbarSlot { get; private set; }      // teclas 1, 2, 3: segurar o item daquele espaço
+        public static InputAction HotbarScroll { get; private set; }      // rodinha do mouse: passa de espaço
+        public static InputAction HotbarNext { get; private set; }
+        public static InputAction HotbarPrevious { get; private set; }
+        public static InputAction[] SelectCharacter { get; private set; } // F1, F2, F3... (troca de personagem para testes)
 
         static InputActionMap map;
 
@@ -72,9 +76,19 @@ namespace MudancaAssombrada
             Pause = Button(map, "Pausa", "<Keyboard>/escape", "<Gamepad>/start");
             Restart = Button(map, "Reiniciar", "<Keyboard>/r", "<Gamepad>/select");
 
+            // Hotbar: os números são dela. No controle, o direcional para os lados passa de espaço
+            // (o de cima é a lanterna).
+            HotbarSlot = new InputAction[HotbarRules.Slots];
+            for (int i = 0; i < HotbarSlot.Length; i++)
+                HotbarSlot[i] = Button(map, $"Item {i + 1}", $"<Keyboard>/{i + 1}");
+            HotbarScroll = map.AddAction("Trocar item", InputActionType.Value, "<Mouse>/scroll/y");
+            HotbarNext = Button(map, "Próximo item", "<Gamepad>/dpad/right");
+            HotbarPrevious = Button(map, "Item anterior", "<Gamepad>/dpad/left");
+
+            // A troca de personagem (só em testes) foi para F1, F2, F3...: os números são da hotbar.
             SelectCharacter = new InputAction[9];
             for (int i = 0; i < SelectCharacter.Length; i++)
-                SelectCharacter[i] = Button(map, $"Personagem {i + 1}", $"<Keyboard>/{i + 1}");
+                SelectCharacter[i] = Button(map, $"Personagem {i + 1}", $"<Keyboard>/f{i + 1}");
 
             map.Enable(); // ações só funcionam depois de ligadas
         }

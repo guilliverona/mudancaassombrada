@@ -441,6 +441,7 @@ namespace MudancaAssombrada.Editor
             beam.intensity = 6f; // forte o bastante para a casa escura: é ela que mostra o caminho
             beam.color = new Color(1f, 0.86f, 0.68f);
             beam.shadows = LightShadows.Soft;
+            player.AddComponent<Hotbar>(); // 3 espaços (teclas 1-2-3); a lanterna mora nela
             EditorTools.SetReference(player.AddComponent<Flashlight>(), "beam", beam);
             player.AddComponent<NavMeshModifier>().ignoreFromBuild = true;
 

@@ -223,7 +223,7 @@ namespace MudancaAssombrada
             foreach (var p in NetworkPlayer.All)
             {
                 if (p.Condition != null) p.Condition.ServerReset(); // todo mundo de pé de novo
-                if (p.TryGetComponent(out Flashlight flashlight)) flashlight.ServerReset(); // e de mãos vazias
+                if (p.TryGetComponent(out Hotbar hotbar)) hotbar.ServerClear(); // e de mãos (e hotbar) vazias
                 p.ResetPositionRpc();
             }
 
