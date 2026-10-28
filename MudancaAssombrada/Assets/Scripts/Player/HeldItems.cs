@@ -119,6 +119,30 @@ namespace MudancaAssombrada
                 PlaceLantern(chest.position + transform.forward * chestForward, flashlight.Beam.rotation, moveBeam: false);
             else
                 PlaceLantern(ArmRaised ? arm.FistCenter() : socket.position, aim, moveBeam: ArmRaised && weight > 0.99f);
+            // Onde ela fica no CORPO: o FirstPersonArm pode levá-la para a sua tela depois, e o espelho
+            // devolve para cá enquanto desenha o reflexo (ShowLanternOnBody).
+            bodyLantern = new Pose(lantern.transform.position, lantern.transform.rotation);
+        }
+
+        // ---------- Espelho ----------
+
+        Pose bodyLantern, viewLantern; // na mão do corpo / no lugar da sua tela (primeira pessoa)
+        bool lanternOnBody;
+
+        // O espelho mostra o SEU corpo (o que os colegas veem), não a primeira pessoa: enquanto a câmera
+        // do reflexo desenha, a lanterna volta para a mão do corpo; depois, para o lugar da tela.
+        // Chamado pelo MirrorReflection (via FirstPersonArm), só no dono.
+        public void ShowLanternOnBody(bool onBody)
+        {
+            if (lantern == null || !lantern.activeSelf || onBody == lanternOnBody) return;
+            var t = lantern.transform;
+            if (onBody)
+            {
+                viewLantern = new Pose(t.position, t.rotation);
+                t.SetPositionAndRotation(bodyLantern.position, bodyLantern.rotation);
+            }
+            else t.SetPositionAndRotation(viewLantern.position, viewLantern.rotation);
+            lanternOnBody = onBody;
         }
 
         // O braço do modelo: a mão abaixo e à frente do ombro suavizado (carregar natural), o braço

@@ -163,6 +163,8 @@ namespace MudancaAssombrada
             bool reflecting = mode == ShadowCastingMode.On;
             foreach (var part in FirstPersonBody.Parts)
                 if (part != null) part.forceRenderingOff = reflecting;
+            // Nem a lanterna presa à câmera: no reflexo ela volta para a mão do corpo.
+            FirstPersonArm.ShowInMirror(reflecting);
         }
 
         // Distância até a câmera, ou -1 se este espelho não precisa refletir agora.
