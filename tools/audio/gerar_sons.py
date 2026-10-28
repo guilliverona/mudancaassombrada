@@ -330,7 +330,26 @@ def eco_pulso(rng):
     return amostras
 
 
-PROCEDURAIS = {"ui_clique": ui_clique, "ui_hover": ui_hover, "ui_erro": ui_erro, "eco_pulso": eco_pulso}
+def item_troca(rng):
+    """Trocar o item da hotbar: um roçar curto de pano/couro (tirar do cinto) e um "tic" metálico
+    abafado no fim (a fivela). Baixinho: toca a cada troca."""
+    n = int(TAXA * 0.22)
+    pano = _ruido_filtrado(rng, n, 4)
+    amostras = []
+    for i in range(n):
+        t = i / TAXA
+        roca = _envelope(t, 0.02, 0.04) * pano[i] * 1.6           # sobe devagar e some: o tecido
+        tic_t = t - 0.12                                           # a fivela, depois do roçar
+        tic = 0.0
+        if tic_t >= 0:
+            tic = _envelope(tic_t, 0.0005, 0.006) * (math.sin(2 * math.pi * 2300 * tic_t)
+                                                    + 0.5 * math.sin(2 * math.pi * 3700 * tic_t))
+        amostras.append((roca + tic * 0.35) * 0.5)
+    return amostras
+
+
+PROCEDURAIS = {"ui_clique": ui_clique, "ui_hover": ui_hover, "ui_erro": ui_erro, "eco_pulso": eco_pulso,
+               "item_troca": item_troca}
 
 
 def gerar_procedural(som, caminho):

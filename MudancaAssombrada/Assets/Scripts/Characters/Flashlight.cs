@@ -12,11 +12,14 @@ namespace MudancaAssombrada
     //   - no COLETE (estava na mão e você pegou um móvel): aponta para a frente do corpo, mais
     //     fraca. Quem carrega fica meio cego; quem está de mão livre ilumina o caminho para ele;
     //   - GUARDADA (outro espaço escolhido): apaga.
-    // A tecla L liga/desliga; com a lanterna guardada, tira do cinto e já acende.
+    // A tecla L liga/desliga; com a lanterna guardada, tira do cinto e já acende (carregando um
+    // móvel, vai direto para o colete, como pela tecla do número).
     //
     // A BATERIA acaba: ligada, gasta (100 s de luz com a carga cheia); abaixo de 20% a luz começa
-    // a falhar, cada vez mais; em 0 apaga sozinha. Pilhas espalhadas pela casa recarregam um
-    // pedaço. Gerir a luz (ligar só quando precisa) é parte do jogo.
+    // a falhar, cada vez mais; em 0 apaga sozinha. Pilhas espalhadas pela casa vão para a HOTBAR
+    // (ocupam um espaço!); com o pacote na mão, "Usar item" recarrega um pedaço. Gerir a luz (ligar
+    // só quando precisa, guardar pilha ou levar outra coisa) é parte do jogo.
+    // O modelo da lanterna na mão/no colete é do HeldItems.
     //
     // REDE: o host decide QUEM tem lanterna (está na hotbar dele). Ligar, o lugar e a carga são do
     // DONO (é ele que aperta a tecla e carrega o móvel); todos veem a luz acesa, falhando e no colete.
@@ -28,6 +31,8 @@ namespace MudancaAssombrada
         [SerializeField] float batterySeconds = 100f;
         [Tooltip("Abaixo desta carga a luz começa a falhar.")]
         [SerializeField, Range(0f, 1f)] float flickerBelow = 0.2f;
+        [Tooltip("Quanto um pacote de pilhas recarrega (0,4 = 40% da bateria).")]
+        [SerializeField, Range(0f, 1f)] float batteryCharge = 0.4f;
 
         [Header("No colete (carregando um móvel)")]
         [Tooltip("Fração da força da luz presa no colete.")]
@@ -44,6 +49,9 @@ namespace MudancaAssombrada
         // A carga em porcentagem inteira: muda pouco, então quase não gasta rede.
         readonly NetworkVariable<byte> percent = new(
             100, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
+        // Para cima/baixo que o dono está olhando (graus inteiros): o braço e a luz dos colegas seguem.
+        readonly NetworkVariable<sbyte> pitch = new(
+            0, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Owner);
 
         float charge = 1f;   // só no dono: a carga exata (0 a 1)
         float baseIntensity;
@@ -53,7 +61,22 @@ namespace MudancaAssombrada
         public bool Has => hotbar != null && hotbar.Contains(HotbarItem.Flashlight);
         public bool IsOn => on.Value;
         public FlashlightPlace Place => place.Value;
+        // Para onde a luz aponta (o HeldItems vira o modelo da lanterna para o mesmo lado).
+        public Transform Beam => beam.transform;
+        // Para onde a lanterna NA MÃO aponta: o giro do corpo + o olhar para cima/baixo. No dono é o
+        // olhar da câmera; nos outros, o que veio pela rede (a câmera dos outros não gira).
+        public Quaternion AimRotation => transform.rotation * Quaternion.Euler(IsOwner ? LookPitch() : pitch.Value, 0f, 0f);
+
+        // Quanto a câmera olha para baixo (+) ou para cima (−), em graus, em relação ao corpo.
+        float LookPitch()
+        {
+            Transform eye = beam.transform.parent;
+            return Vector3.SignedAngle(transform.forward, Vector3.ProjectOnPlane(eye.forward, transform.right), transform.right);
+        }
         public float Charge01 => IsOwner ? charge : percent.Value / 100f;
+        // Pilhas na mão e dá para trocar agora? (a HUD mostra a dica do botão Usar)
+        public bool CanReload => hotbar != null && hotbar.InHand == HotbarItem.Battery
+                                 && HotbarRules.CanReload(Has, Charge01, hotbar.HandsBusy);
 
         void Awake()
         {
@@ -92,18 +115,22 @@ namespace MudancaAssombrada
 
             if (!PauseMenu.IsOpen && GameInput.Flashlight.WasPressedThisFrame())
             {
-                switch (HotbarRules.OnFlashlightKey(has, now, busy))
+                switch (HotbarRules.OnFlashlightKey(has, now))
                 {
-                    case FlashlightKey.Toggle:
+                    case ItemKey.Use:
                         if (on.Value || charge > 0f) SetOn(!on.Value);
                         break;
-                    case FlashlightKey.TakeOutAndTurnOn:
+                    case ItemKey.TakeOutAndUse:
                         hotbar.Select(hotbar.Find(HotbarItem.Flashlight));
-                        place.Value = FlashlightPlace.Hand;
+                        place.Value = HotbarRules.PlaceOf(true, busy); // carregando: direto no colete
                         if (charge > 0f) SetOn(true);
                         break;
                 }
             }
+
+            // Pilhas na mão + Usar: troca as pilhas (o host confere e tira o pacote da hotbar).
+            if (!PauseMenu.IsOpen && GameInput.UseItem.WasPressedThisFrame() && CanReload)
+                ReloadRpc(hotbar.Selected);
 
             if (on.Value)
             {
@@ -113,6 +140,13 @@ namespace MudancaAssombrada
 
             byte p = (byte)Mathf.CeilToInt(charge * 100f);
             if (p != percent.Value) percent.Value = p;
+
+            // O olhar só vai pela rede com a lanterna na mão (é só para o braço e a luz dos colegas).
+            if (now == FlashlightPlace.Hand)
+            {
+                sbyte look = (sbyte)Mathf.Clamp(Mathf.RoundToInt(LookPitch()), -90, 90);
+                if (Mathf.Abs(look - pitch.Value) >= 2) pitch.Value = look;
+            }
         }
 
         void SetOn(bool value)
@@ -169,8 +203,20 @@ namespace MudancaAssombrada
             return true;
         }
 
-        // Trocou as pilhas: soma 'amount' na carga (sem passar de cheia).
-        public void ServerCharge(float amount) => ChargeRpc(amount, false);
+        // O dono usou o pacote de pilhas do espaço 'slot'. O host confere de novo (o pacote ainda está
+        // lá? tem lanterna?), gasta o pacote e manda a carga. A cheia/mãos ocupadas o dono já conferiu.
+        [Rpc(SendTo.Server)]
+        void ReloadRpc(int slot)
+        {
+            if (hotbar.Get(slot) != HotbarItem.Battery || !Has) return;
+            hotbar.ServerRemove(slot);
+            ChargeRpc(batteryCharge, false);
+            ReloadSoundRpc();
+        }
+
+        // Todos ouvem a tampa desatarraxando (e o fantasma não: é só som, não SoundEvent).
+        [Rpc(SendTo.Everyone)]
+        void ReloadSoundRpc() => GameAudio.Play("pilhas_troca", transform.position);
 
         // A carga é do dono: o host pede e o computador dele muda.
         [Rpc(SendTo.Owner)]

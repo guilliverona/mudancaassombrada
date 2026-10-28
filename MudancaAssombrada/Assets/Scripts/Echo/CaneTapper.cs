@@ -26,6 +26,7 @@ namespace MudancaAssombrada
 
         PlayerMovement movement;
         CaneCall call;
+        Hotbar hotbar;
         float nextTapTime;
         float walked;
         Vector3 lastPosition;
@@ -36,15 +37,35 @@ namespace MudancaAssombrada
             lastPosition = transform.position;
             movement = GetComponent<PlayerMovement>();
             call = GetComponent<CaneCall>();
+            hotbar = GetComponent<Hotbar>();
         }
 
         // A ponta da bengala bate no chão, um pouco à frente dos pés.
         Vector3 Tip => transform.position + transform.forward * 0.6f + Vector3.down * 0.9f;
 
+        // A bengala mora na hotbar (espaço 1 da Cida). Sem hotbar (Player antigo), está sempre na mão.
+        // Carregar um móvel NÃO a guarda: é a visão da Cida (decisão: ver ARQUITETURA.md, "Hotbar").
+        bool CaneInHand => hotbar == null || hotbar.InHand == HotbarItem.Cane;
+
+        // Espaço com a bengala guardada: tira do cinto e bate, como a tecla do número (HotbarRules.OnItemKey).
+        bool TakeCane()
+        {
+            if (hotbar == null) return true;
+            switch (HotbarRules.OnItemKey(hotbar.Contains(HotbarItem.Cane), CaneInHand))
+            {
+                case ItemKey.Use: return true;
+                case ItemKey.TakeOutAndUse:
+                    hotbar.Select(hotbar.Find(HotbarItem.Cane));
+                    return true;
+                default: return false;
+            }
+        }
+
         void Update()
         {
             // Time.time = segundos desde o início do jogo. Técnica clássica de cooldown.
-            if (CanTap && !PauseMenu.IsOpen && GameInput.Tap.WasPressedThisFrame() && Time.time >= nextTapTime)
+            if (CanTap && !PauseMenu.IsOpen && GameInput.Tap.WasPressedThisFrame() && Time.time >= nextTapTime
+                && TakeCane())
             {
                 nextTapTime = Time.time + tapCooldown;
                 // 0,9 e não 1: intensidade 1 é a chamada (o som de três batidas, ver SoundLibrary).
@@ -55,7 +76,7 @@ namespace MudancaAssombrada
             // Continuou segurando: vira a CHAMADA (uma vez por aperto).
             if (holdStart >= 0f)
             {
-                if (!GameInput.Tap.IsPressed() || !CanTap) holdStart = -1f;
+                if (!GameInput.Tap.IsPressed() || !CanTap || !CaneInHand) holdStart = -1f;
                 else if (Time.time - holdStart >= callHoldSeconds)
                 {
                     holdStart = -1f;
