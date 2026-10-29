@@ -42,9 +42,11 @@ namespace MudancaAssombrada
         [Tooltip("Uma caixinha por espaço (até 3); a Hud mostra só as do personagem e centraliza.")]
         [SerializeField] HotbarSlotView[] hotbarSlots;
         [Tooltip("A dica do botão Usar, logo acima da barra: o mouse com o botão esquerdo aceso, \"ESQ\" " +
-                 "e a ação (pilhas na mão: \"Trocar as pilhas\").")]
+                 "e a ação (pilhas na mão: \"Segure: trocar as pilhas\").")]
         [SerializeField] GameObject useHint;
         [SerializeField] Text useHintAction;
+        [Tooltip("A carga da barrinha embaixo da dica: enche enquanto o botão Usar é segurado.")]
+        [SerializeField] RectTransform useHintProgress;
         [Tooltip("Ícones gerados dos modelos do jogo (ItemIconBuilder).")]
         [SerializeField] Sprite flashlightIcon, batteryIcon, caneIcon;
         [Tooltip("Segundos na tela depois da última troca de item.")]
@@ -252,7 +254,13 @@ namespace MudancaAssombrada
             if (useHint != null)
             {
                 if (useHint.activeSelf != canReload) useHint.SetActive(canReload);
-                if (canReload) SetText(useHintAction, "Trocar as pilhas"); // o mouse e o "ESQ" são fixos (HudBuilder)
+                if (canReload)
+                {
+                    // o mouse e o "ESQ" são fixos (HudBuilder); a barrinha enche enquanto segura
+                    float progress = flashlight.ReloadProgress01;
+                    SetText(useHintAction, progress > 0f ? "Trocando as pilhas..." : "Segure: trocar as pilhas");
+                    if (useHintProgress != null) useHintProgress.anchorMax = new Vector2(progress, 1f);
+                }
             }
         }
 

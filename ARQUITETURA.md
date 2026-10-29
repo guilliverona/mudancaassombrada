@@ -243,7 +243,8 @@ guarda). Quantos espaços vem da ficha (`hotbarSlots`: o Marcelo tem 2) e o **ki
 bengala da Cida no espaço 1, já na mão) é aplicado ao nascer, ao trocar de personagem e ao reiniciar.
 As regras ficam em `HotbarRules` (testes em `HotbarRulesTests`). A tecla própria de um item (L, Espaço)
 faz o mesmo que o número + usar (`OnItemKey`). "Usar item" (botão esquerdo / gatilho direito) usa o
-que está na mão (hoje: trocar as pilhas). O `HeldItems` mostra no boneco o que está na mão: com a
+que está na mão (hoje: trocar as pilhas, **segurando** por 3 s: `HoldAction`, testes em `HoldActionTests`;
+soltar antes perde o que foi, e completar só vale de novo depois de soltar). O `HeldItems` mostra no boneco o que está na mão: com a
 lanterna **na mão**, o braço direito sobe: a camada "Lanterna" do Animator fecha os dedos no cabo
 (clipe `PegaLanterna`, gerado por `tools/blender/build_pega_lanterna.py` no rig do Tiago) e, por cima,
 um IK de dois ossos leva a mão para baixo e um pouco à frente do **ombro suavizado** (`carry`, em
@@ -286,7 +287,7 @@ desenho (miolo forte, faixa mais escura e o aro do refletor): o cookie `T_PRP_La
 gerado pelo `FlashlightCookieBuilder` a partir do `FlashlightBeamRules` (testes em
 `FlashlightBeamRulesTests`; mudou o desenho, recrie o Player). A **lente** da lanterna na mão acende
 e pisca junto com a luz (`Flashlight.LightLevel` → `HeldItems`, numa cópia do material só dela). As pilhas vão para
-a hotbar (ocupam um espaço) e recarregam com "Usar item" (`batteryCharge` no `Flashlight`, 40%). Um objeto que dá para **tocar** (o piano) é um
+a hotbar (ocupam um espaço) e recarregam segurando "Usar item" (`reloadHoldSeconds` = 3 s e `batteryCharge` = 40% no `Flashlight`). Um objeto que dá para **tocar** (o piano) é um
 `PlayableInstrument`: o host emite um `SoundEvent` de música e o `SoundVoice` do objeto diz o arquivo.
 Luz que treme (arandela, vela): `LightFlicker` na `Light`.
 Pilha **escondida**: `startsHidden` no `FlashlightPickup`; aparece quando algo chama `ServerReveal`

@@ -32,6 +32,7 @@ está no [CLAUDE.md](CLAUDE.md), regra 6. Como rodar os testes também está lá
 | 10. Mansão do Espelho | `ImitatorRules` (espelho pelo caminho), `SecretDoorRules`, `PortalRules`, `MirrorReflection.Priority` | `MansionRulesTests` | 18 | ✅ feito |
 | 11. Atmosfera da Mansão | `HouseScareRules`, `PianolaRules`, `PeriodFindRules`, `SaveData.Complete` (extra) | `AtmosphereRulesTests` | 16 | ✅ feito |
 | 12. Filtro da tela e lâmpadas assombradas | `ScreenLookRules`, `VideoRules.Quality(...).effects` | `ScreenLookRulesTests` | 17 | ✅ feito |
+| 13. Segurar para trocar as pilhas (3 s) | `HoldAction` | `HoldActionTests` | 7 | ✅ feito |
 
 ---
 

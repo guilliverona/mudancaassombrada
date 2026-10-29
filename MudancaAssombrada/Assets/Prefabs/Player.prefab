@@ -1289,6 +1289,7 @@ MonoBehaviour:
   batterySeconds: 400
   flickerBelow: 0.05
   batteryCharge: 0.4
+  reloadHoldSeconds: 3
   chestIntensity: 0.6
   chestBelowEyes: 0.35
   chestTilt: 12
