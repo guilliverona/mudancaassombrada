@@ -63,6 +63,12 @@ MATS = bc.Materials("MAT_ENV", {
     "Chama": ("#FFC98A", 0.0, 0.3, 2.0),
     "VidroLampiao": ("#6A5A40", 0.2, 0.15, 0.4),   # vidro fosco, tingido pela chama
     "VidroJanela": ("#141C24", 0.5, 0.1, 0.0),
+    # hera, musgo e mato (o nome "Folhagem"/"Grama" liga o detalhe de folhas/grama)
+    "FolhagemHera": ("#1F2E1C", 0.0, 0.8, 0.0),
+    "FolhagemHeraEscura": ("#152114", 0.0, 0.85, 0.0),
+    "FolhagemMusgo": ("#2A3622", 0.0, 0.95, 0.0),
+    "GramaTufo": ("#24331F", 0.0, 0.9, 0.0),
+    "GramaSeca": ("#4A4630", 0.0, 0.9, 0.0),
     # a fachada da casa: reboco ocre desbotado e manchado de umidade (o nome "Reboco" liga o
     # detalhe de reboco), com cantaria de pedra na base, nos cunhais e nas janelas
     "RebocoFachada": ("#6B6152", 0.0, 0.9, 0.0),
@@ -465,32 +471,60 @@ def build_fonte(col):
 
 # ---------------------------------------------------------------- vegetação e pedras
 
+def skirt(p, rng, z_top, z_tip, r_top, r_tip, n, mat, under="FolhagemPinheiroEscura"):
+    """Um ANDAR de pinheiro: uma "saia" contínua de agulhas que sai do tronco, abre e cai nas
+    pontas. A borda é serrilhada (2n pontas, uma longa e uma curta, cada uma caindo de um tanto):
+    é esse recorte, andar sobre andar, que faz ler "pinheiro" de longe contra a névoa. Por baixo,
+    um fundo escuro fecha a saia (quem olha de baixo não vê o oco)."""
+    bm = p.bm
+    k = bc.K
+    turn = rng.uniform(0, 2 * math.pi)
+    rings = []
+    for i, (rf, zf) in enumerate(((0.0, 0.0), (0.55, 0.45), (1.0, 1.0))):
+        ring = []
+        for j in range(2 * n):
+            a = turn + math.pi * j / n + (rng.uniform(-0.08, 0.08) if i else 0.0)
+            long_tip = j % 2 == 0
+            spread = (1.0 if long_tip else 0.74) * rng.uniform(0.9, 1.1) if i else 0.0
+            r = r_top + (r_tip - r_top) * rf * spread
+            droop = (0.22 if long_tip else 0.08) * (r_tip - r_top) * rf * rf
+            z = z_top + (z_tip - z_top) * zf - droop + (rng.uniform(-0.04, 0.04) * (r_tip - r_top) if i else 0.0)
+            bulge = 1.08 if i == 1 else 1.0                                 # a saia estufa: tem volume
+            ring.append(bm.verts.new((math.cos(a) * r * bulge * k, math.sin(a) * r * bulge * k, z * k)))
+        rings.append(ring)
+    center = bm.verts.new((0, 0, (z_tip + (z_top - z_tip) * 0.35) * k))
+    m_out, m_under = p._index(p.mats, mat), p._index(p.mats, under)
+    gi = p._index(p.groups, "root")
+    for v in [v for r in rings for v in r] + [center]:
+        v[p.deform][gi] = 1.0
+    for i in range(2):                                                       # a saia, por cima
+        a, b = rings[i], rings[i + 1]
+        for j in range(2 * n):
+            j2 = (j + 1) % (2 * n)
+            bm.faces.new((a[j], b[j], b[j2], a[j2])).material_index = m_out
+    for j in range(2 * n):                                                   # o fundo escuro
+        bm.faces.new((rings[2][(j + 1) % (2 * n)], rings[2][j], center)).material_index = m_under
+
+
 def pine(p, rng, height, trunk_r):
-    """Pinheiro: tronco e camadas de galhos em cone, cada uma girada, amassada e de um verde."""
-    p.tube((0, 0, 0), (0, 0, height * 0.92), trunk_r, trunk_r * 0.25, "MadeiraCasca", "root", seg=8)
+    """Pinheiro: tronco que afina e ANDARES de agulhas em saia (skirt), cada um girado e de um
+    verde, ficando menores e mais juntos para o alto, até a ponteira."""
+    p.tube((0, 0, 0), (0, 0, height * 0.9), trunk_r, trunk_r * 0.2, "MadeiraCasca", "root", seg=8)
     for k in range(4):                                                     # raízes aparentes
         a = 2 * math.pi * k / 4 + rng.uniform(-0.3, 0.3)
         p.tube((0, 0, 0.25), (math.cos(a) * trunk_r * 3, math.sin(a) * trunk_r * 3, -0.05), trunk_r * 0.5, trunk_r * 0.15,
                "MadeiraCasca", "root", seg=5, smooth=False)
-    # Cada andar de galhos é um anel de RAMOS (cunhas que saem do tronco e caem nas pontas), e não
-    # um cone liso: o recorte serrilhado é o que faz ler "pinheiro" de longe, contra a névoa.
-    layers = 8
-    base = height * 0.2
+    layers = 10
+    base = height * 0.16
     for k in range(layers):
         t = k / (layers - 1)
-        z0 = base + (height - base) * t * 0.8
-        rad = (1 - t * 0.85) * height * 0.23 * rng.uniform(0.9, 1.1)
-        n = max(5, round(9 - t * 4))
-        turn = rng.uniform(0, 2 * math.pi)
-        for b in range(n):
-            a = turn + 2 * math.pi * b / n + rng.uniform(-0.2, 0.2)
-            reach = rad * rng.uniform(0.85, 1.1)
-            tip = (math.cos(a) * reach, math.sin(a) * reach, z0 - reach * 0.35)
-            root = (math.cos(a) * 0.1, math.sin(a) * 0.1, z0 + rad * 0.45)
-            mat = "FolhagemPinheiro" if (b + k) % 2 else "FolhagemPinheiroEscura"
-            # o ramo: um cone de 5 lados que afina até a ponta (as facetas pegam a luz em lascas)
-            p.tube(root, tip, rad * 0.34, rad * 0.04, mat, "root", seg=5, smooth=False)
-    p.tube((0, 0, height * 0.86), (0, 0, height), height * 0.035, 0.005, "FolhagemPinheiro", "root", seg=5, smooth=False)
+        # para o alto: andares menores e mais juntos, e cada saia cobre o pé da de cima
+        z_tip = base + (height * 0.8 - base) * t ** 0.85
+        r_tip = (1 - t * 0.88) * height * 0.24 * rng.uniform(0.92, 1.08)
+        z_top = z_tip + r_tip * 0.95 + height * 0.02
+        mat = rng.choice(("FolhagemPinheiro", "FolhagemPinheiro", "FolhagemPinheiroEscura"))
+        skirt(p, rng, z_top, z_tip, 0.05, r_tip, max(6, round(11 - t * 5)), mat)
+    skirt(p, rng, height, height * 0.86, 0.01, height * 0.045, 5, "FolhagemPinheiro")  # ponteira
 
 
 def build_pinheiro(name, height, seed_name):
@@ -503,29 +537,49 @@ def build_pinheiro(name, height, seed_name):
 
 
 def broadleaf(p, rng, height):
-    """Árvore de copa larga: tronco que se divide em galhos e uma copa feita de vários
-    'chumaços' de folhas amassados pelo ruído."""
-    trunk_top = height * 0.45
-    p.tube((0, 0, 0), (0, 0, trunk_top), 0.28, 0.2, "MadeiraCasca", "root", seg=10)
-    for k in range(5):
+    """Árvore de copa larga: tronco com curva e pé alargado que se divide em galhos (e cada galho
+    em dois), e uma copa de MUITOS chumaços: os de cima claros, os de baixo escuros (a sombra da
+    própria copa), achatados embaixo, com vãos onde aparecem os galhos. Amassados pelo ruído."""
+    trunk_top = height * 0.42
+    lean = (rng.uniform(-0.25, 0.25), rng.uniform(-0.25, 0.25))
+    trunk = [(0, 0, 0), (lean[0] * 0.3, lean[1] * 0.3, trunk_top * 0.45), (lean[0], lean[1], trunk_top)]
+    p.tube(trunk[0], trunk[1], 0.34, 0.24, "MadeiraCasca", "root", seg=9, smooth=False, caps=False)
+    p.tube(trunk[1], trunk[2], 0.245, 0.19, "MadeiraCasca", "root", seg=9, smooth=False)
+    for k in range(5):                                                     # raízes
         a = 2 * math.pi * k / 5 + rng.uniform(-0.3, 0.3)
-        p.tube((0, 0, 0.3), (math.cos(a) * 0.7, math.sin(a) * 0.7, -0.05), 0.16, 0.05, "MadeiraCasca", "root", seg=6, smooth=False)
+        p.tube((0, 0, 0.45), (math.cos(a) * 0.85, math.sin(a) * 0.85, -0.05), 0.2, 0.05, "MadeiraCasca", "root", seg=6, smooth=False)
     tips = []
-    for k in range(4):
-        a = 2 * math.pi * k / 4 + rng.uniform(-0.4, 0.4)
-        reach = height * rng.uniform(0.18, 0.26)
-        tip = (math.cos(a) * reach, math.sin(a) * reach, trunk_top + height * rng.uniform(0.2, 0.32))
-        mid = (tip[0] * 0.45, tip[1] * 0.45, trunk_top + (tip[2] - trunk_top) * 0.4)
-        p.limb([(0, 0, trunk_top - 0.2), mid, tip], (0.17, 0.11, 0.05), "MadeiraCasca", ["root"] * 3, seg=7)
-        tips.append(tip)
-    tips.append((0, 0, height * 0.82))
-    for i, tip in enumerate(tips):
-        for j in range(2):
-            c = (tip[0] + rng.uniform(-0.8, 0.8), tip[1] + rng.uniform(-0.8, 0.8), tip[2] + rng.uniform(-0.3, 0.7))
-            s = height * rng.uniform(0.13, 0.19)
-            f = p.ellipsoid(c, (s, s * rng.uniform(0.85, 1.1), s * 0.75), "Folhagem" if (i + j) % 2 else "FolhagemEscura",
-                            "root", seg=12, rings=8)
-            p.wrinkle(f, s * 0.35, scale=s * 0.35, seed=i * 3.1 + j)
+    for k in range(5):
+        a = 2 * math.pi * k / 5 + rng.uniform(-0.35, 0.35)
+        reach = height * rng.uniform(0.16, 0.24)
+        up = height * rng.uniform(0.14, 0.24)
+        start = (lean[0], lean[1], trunk_top - 0.25)
+        mid = (lean[0] + math.cos(a) * reach * 0.5, lean[1] + math.sin(a) * reach * 0.5, trunk_top + up * 0.55)
+        p.limb([start, mid], (0.16, 0.1), "MadeiraCasca", ["root"] * 2, seg=6)
+        for side in (-0.45, 0.45):                                         # o galho se divide em dois
+            b = a + side + rng.uniform(-0.15, 0.15)
+            tip = (mid[0] + math.cos(b) * reach * 0.6, mid[1] + math.sin(b) * reach * 0.6, trunk_top + up + rng.uniform(-0.3, 0.4))
+            p.limb([mid, tip], (0.1, 0.035), "MadeiraCasca", ["root"] * 2, seg=5)
+            tips.append(tip)
+    # A copa: um volume (elipsoide de 0,3 × 0,3 × 0,2 da altura) com um MIOLO escuro que fecha os
+    # buracos e chumaços espalhados pela casca dele, mais densos em cima. Um chumaço em cada ponta
+    # de galho amarra a copa aos galhos.
+    cc = (lean[0], lean[1], trunk_top + height * 0.3)
+    cr = (height * 0.29, height * 0.27, height * 0.2)
+    core = p.ellipsoid(cc, (cr[0] * 0.8, cr[1] * 0.8, cr[2] * 0.75), "FolhagemEscura", "root", seg=10, rings=7)
+    p.wrinkle(core, height * 0.03, scale=height * 0.05, seed=9.0)
+    spots = [t for t in tips]
+    for _ in range(14):
+        th = rng.uniform(0, 2 * math.pi)
+        ph = math.acos(rng.uniform(-0.35, 1.0))                              # mais em cima que embaixo
+        spots.append((cc[0] + math.sin(ph) * math.cos(th) * cr[0], cc[1] + math.sin(ph) * math.sin(th) * cr[1],
+                      cc[2] + math.cos(ph) * cr[2]))
+    for i, c in enumerate(spots):
+        s = height * rng.uniform(0.08, 0.12)
+        low = c[2] < cc[2] - cr[2] * 0.2
+        mat = "FolhagemEscura" if low else rng.choice(("Folhagem", "Folhagem", "FolhagemEscura"))
+        f = p.ellipsoid(c, (s, s * rng.uniform(0.85, 1.1), s * 0.7), mat, "root", seg=8, rings=6)
+        p.wrinkle(f, s * 0.3, scale=s * 0.4, seed=i * 3.1)
 
 
 def build_folhosa(name, height, seed_name):
@@ -934,6 +988,89 @@ def build_cornija(col):
     return p.to_static(col, bevel_segments=1)
 
 
+# ---------------------------------------------------------------- hera, musgo e mato
+
+def build_hera(name, w, h):
+    """HERA subindo a parede (w × h m): ramos que nascem no pé e sobem em leque, ondulando, e
+    folhas em ponta de pirâmide (as facetas pegam a luz da lanterna). Mais folhas embaixo, onde é
+    mais velha. Plana (6 cm), olhando para -Y (= +Z no Unity); origem no meio da base, encostada
+    na parede. Vai por cima da fachada e do muro de pedra."""
+    def build(col):
+        rng = rng_for(name)
+        p = bc.Part(f"SM_ENV_{name}", MATS)
+        for s in range(rng.randint(4, 6)):
+            x = rng.uniform(-w * 0.35, w * 0.35)
+            top = h * rng.uniform(0.55, 1.0)
+            lean = rng.uniform(-0.35, 0.35) * w
+            pts = []
+            steps = 8
+            for i in range(steps + 1):
+                t = i / steps
+                pts.append((x + lean * t + math.sin(t * 6 + s) * 0.08, -0.015, top * t))
+            for a, b in zip(pts, pts[1:]):                                     # o ramo (sem juntas: é fino)
+                p.tube(a, b, 0.012, 0.01, "MadeiraCasca", "root", seg=3, smooth=False, caps=False)
+            n = int(top * 26)
+            for i in range(n):
+                t = (i / n) ** 0.8                                             # mais folhas embaixo
+                z = top * t
+                bx = x + lean * t + math.sin(t * 6 + s) * 0.08
+                spread = 0.1 + 0.2 * (1 - t)
+                lx, lz = bx + rng.uniform(-spread, spread), z + rng.uniform(-0.05, 0.05)
+                size = rng.uniform(0.05, 0.085)
+                mat = "FolhagemHera" if rng.random() < 0.6 else "FolhagemHeraEscura"
+                p.tube((lx, -0.01, lz), (lx + rng.uniform(-0.01, 0.01), -0.04 - rng.uniform(0, 0.02), lz + rng.uniform(-0.01, 0.01)),
+                       size, 0.004, mat, "root", seg=4, smooth=False)
+        return p.to_static(col, bevel=0)
+    return build
+
+
+def build_musgo(col):
+    """MUSGO em placa (≈1,2 × 0,8 m): almofadas baixas amassadas, coladas na pedra. Para o pé do
+    muro de pedra, do arrimo e do soco da casa. Olha para -Y; origem no meio da base."""
+    rng = rng_for("MusgoParede")
+    p = bc.Part("SM_ENV_MusgoParede", MATS)
+    for i in range(7):
+        x, z = rng.uniform(-0.45, 0.45), rng.uniform(0.05, 0.6) * (1 - abs(rng.uniform(-0.45, 0.45)))
+        s = rng.uniform(0.15, 0.3)
+        f = p.ellipsoid((x, -0.005, z + s * 0.4), (s, 0.035, s * 0.65), "FolhagemMusgo" if i % 3 else "PedraMusgo",
+                        "root", seg=10, rings=6)
+        p.wrinkle(f, 0.02, scale=0.05, seed=i * 1.7)
+    return p.to_static(col, bevel=0)
+
+
+def build_tufo(name, blades, height, mats, seeds=False):
+    """TUFO de grama ou de MATO: lâminas finas que saem de um pé (Ø ~0,35 m), cada uma curvada
+    para fora; o mato alto tem hastes com o pendão de sementes. Quebra o chão liso perto do muro,
+    da casa e do lago. Origem no meio da base."""
+    def build(col):
+        rng = rng_for(name)
+        p = bc.Part(f"SM_ENV_{name}", MATS)
+        for b in range(blades):
+            a = rng.uniform(0, 2 * math.pi)
+            r0 = rng.uniform(0, 0.12)
+            hh = height * rng.uniform(0.5, 1.0)
+            out = hh * rng.uniform(0.15, 0.5)
+            base = (math.cos(a) * r0, math.sin(a) * r0, -0.02)
+            mid = (math.cos(a) * (r0 + out * 0.35), math.sin(a) * (r0 + out * 0.35), hh * 0.6)
+            tip = (math.cos(a) * (r0 + out), math.sin(a) * (r0 + out), hh * rng.uniform(0.8, 1.0))
+            mat = rng.choice(mats)
+            p.tube(base, mid, 0.016, 0.01, mat, "root", seg=3, smooth=False, caps=False)
+            p.tube(mid, tip, 0.01, 0.001, mat, "root", seg=3, smooth=False, caps=False)
+            if seeds and b % 3 == 0:                                            # o pendão
+                p.ellipsoid(tip, (0.025, 0.025, 0.07), "GramaSeca", "root", seg=5, rings=3)
+        return p.to_static(col, bevel=0)
+    return build
+
+
+GREENERY = [
+    ("HeraA", build_hera("HeraA", 1.6, 2.8), 2.8, 3.0, 0.0),
+    ("HeraB", build_hera("HeraB", 2.2, 1.6), 1.6, 2.4, 0.0),
+    ("MusgoParede", build_musgo, 0.7, 1.4, 0.0),
+    ("TufoGrama", build_tufo("TufoGrama", 34, 0.45, ("GramaTufo", "GramaTufo", "Grama", "GramaSeca")), 0.5, 0.9, 0.0),
+    ("MatoAlto", build_tufo("MatoAlto", 22, 1.1, ("GramaSeca", "GramaTufo", "FolhagemSeca"), seeds=True), 1.1, 1.4, 0.0),
+]
+
+
 FACADE = [(f"Fachada{k}{'' if plinth else 'Alta'}", build_fachada(k, plinth), 3.3, 3.4, 0.0)
           for k, plinth in (("Lisa", True), ("Janela", True), ("Porta", True), ("Dupla", True),
                             ("Lisa", False), ("Janela", False))]
@@ -991,6 +1128,7 @@ PIECES = [
     ("Barco", build_barco, 0.6, 3.2, 0.0),
     ("Lago", build_lago, 1.3, 21.0, 0.0),
     *FACADE,
+    *GREENERY,
     ("Cunhal", build_cunhal, 3.2, 3.4, 0.0),
     ("Cornija", build_cornija, 0.9, 2.4, 0.0),
 ]

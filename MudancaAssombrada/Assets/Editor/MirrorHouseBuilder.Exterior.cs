@@ -47,12 +47,16 @@ namespace MudancaAssombrada.Editor
         static string FacadePath(string art) => $"{FacadeFolder}/{art}.prefab";
         static readonly string[] FacadeArts = { "FachadaLisa", "FachadaJanela", "FachadaPorta", "FachadaDupla", "FachadaLisaAlta", "FachadaJanelaAlta", "Cunhal", "Cornija" };
         const string MistPath = ExteriorFolder + "/Névoa Rasteira.prefab";
+        // Hera e musgo nas paredes, tufos de grama e mato no chão
+        static readonly string[] GreeneryArts = { "HeraA", "HeraB", "MusgoParede", "TufoGrama", "MatoAlto" };
+        static string GreeneryPath(string art) => $"{ExteriorFolder}/Mato/{art}.prefab";
         const string MistTexturePath = "Assets/Art/Textures/Detail/T_Nevoa.png";
 
         // As medidas do kit de fora (tools/blender/build_exterior_blockout.py).
         const float ModuleLength = 4f;        // muro, arrimo e grade
         const float PillarHalf = 0.35f;
         const float GateWidth = 4.4f;
+        const float HillSink = 0.03f;         // o morro fica 3 cm abaixo do piso de cima (ver ExtendTerrain)
 
         // O terreno: a propriedade (dentro do muro) e até onde vai a floresta.
         const float PropertyWest = -50f, PropertyEast = 60f, PropertyFront = -48f;
@@ -104,6 +108,18 @@ namespace MudancaAssombrada.Editor
             foreach (var art in FacadeArts)
                 LevelPrefabsBuilder.Build(FacadePath(art), false, () => KitPiece(art, $"Environment/{art}/SM_ENV_{art}", null));
             LevelPrefabsBuilder.Build(MistPath, false, BuildMist);
+            // Hera, musgo e mato: só desenho, sem sombra. O mato some de longe (LODGroup de um nível
+            // só: abaixo de 4% da altura da tela, ~15 m, ninguém vê um tufo de 0,5 m na névoa).
+            foreach (var art in GreeneryArts)
+                LevelPrefabsBuilder.Build(GreeneryPath(art), false, () =>
+                {
+                    var root = KitPiece(art, $"Environment/{art}/SM_ENV_{art}", null);
+                    var renderers = root.GetComponentsInChildren<Renderer>();
+                    foreach (var r in renderers) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                    var group = root.AddComponent<LODGroup>();
+                    group.SetLODs(new[] { new LOD(art.StartsWith("Hera") ? 0.01f : 0.04f, renderers) });
+                    return root;
+                });
             LevelPrefabsBuilder.Build(BushPaths[0], false, () => KitPiece("Arbusto A", "Environment/ArbustoA/SM_ENV_ArbustoA", null));
             LevelPrefabsBuilder.Build(BushPaths[1], false, () => KitPiece("Arbusto B", "Environment/ArbustoB/SM_ENV_ArbustoB", null));
             LevelPrefabsBuilder.Build(RockPaths[0], false, () => KitPiece("Pedra A", "Environment/PedraA/SM_ENV_PedraA", null));
@@ -230,8 +246,11 @@ namespace MudancaAssombrada.Editor
         static void ExtendTerrain(Plan plan, GameObject hill)
         {
             float hillWest = ForestWest, hillEast = ForestEast;
-            hill.transform.position = new Vector3((hillWest + hillEast) / 2, FloorY / 2, (plan.morroZ + ForestBack) / 2);
-            hill.transform.localScale = new Vector3(hillEast - hillWest, FloorY, ForestBack - plan.morroZ);
+            // O topo fica 3 cm ABAIXO do piso de cima: as tábuas do kit vão de -2 cm a 0, e com o
+            // morro no mesmo Y 3,6 as duas faces brigavam (o chão dos cômodos de cima piscava).
+            float top = FloorY - HillSink;
+            hill.transform.position = new Vector3((hillWest + hillEast) / 2, top / 2, (plan.morroZ + ForestBack) / 2);
+            hill.transform.localScale = new Vector3(hillEast - hillWest, top, ForestBack - plan.morroZ);
             hill.GetComponent<Renderer>().sharedMaterial = GroundMaterial("Gramado do Morro", new Color(0.12f, 0.16f, 0.11f),
                 new Vector2(hillEast - hillWest, ForestBack - plan.morroZ));
 
@@ -278,6 +297,8 @@ namespace MudancaAssombrada.Editor
             BuildVegetation(plan, Group(root, "Vegetação"), Group(root, "Floresta"), rng, taken);
             BuildRoad(root);
             BuildFacade(plan, Group(root, "Fachada"));
+            BuildWallGreenery(root, Group(root, "Hera e Musgo"));
+            BuildGrass(plan, Group(root, "Mato"), rng, taken);
 
             foreach (Transform t in root.GetComponentsInChildren<Transform>())
                 GameObjectUtility.SetStaticEditorFlags(t.gameObject, StaticEditorFlags.BatchingStatic);
@@ -581,7 +602,7 @@ namespace MudancaAssombrada.Editor
                 if (!hill && Mathf.Abs(p.y - plan.morroZ) < 1.5f) continue;     // não na beirada do arrimo
                 // perto do muro, a sombra ajuda a ler o limite; longe, só pesa
                 float edge = Mathf.Min(Mathf.Abs(p.x - PropertyWest), Mathf.Abs(p.x - PropertyEast), Mathf.Abs(p.y - PropertyFront));
-                Tree(forest, p, hill ? FloorY : 0f, solid: false, shadows: edge < 10f || InHouse(p, 12f));
+                Tree(forest, p, hill ? FloorY - HillSink : 0f, solid: false, shadows: edge < 10f || InHouse(p, 12f));
                 placed++;
             }
             // arbustos e pedras do lado de fora, junto do muro (tapam a base dos troncos)
@@ -674,6 +695,134 @@ namespace MudancaAssombrada.Editor
                 var quoin = Put(FacadePath("Cunhal"), parent, e.point, e.yaw);
                 quoin.transform.localScale = new Vector3(1f, e.height / WallHeight, 1f);
             }
+        }
+
+        // ---------- Hera, musgo e mato ----------
+
+        // HERA e MUSGO por cima do que já foi posto: a casa abandonada vai sendo tomada. Cada peça é
+        // posta no sistema de coordenadas do módulo onde ela cola (fachada lisa, cunhal, muro de pedra,
+        // arrimo), na face de fora dele: "frente" é quanto ela fica à frente da origem do módulo.
+        // A peça NUNCA passa da ponta do módulo: na quina para dentro, a ponta que sobrava atravessava
+        // a parede do lado e aparecia dentro do cômodo (módulos de 1 m e o musgo de 1,5 m).
+        static readonly Dictionary<string, float> GreeneryWidth = new() { ["HeraA"] = 1.9f, ["HeraB"] = 2.5f, ["MusgoParede"] = 1.5f };
+
+        static void BuildWallGreenery(Transform exterior, Transform parent)
+        {
+            var rng = new System.Random(1931);
+            float R(float a, float b) => a + (float)rng.NextDouble() * (b - a);
+            // u: onde ao longo do módulo (-1 = uma ponta, 1 = a outra); half: meio comprimento do
+            // módulo sem escala; margin: o que fica livre em cada ponta (o cunhal, o pilar do muro)
+            void Stick(Transform module, string art, float u, float front, float yaw, Vector3 scale, float half, float margin)
+            {
+                float room = half * Mathf.Abs(module.localScale.x) - margin;     // meio comprimento livre, em metros
+                if (room <= 0.15f) return;
+                scale.x = Mathf.Min(scale.x, 2f * room / GreeneryWidth[art]);
+                float width = GreeneryWidth[art] * scale.x;
+                var position = module.TransformPoint(new Vector3(0f, 0f, front)) + module.right * (u * (room - width / 2f));
+                var go = Put(GreeneryPath(art), parent, position, module.eulerAngles.y + yaw);
+                go.transform.localScale = scale;
+            }
+            foreach (Transform t in exterior.GetComponentsInChildren<Transform>())
+            {
+                var source = PrefabUtility.GetCorrespondingObjectFromSource(t.gameObject);
+                if (source == null || PrefabUtility.GetNearestPrefabInstanceRoot(t.gameObject) != t.gameObject) continue;
+                string path = AssetDatabase.GetAssetPath(source);
+                double roll = rng.NextDouble();
+                if (path == FacadePath("FachadaLisa"))
+                {
+                    // a fachada tem 6 cm e o friso avança mais 4: a hera fica por cima dos dois
+                    if (roll < 0.3) Stick(t, rng.NextDouble() < 0.5 ? "HeraA" : "HeraB", R(-1f, 1f), 0.1f, 0, Vector3.one, 1f, 0.25f);
+                    else if (roll < 0.55) Stick(t, "MusgoParede", R(-1f, 1f), 0.12f, 0, new Vector3(R(0.8f, 1.2f), R(0.5f, 0.8f), 1f), 1f, 0.25f);
+                }
+                else if (path == FacadePath("Cunhal") && roll < 0.35)
+                {
+                    // a hera sobe pela quina: só na face que olha para fora da parede dele (a de lado,
+                    // numa quina para dentro, dá para a outra parede), e da largura do cunhal (0,42 m)
+                    var go = Put(GreeneryPath("HeraA"), parent, t.TransformPoint(new Vector3(0, 0, 0.29f)), t.eulerAngles.y);
+                    go.transform.localScale = new Vector3(0.4f / GreeneryWidth["HeraA"], t.localScale.y * R(0.8f, 1.15f), 1f);
+                }
+                else if (path == StoneWallPath)
+                {
+                    // muro de pedra: as duas faces (as pedras saltam até 31 cm do meio)
+                    foreach (float side in new[] { 1f, -1f })
+                    {
+                        double r = rng.NextDouble();
+                        float yaw = side > 0 ? 0f : 180f;
+                        if (r < 0.25) Stick(t, "HeraB", R(-1f, 1f), side * 0.32f, yaw, new Vector3(R(0.7f, 1f), R(0.8f, 1f), 1f), 2f, 0.4f);
+                        else if (r < 0.6) Stick(t, "MusgoParede", R(-1f, 1f), side * 0.32f, yaw, new Vector3(R(0.8f, 1.4f), R(0.6f, 1f), 1f), 2f, 0.4f);
+                    }
+                }
+                else if (path == RetainingWallPath)
+                {
+                    // arrimo: só a face do pátio (+Z do módulo), entre os contrafortes
+                    if (roll < 0.45) Stick(t, "HeraA", R(-1f, 1f), 0.16f, 0, new Vector3(R(0.8f, 1.1f), R(0.9f, 1.25f), 1f), 2f, 0.6f);
+                    if (rng.NextDouble() < 0.5) Stick(t, "MusgoParede", R(-1f, 1f), 0.16f, 0, new Vector3(R(1f, 1.5f), R(0.8f, 1.3f), 1f), 2f, 0.6f);
+                }
+            }
+        }
+
+        // TUFOS de grama e MATO alto: no pé dos muros (dos dois lados), em volta da casa, na margem
+        // do lago e espalhados pelo terreno (fora dos caminhos). O mato alto fica mais perto do muro
+        // e do lago, onde ninguém corta.
+        static void BuildGrass(Plan plan, Transform parent, System.Random rng, List<(Vector2 c, float r)> taken)
+        {
+            float R(float a, float b) => a + (float)rng.NextDouble() * (b - a);
+            float x0 = plan.comodos.Min(r => r.x0), x1 = plan.comodos.Max(r => r.x1), z0 = plan.comodos.Min(r => r.z0);
+            bool InHouse(Vector2 p) => p.x > x0 - 0.3f && p.x < x1 + 0.3f && p.y > z0 - 0.3f && p.y < plan.morroZ + 0.5f;
+            bool Free(Vector2 p, float r) => taken.All(t => (p - t.c).sqrMagnitude >= (r + t.r) * (r + t.r));
+            void Tuft(Vector2 p, float tallChance, float baseY = 0f)
+            {
+                if (InHouse(p)) return;
+                bool tall = rng.NextDouble() < tallChance;
+                Put(GreeneryPath(tall ? "MatoAlto" : "TufoGrama"), parent, new Vector3(p.x, baseY, p.y), R(0, 360), R(0.7f, 1.4f));
+            }
+
+            // o pé dos muros: por dentro e por fora (o chão de fora é o mesmo plano)
+            for (float z = PropertyFront; z < plan.morroZ; z += R(0.8f, 1.6f))
+                foreach (float x in new[] { PropertyWest, PropertyEast })
+                    foreach (float side in new[] { -1f, 1f })
+                        Tuft(new Vector2(x + side * R(0.45f, 1.3f), z), 0.4f);
+            for (float x = PropertyWest; x < PropertyEast; x += R(0.8f, 1.6f))
+            {
+                foreach (float side in new[] { -1f, 1f })
+                {
+                    var p = new Vector2(x, PropertyFront + side * R(0.45f, 1.3f));
+                    if (Free(p, 0.3f)) Tuft(p, 0.35f);
+                }
+                var foot = new Vector2(x, plan.morroZ - R(0.5f, 1.4f));         // o pé do arrimo
+                if (Free(foot, 0.3f)) Tuft(foot, 0.45f);
+            }
+            // em volta da casa (o soco de pedra): a frente e os lados
+            for (float x = x0 - 1f; x < x1 + 1f; x += R(0.7f, 1.5f))
+            {
+                var p = new Vector2(x, z0 - R(0.45f, 1.1f));
+                if (Free(p, 0.3f)) Tuft(p, 0.2f);
+            }
+            for (float z = z0; z < plan.morroZ; z += R(0.7f, 1.5f))
+                foreach (float x in new[] { x0 - R(0.45f, 1.1f), x1 + R(0.45f, 1.1f) })
+                {
+                    var p = new Vector2(x, z);
+                    if (Free(p, 0.3f)) Tuft(p, 0.2f);
+                }
+            // a margem do lago (elipse de ~9,5 × 7 m): quase tudo mato alto
+            for (int i = 0; i < 70; i++)
+            {
+                float a = R(0, Mathf.PI * 2), k = R(0.95f, 1.2f);
+                var p = new Vector2(LakeCenter.x + Mathf.Cos(a) * 9.5f * k, LakeCenter.z + Mathf.Sin(a) * 7f * k);
+                Tuft(p, 0.7f);
+            }
+            // espalhados pelo terreno, fora dos caminhos e do que já ocupa o chão
+            for (int tries = 0, placed = 0; tries < 3000 && placed < 260; tries++)
+            {
+                var p = new Vector2(R(PropertyWest + 1f, PropertyEast - 1f), R(PropertyFront + 1f, plan.morroZ - 1f));
+                if (!Free(p, 0.4f)) continue;
+                Tuft(p, 0.15f);
+                placed++;
+            }
+            // no alto do morro, na beirada do arrimo
+            for (float x = PropertyWest; x < PropertyEast; x += R(1f, 2.2f))
+                if (x < x0 - 0.5f || x > x1 + 0.5f)                             // não dentro dos cômodos de cima
+                    Tuft(new Vector2(x, plan.morroZ + R(0.4f, 2.5f)), 0.5f, FloorY - HillSink);
         }
 
         // ---------- Névoa rasteira ----------
