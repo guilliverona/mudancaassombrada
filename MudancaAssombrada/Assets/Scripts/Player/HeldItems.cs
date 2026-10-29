@@ -358,16 +358,6 @@ namespace MudancaAssombrada
                 Hand.rotation = Quaternion.Slerp(Quaternion.identity, swing * twist, w) * hand;
             }
 
-            // Quanto o punho dobraria agora para o furo apontar para "forward", sem contar o giro do
-            // antebraço (graus). Para medir poses.
-            public float WristBend(Vector3 forward)
-            {
-                Vector3 hole = IndexKnuckle != null && LittleKnuckle != null
-                    ? IndexKnuckle.position - LittleKnuckle.position : Hand.up;
-                HandPoseRules.SplitTwist(Quaternion.FromToRotation(hole, forward), Hand.position - Lower.position, out _, out var swing);
-                return Quaternion.Angle(Quaternion.identity, swing);
-            }
-
             // O meio do punho fechado, onde o cabo passa: a média das juntas de cada dedo (nó, meio,
             // ponta do meio) e da ponta estimada (a distal continua mais um tanto na mesma direção).
             // Só os nós ficaria em cima dos dedos; com as pontas, cai dentro da curva.
