@@ -268,5 +268,27 @@ namespace MudancaAssombrada.Tests
         {
             Assert.IsFalse(HotbarRules.CanReload(hasFlashlight: true, charge01: 0.3f, hasLoad: true));
         }
+
+        // --- A cartela de pilhas na mão (HeldItems) ---
+
+        [Test]
+        public void Pilhas_Escolhidas_AparecemNaMao()
+        {
+            Assert.IsTrue(HotbarRules.ShowsBatteryInHand(Pilhas, hasLoad: false));
+        }
+
+        [Test]
+        public void Pilhas_ComMovelNasMaos_FicamGuardadas()
+        {
+            // as duas mãos estão no móvel: a cartela não aparece (nem trocar dá: CanReload)
+            Assert.IsFalse(HotbarRules.ShowsBatteryInHand(Pilhas, hasLoad: true));
+        }
+
+        [Test]
+        public void OutroItemNaMao_NaoMostraACartela()
+        {
+            Assert.IsFalse(HotbarRules.ShowsBatteryInHand(Lanterna, hasLoad: false));
+            Assert.IsFalse(HotbarRules.ShowsBatteryInHand(HotbarItem.None, hasLoad: false));
+        }
     }
 }
