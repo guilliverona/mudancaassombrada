@@ -136,5 +136,10 @@ namespace MudancaAssombrada
         // (desatarraxar a tampa com um móvel nos braços, não dá).
         public static bool CanReload(bool hasFlashlight, float charge01, bool hasLoad) =>
             hasFlashlight && charge01 < FullCharge && !hasLoad;
+
+        // A cartela de pilhas aparece na mão direita (HeldItems) com o espaço dela escolhido e as mãos
+        // livres; com um móvel nos braços ela fica guardada (não vai para o cinto, como a lanterna).
+        public static bool ShowsBatteryInHand(HotbarItem inHand, bool hasLoad) =>
+            inHand == HotbarItem.Battery && !hasLoad;
     }
 }
