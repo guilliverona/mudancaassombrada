@@ -1058,9 +1058,10 @@ MonoBehaviour:
   m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.FurnitureCarrier
   playerCamera: {fileID: 2576609307100874873}
   reach: 2.5
-  holdDistance: 1.8
+  holdDistance: 1.2
   followStrength: 12
   requestTimeout: 1
+  holdBelowEyes: 0.6
   dragSpeed: 0.35
   stairsSlowdown: 1.5
   stairStepEvery: 0.7
@@ -1285,8 +1286,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.Flashlight
   ShowTopMostFoldoutHeaderGroup: 1
   beam: {fileID: 254650978594259842}
-  batterySeconds: 100
-  flickerBelow: 0.2
+  batterySeconds: 400
+  flickerBelow: 0.05
   batteryCharge: 0.4
   chestIntensity: 0.6
   chestBelowEyes: 0.35

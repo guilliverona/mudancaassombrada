@@ -19,9 +19,10 @@ namespace MudancaAssombrada
     {
         [SerializeField] Camera playerCamera;
         [SerializeField] float reach = 2.5f;          // longe assim do alvo, o móvel escapa da mão
-        [SerializeField] float holdDistance = 1.8f;   // onde o móvel fica à sua frente
+        [SerializeField] float holdDistance = 1.2f;   // onde o móvel fica à sua frente
         [SerializeField] float followStrength = 12f;  // quão "firme" você segura
         [SerializeField] float requestTimeout = 1f;   // segundos esperando a resposta do host
+        [SerializeField] float holdBelowEyes = 0.6f;  // levantado: o móvel fica esta altura abaixo dos olhos
 
         [Header("Dupla, arrastar e escada")]
         [Tooltip("Arrastando (o móvel pesa mais que a força de quem segura): esta fração da velocidade, " +
@@ -63,6 +64,8 @@ namespace MudancaAssombrada
         Furniture requested;     // pedi para pegar e estou esperando
         Furniture helpRequested; // pedi a outra ponta e estou esperando
         float requestTime;
+        Quaternion heldYaw;                          // giro do móvel em relação a quem segura
+        RigidbodyInterpolation heldInterpolation;    // para devolver ao soltar
         Vector3 lastStepPosition;
         float stairWalked;
 
@@ -190,6 +193,32 @@ namespace MudancaAssombrada
             held.NoiseMultiplier = CarryNoise;
             held.Body.useGravity = false;
             held.Body.linearDamping = 10f; // amortece para não ficar balançando
+            // O giro do móvel em relação a quem pega: ele mantém esse giro enquanto estiver na mão.
+            heldYaw = Quaternion.Inverse(FlatRotation()) * held.Body.rotation;
+            heldInterpolation = held.Body.interpolation;
+            held.Body.interpolation = RigidbodyInterpolation.Interpolate; // a câmera anda no Update: sem tremer
+        }
+
+        // Para onde o jogador olha, só no plano (olhar para cima ou para baixo não gira o móvel).
+        Quaternion FlatRotation()
+        {
+            Vector3 f = playerCamera.transform.forward;
+            f.y = 0;
+            return f.sqrMagnitude > 0.001f ? Quaternion.LookRotation(f) : transform.rotation;
+        }
+
+        // Levantado, o móvel fica PRESO na mão: kinematic (a física não empurra nem balança).
+        // Arrastando, volta a ser físico (fica no chão e esbarra nas coisas).
+        void SetLiftedBody(bool lifted)
+        {
+            if (held.Body.isKinematic == lifted) return;
+            if (!lifted)
+            {
+                held.Body.isKinematic = false;
+                held.Body.linearVelocity = Vector3.zero;
+                held.Body.angularVelocity = Vector3.zero;
+            }
+            else held.Body.isKinematic = true;
         }
 
         // Solta o que estiver na mão (a primeira ponta ou a outra).
@@ -202,6 +231,8 @@ namespace MudancaAssombrada
             }
             if (held == null) return;
             // Devolve a física ao normal ANTES de devolver a posse ao host.
+            SetLiftedBody(false);
+            held.Body.interpolation = heldInterpolation;
             held.Body.useGravity = true;
             held.Body.linearDamping = 0f;
             held.NoiseMultiplier = 1f;
@@ -220,9 +251,32 @@ namespace MudancaAssombrada
             // sem pedir nada ao host, porque o móvel já não é meu.
             if (!held.IsOwner)
             {
+                held.Body.interpolation = heldInterpolation;
                 movement.SpeedMultiplier = 1f;
                 held.NoiseMultiplier = 1f;
                 held = null;
+                return;
+            }
+
+            bool lifting = held.CanLift;
+            SetLiftedBody(lifting);
+
+            // Levantado: o móvel fica numa posição FIXA à frente do peito (não sobe e desce com a
+            // mira) e com o mesmo giro de quando foi pego. Kinematic e sem colisão (Furniture.IsLifted):
+            // nada empurra, nada balança, e ele atravessa os batentes junto com você.
+            if (lifting)
+            {
+                Quaternion facing = FlatRotation();
+                Vector3 front = playerCamera.transform.position + facing * Vector3.forward * holdDistance
+                                + Vector3.down * holdBelowEyes;
+                var mate = held.Helper;
+                if (mate != null)
+                {
+                    Vector3 hand = mate.transform.position + mate.transform.forward * holdDistance * 0.6f + Vector3.up * 1.1f;
+                    front = (front + hand) / 2f;
+                }
+                held.Body.MovePosition(front);
+                held.Body.MoveRotation(facing * heldYaw);
                 return;
             }
 
@@ -239,15 +293,15 @@ namespace MudancaAssombrada
 
             // Em vez de "teletransportar" o móvel, damos velocidade na direção do alvo.
             // Assim ele ainda colide com paredes e portas, igual a carregar de verdade.
+            // (Daqui para baixo, só arrastando: no chão, com física.)
             Vector3 velocity = toTarget * followStrength / FeltWeight(held);
-            bool lifting = held.CanLift;
-            held.Body.useGravity = !lifting;
-            if (!lifting) velocity.y = held.Body.linearVelocity.y; // arrastando: fica no chão
+            held.Body.useGravity = true;
+            velocity.y = held.Body.linearVelocity.y; // arrastando: fica no chão
             held.Body.linearVelocity = velocity;
 
-            // Se prender em algo e ficar longe demais, você solta. (Arrastando, o móvel está no chão
+            // Se prender em algo e ficar longe demais, você solta. (O móvel está no chão
             // e a mão no alto: só conta a distância no plano.)
-            if (!lifting) toTarget.y = 0;
+            toTarget.y = 0;
             if (toTarget.magnitude > reach * 1.5f) Drop();
         }
     }
