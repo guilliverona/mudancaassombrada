@@ -70,6 +70,7 @@ namespace MudancaAssombrada.Editor
             var house = new GameObject("Casa").transform;
             BuildShell(plan, Group(house, "Paredes"), Group(house, "Pisos e Lajes"));
             BuildTerrain(plan, house);
+            BuildExterior(plan, house);
             BuildStairsFromPlan(plan, Group(house, "Escadas"));
             var dressing = Group(house, "Cenário");
             Piece(StagePath, dressing, new Vector3(-1f, FloorY, 17.4f), 0); // o palco do Salão, encostado no fundo
@@ -102,6 +103,11 @@ namespace MudancaAssombrada.Editor
         {
             surface.overrideVoxelSize = true;
             surface.voxelSize = 0.05f;
+            // Só dentro do muro (a casa, o morro dela e o terreno): a floresta de fora fica sem
+            // mapa. Com 5 cm, o terreno inteiro levaria muito mais tempo e ninguém anda lá.
+            surface.collectObjects = Unity.AI.Navigation.CollectObjects.Volume;
+            surface.center = new Vector3((PropertyWest + PropertyEast) / 2, 4f, (PropertyFront + 24f) / 2);
+            surface.size = new Vector3(PropertyEast - PropertyWest + 2f, 12f, 24f - PropertyFront + 2f);
         }
 
         static Transform Group(Transform parent, string name)
@@ -144,23 +150,17 @@ namespace MudancaAssombrada.Editor
 
         // O MORRO: um bloco de terra do Z 7 para o norte, com o topo em Y 3,6. É o chão do nível de
         // cima (galeria, biblioteca, salão, camarins, câmara) e a parede de arrimo dos fundos do
-        // térreo. O chão de fora cresce para cobrir a casa toda, a calçada e o pátio.
+        // térreo. O morro e o chão de fora vão até a floresta e são de grama (o tamanho e o material
+        // ficam no MirrorHouseBuilder.Exterior.cs, junto com o resto do lado de fora).
         static void BuildTerrain(Plan plan, Transform house)
         {
-            float minX = plan.comodos.Min(r => r.x0) - 2f, maxX = plan.comodos.Max(r => r.x1) + 2f;
-            float maxZ = plan.comodos.Max(r => r.z1) + 2f, minZ = plan.comodos.Min(r => r.z0) - 4f;
             var hill = GameObject.CreatePrimitive(PrimitiveType.Cube);
             hill.name = "Morro (encosta)";
             hill.transform.SetParent(house);
-            hill.transform.position = new Vector3((minX + maxX) / 2, FloorY / 2, (plan.morroZ + maxZ) / 2);
-            hill.transform.localScale = new Vector3(maxX - minX, FloorY, maxZ - plan.morroZ);
-            hill.GetComponent<Renderer>().sharedMaterial = EditorTools.ColorMaterial("Morro", new Color(0.14f, 0.125f, 0.11f));
             GameObjectUtility.SetStaticEditorFlags(hill, StaticEditorFlags.NavigationStatic);
-
+            ExtendTerrain(plan, hill);
             var ground = GameObject.Find("Chão");
             if (ground == null) return;
-            ground.transform.position = new Vector3((minX + maxX) / 2, -0.01f, (minZ + maxZ) / 2);
-            ground.transform.localScale = new Vector3((maxX - minX) / 10f, 1f, (maxZ - minZ) / 10f); // o Plane tem 10 m
             // Ele fica 1 cm abaixo das tábuas: se fizesse sombra, ela "vazava" por cima delas em
             // triângulos que piscavam com a lanterna perto. É o chão mais baixo: não precisa de sombra.
             if (ground.TryGetComponent(out MeshRenderer groundRenderer))
@@ -475,6 +475,7 @@ namespace MudancaAssombrada.Editor
             LevelPrefabsBuilder.Build(BooksPath, false, () => StaticProp("Pilha de Livros", "Props/PilhaLivros/SM_PRP_PilhaLivros", Vector3.zero));
             LevelPrefabsBuilder.Build(FlameCandlesPath, false, () => StaticProp("Velas", "Props/Velas/SM_PRP_Velas", Vector3.zero));
             BuildPeriodPrefabs();
+            BuildExteriorPrefabs();
         }
 
         // O E9: um espelho G que fecha o vão da porta dos Camarins para a Câmara. A FOLHA gira pela

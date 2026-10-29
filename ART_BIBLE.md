@@ -40,6 +40,7 @@ tools/blender/                         ← scripts (Python do Blender)
 ├── build_story_props_blockout.py      rádio, bilhete, nota fiscal, relíquias, caixinha
 ├── build_furniture_blockout.py        mobília do Art Bible, props da biblioteca e o relógio de pêndulo
 ├── build_env_kit_blockout.py          kit modular: paredes, porta, pisos, molduras
+├── build_exterior_blockout.py         o lado de fora da Mansão: muro, portão, fonte, árvores, lago
 ├── build_all.ps1                      gera todos
 └── check_fbx.py                       reimporta um FBX e lista o que veio
 Art/Source/<Tipo>/<Nome>/              ← arquivos-fonte (fora do Unity)
@@ -191,6 +192,7 @@ a penteadeira e o cartaz do teatro, pelo `MirrorHouseBuilder` (Casa do Espelho).
 | Biblioteca (ENV_03) | estante, pilha de livros, luminária verde, piso de tábuas | cena; piso que range |
 | Kit modular (ENV_01–04) | parede lisa, parede com porta, porta, piso xadrez, molduras de espelho S/M/L (`Environment/`) | cenas das casas; instrumentos do Conservatório |
 | Caminhão | modelo + zona de entrega | — |
+| Exterior da Mansão (documentação "Mansão e cenário externo não urbano") | `build_exterior_blockout.py`, 26 modelos: muro de pedra 4 m (pedra a pedra, 3,1k), arrimo 4 × 3,6 m, muro em ruína, pilar do portão (com lampião) e do muro, portão de ferro 4,4 m (6,3k), grade de ferro 4 m com mureta, laje do caminho 2 × 2 m, canteiro, folhas no chão, luminária 3,1 m, fonte Ø 4,6 m com estátua (9,5k), pinheiros A/B/C (12, 9 e 6 m; 1k), árvores de copa A/B, árvore retorcida 9 m, arbustos A/B, pedras A/B, galpão 4 × 3 m, doca 7 m, barco a remo, lago ~18 × 13 m. Bisel de 1 segmento nas peças de muitas caixas (`to_static(bevel_segments=1)`), nenhum no ferro fino. Detalhe novo: pedra, grama (e terra), folhagem. Fachada da casa (casca de 6 cm por fora do kit): lisa e com janela (com e sem soco de pedra), porta, porta dupla (0,4k a 1,6k), cunhal e cornija. As árvores têm `_LOD0`/`_LOD1` no mesmo FBX (Decimate; pinheiro 1k → 300, copa 2,5k → 500): o Unity cria o LODGroup. Textura `T_Nevoa.png` (alfa) para a névoa rasteira | — |
 
 Ordem sugerida: ~~Bibliotecário, móveis e caminhão~~ (feito) → ~~modelos dos fantasmas, chefe,
 props e kit~~ (feito) → Casa do Espelho e Imitador → Conservatório e Maestrina → Biblioteca →
