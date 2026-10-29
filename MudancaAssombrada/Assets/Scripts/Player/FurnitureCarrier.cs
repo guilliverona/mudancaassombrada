@@ -44,12 +44,16 @@ namespace MudancaAssombrada
         // Já pedi um móvel e estou esperando o host? (não dá para pedir dois)
         public bool IsWaiting => requested != null || helpRequested != null;
 
+        // Levantado dentro de uma parede não solta (Furniture.HasRoomToDrop). A outra ponta sempre solta.
+        public bool CanDrop => held == null || held.HasRoomToDrop();
+
         public InteractionPrompt DropPrompt
         {
             get
             {
                 if (helping != null) return new InteractionPrompt($"Soltar a ponta de {helping.name}", true);
                 if (held == null) return InteractionPrompt.None;
+                if (!CanDrop) return new InteractionPrompt("Sem espaço para soltar aqui", false);
                 string text = held.CanLift ? $"Soltar {held.name}" : $"Soltar {held.name} (arrastando: falta gente)";
                 string other = held.OtherEndName;
                 if (other != null) text += $" · {other} na outra ponta";

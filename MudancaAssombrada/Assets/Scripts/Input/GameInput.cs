@@ -71,8 +71,8 @@ namespace MudancaAssombrada
             Crouch = Button(map, "Agachar", "<Keyboard>/leftCtrl", "<Keyboard>/c", "<Gamepad>/buttonEast");
             Sprint = Button(map, "Correr", "<Keyboard>/leftShift", "<Gamepad>/leftStickPress");
             Tap = Button(map, "Bengala", "<Keyboard>/space", "<Gamepad>/buttonSouth");
-            Whistle = Button(map, "Apito", "<Keyboard>/f", "<Gamepad>/buttonNorth");
-            Flashlight = Button(map, "Lanterna", "<Keyboard>/l", "<Gamepad>/dpad/up");
+            Whistle = Button(map, "Apito", "<Keyboard>/g", "<Gamepad>/buttonNorth");
+            Flashlight = Button(map, "Lanterna", "<Keyboard>/f", "<Gamepad>/dpad/up");
             Fork = Button(map, "Diapasão", "<Keyboard>/q", "<Gamepad>/rightShoulder");
             Pause = Button(map, "Pausa", "<Keyboard>/escape", "<Gamepad>/start");
             Restart = Button(map, "Reiniciar", "<Keyboard>/r", "<Gamepad>/select");

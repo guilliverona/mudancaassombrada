@@ -166,5 +166,22 @@ namespace MudancaAssombrada.Tests
             // Eu ando a 1, o colega a 0,8, peso sentido 1: ando a 80%.
             Assert.AreEqual(0.8f, CarryRules.CarrySpeed(false, 0.35f, 0.8f, 1f, 1f, false, false, 1.5f), 1e-5f);
         }
+
+        // --- Soltar (levantado, o móvel atravessa as paredes) ---
+
+        [Test]
+        public void DentroDaParede_NaoDeixaSoltar()
+        {
+            // A física empurraria o móvel para o lado (para fora da parede): bloqueia.
+            Assert.IsTrue(CarryRules.BlocksDrop(UnityEngine.Vector3.right, 0.3f));
+        }
+
+        [Test]
+        public void EncostandoNoChao_OuQuaseNada_DeixaSoltar()
+        {
+            // Empurrado para cima (o chão) ou só raspando: solta e a física acerta sozinha.
+            Assert.IsFalse(CarryRules.BlocksDrop(UnityEngine.Vector3.up, 0.5f));
+            Assert.IsFalse(CarryRules.BlocksDrop(UnityEngine.Vector3.right, 0.02f));
+        }
     }
 }

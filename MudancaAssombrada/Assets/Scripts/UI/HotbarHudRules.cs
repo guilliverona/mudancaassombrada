@@ -7,7 +7,7 @@ namespace MudancaAssombrada
     // os testes (HotbarHudRulesTests) conferem sem abrir uma fase.
     public static class HotbarHudRules
     {
-        // Abaixo disto a lanterna está "FRACA": a mesma carga em que a luz começa a falhar (Flashlight).
+        // Abaixo disto a lanterna está "FRACA" (um aviso antes de a luz começar a falhar, Flashlight).
         public const float LowBattery = 0.2f;
 
         // Posição X do espaço "slot" com a barra centralizada: com 2 espaços (o Marcelo), os dois
@@ -16,6 +16,9 @@ namespace MudancaAssombrada
             (slot - (count - 1) / 2f) * (size + gap);
 
         public static bool BatteryLow(float charge01) => charge01 < LowBattery;
+
+        // A carga da lanterna só aparece na hotbar: acesa e FRACA, a barra fica na tela (sem esperar trocar de item).
+        public static bool KeepForBattery(bool isOn, float charge01) => isOn && BatteryLow(charge01);
 
         // Entrada suave: apagada, a barra fica "distance" pixels abaixo; acesa, no lugar. Ela sobe
         // enquanto aparece (DESIGN.md: deslizes curtos, nada balança).

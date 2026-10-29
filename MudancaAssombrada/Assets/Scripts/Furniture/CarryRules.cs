@@ -67,5 +67,15 @@ namespace MudancaAssombrada
             if (bulky && onStairs) speed /= stairsSlowdown;
             return speed;
         }
+
+        // Até quanto o móvel pode estar enfiado em algo na hora de soltar (a física acerta sozinha).
+        public const float DropTolerance = 0.05f;
+
+        // Levantado, o móvel atravessa tudo; ao soltar, volta a colidir. Enfiado numa PAREDE
+        // (a física o empurraria para o lado), não dá para soltar: ele seria cuspido com força ou
+        // ficaria preso. No chão ou no teto (empurrado para cima ou para baixo) pode: só assenta.
+        // pushDirection/distance vêm do Physics.ComputePenetration.
+        public static bool BlocksDrop(Vector3 pushDirection, float distance) =>
+            distance > DropTolerance && Mathf.Abs(pushDirection.normalized.y) < 0.7f;
     }
 }

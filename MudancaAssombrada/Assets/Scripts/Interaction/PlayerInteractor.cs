@@ -67,7 +67,7 @@ namespace MudancaAssombrada
                 StopHolding();
                 target = null;
                 Prompt = Carrier.DropPrompt;
-                if (Pressed()) Carrier.Drop();
+                if (Pressed() && Carrier.CanDrop) Carrier.Drop();
                 return;
             }
 

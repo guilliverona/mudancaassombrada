@@ -189,6 +189,32 @@ namespace MudancaAssombrada
             if (IsOwner) DragNoise();
         }
 
+        static readonly Collider[] nearby = new Collider[16];
+
+        // Dá para soltar aqui? Levantado, o móvel pode estar dentro de uma parede (atravessa tudo);
+        // aí não solta (a conta é a CarryRules.BlocksDrop). Os jogadores não contam: saem da frente.
+        public bool HasRoomToDrop()
+        {
+            if (!ghostly) return true; // arrastando, a física já não deixa entrar na parede
+            foreach (var mine in solids)
+            {
+                Bounds b = mine.bounds;
+                int count = Physics.OverlapBoxNonAlloc(b.center, b.extents, nearby, Quaternion.identity,
+                                                       ~0, QueryTriggerInteraction.Ignore);
+                for (int i = 0; i < count; i++)
+                {
+                    var other = nearby[i];
+                    if (other.transform.IsChildOf(transform) || other.GetComponentInParent<NetworkPlayer>() != null) continue;
+                    if (Physics.ComputePenetration(mine, mine.transform.position, mine.transform.rotation,
+                                                   other, other.transform.position, other.transform.rotation,
+                                                   out Vector3 direction, out float distance)
+                        && CarryRules.BlocksDrop(direction, distance))
+                        return false;
+                }
+            }
+            return true;
+        }
+
         void SetGhostly(bool on)
         {
             if (on == ghostly) return;

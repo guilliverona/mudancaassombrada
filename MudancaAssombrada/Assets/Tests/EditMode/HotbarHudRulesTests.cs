@@ -27,6 +27,15 @@ namespace MudancaAssombrada.Tests
 
         // --- Bateria ---
 
+        // A carga só aparece na hotbar (saiu do texto do canto): acesa e fraca, a barra fica na tela.
+        [Test]
+        public void LanternaAcesaEFraca_DeixaAHotbarNaTela()
+        {
+            Assert.IsTrue(HotbarHudRules.KeepForBattery(isOn: true, charge01: 0.1f));
+            Assert.IsFalse(HotbarHudRules.KeepForBattery(isOn: true, charge01: 0.5f));
+            Assert.IsFalse(HotbarHudRules.KeepForBattery(isOn: false, charge01: 0.1f));
+        }
+
         [Test]
         public void Bateria_AbaixoDe20_EstaFraca()
         {

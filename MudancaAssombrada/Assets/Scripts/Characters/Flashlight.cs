@@ -3,7 +3,7 @@ using UnityEngine;
 
 namespace MudancaAssombrada
 {
-    // A LANTERNA (tecla L). Fica no Player, mas só funciona depois de PEGAR uma das lanternas do
+    // A LANTERNA (tecla F). Fica no Player, mas só funciona depois de PEGAR uma das lanternas do
     // caminhão (FlashlightPickup). Só há 2 para a equipe toda: quem fica sem precisa andar junto
     // de quem tem (LEVEL_DESIGN_FASE1.md, vantagem V1). A Cida não precisa: enxerga pelo eco.
     //

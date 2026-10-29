@@ -2,7 +2,7 @@ using UnityEngine;
 
 namespace MudancaAssombrada
 {
-    // O apito (tecla F). O Marcelo não fala, mas apita BEM alto.
+    // O apito (tecla G). O Marcelo não fala, mas apita BEM alto.
     // Uso tático: atrair o fantasma para longe enquanto os outros carregam os móveis.
     // Desligado (enabled = false) para quem não tem apito na ficha.
     public class Whistle : MonoBehaviour

@@ -217,8 +217,10 @@ namespace MudancaAssombrada
 
             var flashlight = bar != null ? bar.GetComponent<Flashlight>() : null;
             bool canReload = flashlight != null && flashlight.CanReload;
+            bool lowBattery = flashlight != null && flashlight.Has
+                              && HotbarHudRules.KeepForBattery(flashlight.IsOn, flashlight.Charge01);
             bool show = bar != null && !PauseMenu.IsOpen && !bar.IsEmpty
-                        && (Time.time - bar.ChangedAt < hotbarShowSeconds || canReload);
+                        && (Time.time - bar.ChangedAt < hotbarShowSeconds || canReload || lowBattery);
             hotbar.alpha = Mathf.MoveTowards(hotbar.alpha, show ? 1f : 0f, Time.unscaledDeltaTime / Theme.FadeSlow);
             ((RectTransform)hotbar.transform).anchoredPosition =
                 hotbarHome + new Vector2(0f, HotbarHudRules.SlideOffset(hotbar.alpha, hotbarSlide));
@@ -297,17 +299,7 @@ namespace MudancaAssombrada
                 sb.Append("\n[").Append(GameInput.KeyLabel(GameInput.Fork)).Append("] Diapasão")
                   .Append(fork.Ready01 < 1f ? Colored($" {Mathf.CeilToInt((1f - fork.Ready01) * 8f)}s", Theme.MutedColor) : "");
             if (me.whistle) sb.Append("\n[").Append(GameInput.KeyLabel(GameInput.Whistle)).Append("] Apito");
-            // A lanterna só aparece depois de pegar uma no caminhão; a carga fica vermelha quando falha.
-            if (switcher.TryGetComponent(out Flashlight flashlight) && flashlight.Has)
-            {
-                int charge = Mathf.CeilToInt(flashlight.Charge01 * 100f);
-                Color color = flashlight.Charge01 < 0.2f ? Theme.DangerColor : flashlight.IsOn ? Theme.HighlightColor : Theme.MutedColor;
-                string state = flashlight.Place == FlashlightPlace.Stowed ? " (guardada)"
-                             : !flashlight.IsOn ? " (desligada)"
-                             : flashlight.Place == FlashlightPlace.Chest ? " (no cinto)" : "";
-                sb.Append("\n[").Append(GameInput.KeyLabel(GameInput.Flashlight)).Append("] Lanterna ")
-                  .Append(Colored($"{charge}%{state}", color));
-            }
+            // A lanterna não aparece aqui: a carga dela fica na hotbar (UpdateHotbar).
 
             // Trocar de personagem no meio da partida é só para TESTES (no roteiro, cada jogador
             // é um personagem fixo). Por isso a lista só aparece no editor / build de desenvolvimento.

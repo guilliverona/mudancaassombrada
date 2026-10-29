@@ -275,11 +275,11 @@ bateria fraca, entrada suave, brilho de item novo) ficam em `HotbarHudRules` (te
 (som procedural, `tools/audio`).
 
 ### Lanterna, pilhas e coisas tocáveis
-A lanterna é o componente `Flashlight` no Player (tecla L, `GameInput.Flashlight`), mas só funciona
+A lanterna é o componente `Flashlight` no Player (tecla F, `GameInput.Flashlight`), mas só funciona
 depois de pegar uma: o host a põe na hotbar (`ServerGive`), o dono liga e gasta a bateria, e todos
 veem a luz falhando quando ela está fraca. Ela fica na **mão** (espaço escolhido), no **cinto**
 (estava na mão e pegou um móvel: mais fraca, aponta para a frente do corpo) ou **guardada** (apaga);
-com ela guardada, a tecla L tira e acende (carregando um móvel, direto no cinto). No código, o lugar
+com ela guardada, a tecla F tira e acende (carregando um móvel, direto no cinto). No código, o lugar
 "cinto" ainda se chama `FlashlightPlace.Chest` (era o colete). Os itens do
 chão são `FlashlightPickup` (lanterna ou pilhas, some ao pegar e volta no reinício). O **facho** tem
 desenho (miolo forte, faixa mais escura e o aro do refletor): o cookie `T_PRP_Lanterna_Facho.png`,
