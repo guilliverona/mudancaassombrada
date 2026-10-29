@@ -25,8 +25,9 @@ namespace MudancaAssombrada.Editor
         {
             // Lanterna de lado (a frente do modelo é +Z), a lente para cima e para a direita.
             ("Lanterna", "Assets/Art/Props/Lanterna/SM_PRP_Lanterna.fbx", "", new Vector3(0f, 90f, 0f), 35f, 0),
-            // Pilhas vistas um pouco de cima, para as quatro aparecerem.
-            ("Pilhas", "Assets/Art/Props/Pilhas/SM_PRP_Pilhas.fbx", "", new Vector3(-50f, 0f, 0f), 0f, 0),
+            // A cartela vista um pouco de cima, para as duas pilhas e o cartão aparecerem; virada na
+            // tela (180°) para a aba de pendurar ficar no alto, como na prateleira da loja.
+            ("Pilhas", "Assets/Art/Props/Pilhas/SM_PRP_Pilhas.fbx", "", new Vector3(-50f, 0f, 0f), 180f, 0),
             // A bengala da Cida (só ela, do modelo da Cida), de lado; 2 cm de grossura: o traço engrossa.
             ("Bengala", "Assets/Art/Characters/Cida/SK_CHR_Cida.fbx", "Bengala", new Vector3(0f, 90f, 0f), 0f, 7),
         };

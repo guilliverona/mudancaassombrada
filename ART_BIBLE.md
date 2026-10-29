@@ -94,7 +94,7 @@ Cor lisa sob a lanterna parece massinha. Quatro coisas do pipeline cuidam disso,
 
 | O quê | Onde | Como |
 |---|---|---|
-| Bisel nas quinas | `blockout_common.apply_bevel` | todo `to_static` de móvel/objeto tem 6 mm (`bc.DEFAULT_BEVEL`); o kit de paredes e pisos não (a emenda viraria sulco) |
+| Bisel nas quinas | `blockout_common.apply_bevel` | todo `to_static` de móvel/objeto tem 6 mm (`bc.DEFAULT_BEVEL`); o kit de paredes e pisos não (a emenda viraria sulco). Objeto miúdo com detalhe de papel (a cartela de pilhas) passa `bevel=0` |
 | Pano | `Part.cloth_box` + `Part.wrinkle` | caixa em grade de quinas redondas, amassada por ruído; `stretch_z` faz pregas caindo |
 | UV em metros | `blockout_common.metric_uvs` | projeção de caixa, 1 UV = 1 m, U no lado mais comprido da face (o veio segue a tábua). Espelho, vidro, lente e lâmpada guardam o UV próprio |
 | Textura de detalhe | `tools/blender/build_detail_textures.py` → `Assets/Art/Textures/Detail` | cinza com média 128 + normal, por família (madeira, tecido, papel de parede...). O `ArtImportSettings` liga o Detail do URP Lit pelo nome do material |
@@ -184,7 +184,7 @@ a penteadeira e o cartaz do teatro, pelo `MirrorHouseBuilder` (Casa do Espelho).
 | Móveis do protótipo | armário, cadeira e caixa com modelo, no prefab | pontos de pega |
 | Mobília do Art Bible | penteadeira, piano de armário, estante, mesa de leitura, sofá, caixas P/G (`Props/`) | prefabs com o peso da tabela |
 | Relógio de pêndulo (fora do Art Bible: decoração do ENV_01) | modelo 0,55 × 0,32 × 2,1 m + prefab fixo com o tique-taque, no hall da Casa do Espelho | — |
-| Abandono e luz (Casa do Espelho, depois do 1º Play) | poltrona e cômoda sob lençol, teia, entulho, janela com tábuas, papel descascando, baú, papéis no chão, velas · lanterna e pilhas · **portas maiores: simples 1,20 × 2,40, dupla 1,60 × 2,40** (o Marcelo passa; o Art Bible dizia 0,90 × 2,10) | — |
+| Abandono e luz (Casa do Espelho, depois do 1º Play) | poltrona e cômoda sob lençol, teia, entulho, janela com tábuas, papel descascando, baú, papéis no chão, velas · lanterna e pilhas (as pilhas viraram uma **cartela com 2 pilhas grandes**, 8,6 × 12 × 3 cm, 2,1k tris: cartão mostarda, polos chanfrados, rótulo com faixa clara e raio, cinta de papel, aba com furo, selo de preço) · **portas maiores: simples 1,20 × 2,40, dupla 1,60 × 2,40** (o Marcelo passa; o Art Bible dizia 0,90 × 2,10) | — |
 | Casa do Espelho de dois andares ([LEVEL_DESIGN_FASE1.md](LEVEL_DESIGN_FASE1.md) §9) | kit: escada (lance de 16 degraus), guarda-corpo, parede com porta dupla, laje, moldura G rachada, arandela a gás, clarabóia, tábua solta · cenário: manequins A/B/C, gramofone, retratos P/M/G, lustre, pia com torneira · móvel: arara de figurino | folhas de porta dupla, pote de pó, livro de falas |
 | Objetos de 1927 (Mansão, [LEVEL_DESIGN_FASE1_MANSAO.md](LEVEL_DESIGN_FASE1_MANSAO.md) §8 e §11) | `build_epoca_blockout.py`, 19 modelos: cristaleira, telefone de parede, cadeira de balanço, rolos de pianola, cofre, máquina de escrever, lanterna mágica, espelho de pé (psiché), máquina de costura, biombo, talha de barro, lampião de querosene, fogão a lenha, bancada, pratos empilhados, aparador + gaveta, livros soltos e a teia de vão (de 60 a 1104 triângulos) | acabamento; refletor de palco (móvel); cadeira austríaca de palhinha |
 | Props de história | rádio, bilhete, nota fiscal, cartaz, partitura, diário, caixinha (`Props/`) | relíquias que pesam mais longe da porta; texto real nos bilhetes (decal) |

@@ -59,6 +59,12 @@ MATS = bc.Materials("MAT_PRP", {
     "Lente": ("#FFE8B0", 0.0, 0.2, 1.5),
     "Borracha": ("#1A1A1E", 0.0, 0.9, 0.0),         # anéis de pega e a cordinha da lanterna
     "FitaIsolante": ("#2E4A7A", 0.0, 0.45, 0.0),    # o remendo no cabo (a empresa não compra lanterna nova)
+    # a cartela de pilhas
+    "Cartela": ("#C9962E", 0.0, 0.85, 0.0),         # papel-cartão mostarda (lê de longe no escuro)
+    "CartelaVinco": ("#9E7424", 0.0, 0.9, 0.0),     # vinco, marca de cola, reforço do furo
+    "Niquel": ("#A9A7A0", 0.0, 0.3, 0.0),           # as pontas da pilha (o "Ferro" metálico sai preto)
+    "NiquelEscuro": ("#6E6C68", 0.0, 0.4, 0.0),     # o friso e o anel do fundo
+    "Raio": ("#E8B23A", 0.0, 0.4, 0.0),             # o raio impresso
     # lombadas de livro (variam por prateleira, todas dessaturadas: o escuro é o padrão)
     "Livro1": ("#6E3A2A", 0.0, 0.8, 0.0),
     "Livro2": ("#3F5A5E", 0.0, 0.8, 0.0),
@@ -440,15 +446,122 @@ def build_lanterna(col):
     return p.to_static(col)
 
 
-def build_pilhas(col):
-    """Pilhas (um pacotinho com 4, 0,14 × 0,08 × 0,06 m): recarregam a lanterna."""
+PILHA_R = 0.013      # pilha grande (tipo C): 2,6 cm de diâmetro
+PILHA_L = 0.05       # e 5 cm de comprimento
+CARTELA_E = 0.003    # espessura do papel-cartão
+PILHA_PASSO = 0.03   # de uma pilha para a outra na cartela
+
+
+def traco(p, a, b, w, z, mat):
+    """Um risco impresso de a até b (no plano XY), w de largura, a altura z."""
+    (xa, ya), (xb, yb) = a, b
+    ang = math.degrees(math.atan2(yb - ya, xb - xa))
+    p.box(((xa + xb) / 2, (ya + yb) / 2, z), (math.hypot(xb - xa, yb - ya) + w * 0.5, w, 0.0004), mat, "root",
+          rot_z=ang)
+
+
+def raio(p, cx, cy, s, z):
+    """O raio impresso: zigue-zague de três riscos, s = altura total (em Y)."""
+    pts = [(cx + 0.30 * s, cy + 0.5 * s), (cx - 0.15 * s, cy + 0.02 * s),
+           (cx + 0.15 * s, cy - 0.02 * s), (cx - 0.30 * s, cy - 0.5 * s)]
+    for a, b in zip(pts, pts[1:]):
+        traco(p, a, b, s * 0.16, z, "Raio")
+
+
+def pilha(p, x, y0, z):
+    """Uma pilha deitada no eixo Y, o polo (+) em y0 virado para a frente (-Y), o fundo (-) em y0 + L.
+    Rótulo de cima para baixo: topo vermelho da marca com "+", filete, faixa clara com o raio (é ela que
+    pega o facho da lanterna) e o corpo escuro."""
+    r, y1, seg = PILHA_R, y0 + PILHA_L, 20
+    # polo (+): o "botão" de beirada chanfrada, sobre um anel isolante
+    p.tube((x, y0 - 0.0018, z), (x, y0 - 0.0010, z), 0.0030, 0.0038, "Niquel", "root", seg=12, smooth=False)
+    p.tube((x, y0 - 0.0010, z), (x, y0 + 0.0004, z), 0.0038, 0.0038, "Niquel", "root", seg=12, caps=False)
+    p.tube((x, y0 + 0.0002, z), (x, y0 + 0.0008, z), 0.0075, 0.0075, "Plastico", "root", seg=14, smooth=False)
+    # tampa e o friso (a borda do invólucro dobrada por cima da tampa)
+    p.tube((x, y0 + 0.0008, z), (x, y0 + 0.0022, z), r * 0.78, r * 0.97, "Niquel", "root", seg=seg, smooth=False)
+    p.tube((x, y0 + 0.0022, z), (x, y0 + 0.0040, z), r + 0.0003, r + 0.0003, "NiquelEscuro", "root", seg=seg)
+    # invólucro
+    p.tube((x, y0 + 0.0040, z), (x, y0 + 0.0150, z), r, r, "Carimbo", "root", seg=seg, caps=False)
+    p.tube((x, y0 + 0.0150, z), (x, y0 + 0.0162, z), r + 0.0002, r + 0.0002, "Raio", "root", seg=seg, caps=False)
+    p.tube((x, y0 + 0.0162, z), (x, y0 + 0.0300, z), r, r, "Fita", "root", seg=seg, caps=False)
+    p.tube((x, y0 + 0.0300, z), (x, y1 - 0.0030, z), r, r, "Preto", "root", seg=seg, caps=False)
+    zt = z + r + 0.00025
+    raio(p, x, y0 + 0.0231, 0.0105, zt)
+    p.box((x, y0 + 0.0095, zt), (0.0035, 0.0009, 0.0004), "Fita", "root")          # "+"
+    p.box((x, y0 + 0.0095, zt), (0.0009, 0.0035, 0.0004), "Fita", "root")
+    p.box((x + r + 0.0001, (y0 + y1) / 2, z), (0.0004, PILHA_L - 0.008, 0.0008), "Preto", "root")  # costura
+    # fundo (-): friso, disco e um anel rebaixado
+    p.tube((x, y1 - 0.0030, z), (x, y1 - 0.0012, z), r + 0.0003, r + 0.0003, "NiquelEscuro", "root", seg=seg)
+    p.tube((x, y1 - 0.0012, z), (x, y1, z), r * 0.97, r * 0.9, "Niquel", "root", seg=seg, smooth=False)
+    p.tube((x, y1, z), (x, y1 + 0.0002, z), r * 0.62, r * 0.62, "NiquelEscuro", "root", seg=seg, smooth=False)
+
+
+def cinta(p, pts, largura, esp, mat, y):
+    """Tira de papel que passa pelos pontos (x, z), com a largura em Y, centrada em y."""
+    for (xa, za), (xb, zb) in zip(pts, pts[1:]):
+        comp = math.hypot(xb - xa, zb - za)
+        ang = math.degrees(math.atan2(zb - za, xb - xa))
+        p.box(((xa + xb) / 2, y, (za + zb) / 2), (comp + 0.0004, largura, esp), mat, "root", rot_y=-ang)
+
+
+def build_pilhas(col, n=2):
+    """Pilhas: uma cartela de papel-cartão com 2 pilhas grandes (0,086 × 0,12 × 0,03 m), deitada como
+    caiu no chão. Recarregam a lanterna. Cartela mostarda com borda de papelão cru, filete vermelho
+    impresso, faixa da frente com letreiro e raio, aba de pendurar com furo, selo de preço torto e um
+    vinco (alguém já dobrou no bolso). Uma cinta de papel creme abraça as pilhas por cima do corpo
+    escuro, longe da faixa clara do rótulo. Origem no meio da base; a frente (-Y) é o lado dos polos (+)."""
+    e, r = CARTELA_E, PILHA_R
+    larg, prof = n * PILHA_PASSO + 0.026, 0.10
     p = bc.Part("SM_PRP_Pilhas", MATS)
-    p.box((0, 0, 0.005), (0.14, 0.08, 0.01), "Papelao", "root")
-    for i in range(4):
-        x = -0.045 + i * 0.03
-        p.tube((x, -0.03, 0.03), (x, 0.03, 0.03), 0.013, 0.013, "Petroleo" if i % 2 else "Carimbo", "root", seg=10)
-        p.tube((x, 0.03, 0.03), (x, 0.036, 0.03), 0.005, 0.005, "Latao", "root", seg=6)
-    return p.to_static(col)
+    # o cartão (papelão cru com a frente mostarda) e a aba de pendurar atrás
+    p.box((0, 0, e / 2), (larg, prof, e), "Papelao", "root")
+    p.box((0, 0, e - 0.0002), (larg - 0.002, prof - 0.002, 0.0006), "Cartela", "root")
+    aba, ya = min(0.05, larg - 0.02), prof / 2 + 0.011
+    p.box((0, ya, e / 2), (aba, 0.022, e), "Papelao", "root")
+    p.box((0, ya, e - 0.0002), (aba - 0.002, 0.022, 0.0006), "Cartela", "root")
+    p.tube((0, ya + 0.002, e - 0.0001), (0, ya + 0.002, e + 0.0003), 0.0045, 0.0045, "Sombra", "root",
+           seg=12, smooth=False)                                                            # o furo
+    p.tube((0, ya + 0.002, e - 0.0002), (0, ya + 0.002, e + 0.0002), 0.0060, 0.0060, "CartelaVinco", "root",
+           seg=12, smooth=False)                                                            # o reforço
+    top = e + 0.0004
+    # filete vermelho em volta
+    m = 0.004
+    for (cx, cy, sx, sy) in ((0, -prof / 2 + m, larg - 2 * m, 0.0012), (0, prof / 2 - m, larg - 2 * m, 0.0012),
+                             (-larg / 2 + m, 0, 0.0012, prof - 2 * m), (larg / 2 - m, 0, 0.0012, prof - 2 * m)):
+        p.box((cx, cy, top), (sx, sy, 0.0004), "Carimbo", "root")
+    # faixa da frente: o "letreiro" (tracinhos claros) e um raio grande
+    fy = -prof / 2 + 0.014
+    p.box((0, fy, top + 0.0001), (larg - 0.014, 0.014, 0.0005), "Carimbo", "root")
+    for i in range(int((larg - 0.04) / 0.006)):
+        p.box((-larg / 2 + 0.014 + i * 0.006, fy, top + 0.0004), (0.004, 0.006, 0.0003), "Fita", "root")
+    raio(p, larg / 2 - 0.016, fy, 0.012, top + 0.0005)
+    # selo de preço torto e o vinco atravessado
+    sx, sy = larg / 2 - 0.016, prof / 2 - 0.016
+    p.box((sx, sy, top + 0.0001), (0.018, 0.012, 0.0005), "Papel", "root", rot_z=8)
+    p.box((sx, sy, top + 0.0005), (0.010, 0.0025, 0.0003), "Carimbo", "root", rot_z=8)
+    p.box((0.004, 0.03, top), (larg - 0.01, 0.0008, 0.0003), "CartelaVinco", "root", rot_z=-6)
+    # as pilhas, apoiadas no cartão (cada uma sobre a sua marca de cola)
+    z = e + r
+    xs = [(-(n - 1) / 2 + i) * PILHA_PASSO for i in range(n)]
+    for x in xs:
+        p.box((x, 0.0, top), (0.012, PILHA_L - 0.01, 0.0003), "CartelaVinco", "root")
+        pilha(p, x, -PILHA_L / 2, z)
+    # a cinta: desce no cartão, abraça cada pilha por cima e afunda entre elas
+    rc, cy = r + 0.0006, 0.0125
+    pts = [(xs[0] - rc - 0.004, e + 0.0003), (xs[0] - rc, e + 0.002)]
+    for i, x in enumerate(xs):
+        for k in range(9):
+            a = math.pi - math.pi * k / 8
+            pts.append((x + rc * math.cos(a), z + rc * math.sin(a)))
+        if i < n - 1:
+            pts.append(((x + xs[i + 1]) / 2, z + 0.002))
+    pts += [(xs[-1] + rc, e + 0.002), (xs[-1] + rc + 0.004, e + 0.0003)]
+    cinta(p, pts, 0.012, 0.0007, "Papel", cy)
+    for x in xs:
+        p.box((x, cy, z + rc + 0.0005), (0.008, 0.0035, 0.0003), "Carimbo", "root")    # filete da cinta
+    # sem bisel: o de 6 mm dos móveis engoliria o papel e os riscos impressos (e um de 0,5 mm
+    # quadruplica os triângulos sem aparecer)
+    return p.to_static(col, bevel=0)
 
 
 # ---------- Abandono (a casa ficou fechada décadas: lençóis, teias, caliça, tábuas) ----------
@@ -614,7 +727,7 @@ PROPS = [
     ("Torneira", build_torneira, 1.05, 1.2, 0.0),
     ("AraraFigurino", build_arara, 1.7, 1.9, 0.0),
     ("Lanterna", build_lanterna, 0.12, 0.35, 0.0),
-    ("Pilhas", build_pilhas, 0.06, 0.2, 0.0),
+    ("Pilhas", build_pilhas, 0.03, 0.16, 0.01),
     ("MovelCobertoA", lambda c: build_movel_coberto("MovelCobertoA", "A", c), 1.07, 1.2, 0.0),
     ("MovelCobertoB", lambda c: build_movel_coberto("MovelCobertoB", "B", c), 1.68, 1.9, 0.0),
     ("Teia", build_teia, 0.6, 0.8, 0.0),
