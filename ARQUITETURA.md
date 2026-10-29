@@ -260,7 +260,15 @@ braço direito da cópia de primeira pessoa e leva a lanterna a um ponto preso �
 onde só a ponta aparece no canto de baixo (os olhos ficam 30-40 cm acima do ombro: pela mão de
 verdade, ela sairia da tela). No espelho você se vê pelo corpo (`MirrorReflection.SetOwnBody`), então
 enquanto a câmera do reflexo desenha a lanterna volta para a mão do corpo (`FirstPersonArm.ShowInMirror`
-→ `HeldItems.ShowLanternOnBody`). Algo novo preso à câmera precisa do mesmo cuidado.
+→ `HeldItems.ShowHeldOnBody`). Algo novo preso à câmera precisa do mesmo cuidado.
+Com as **pilhas na mão** (`HotbarRules.ShowsBatteryInHand`: o espaço delas e as mãos livres), o mesmo
+braço com IK leva a mão para a barriga (`batteryCarry`), a mesma pega da lanterna fecha na aba da
+cartela, e a cartela fica deitada e virada para o rosto (`batteryTilt`/`batteryTurn`, sem seguir o
+olhar). A aba fica na beira do punho (`ArmBones.FistHalfWidth`), senão a luva do Marcelo engolia a
+cartela. Na SUA tela, ela vai para `batteryViewOffset`, quase em pé e virada para você. Com um móvel
+nos braços, ela fica guardada. Conferido em fotos (batch) em 29/10/2026; não testado com Play.
+Tentado e desfeito (29/10/2026, a pedido): a cartela em pé na palma, com uma pega própria gerada no
+Blender e os dedos abrindo até não atravessar; não ficou bom no jogo.
 As contas ficam em `HandPoseRules` (testes em `FlashlightArmRulesTests`). No **cinto** (carregando um
 móvel), o modelo vai bem do lado DIREITO da cintura (`beltSide`; a bolsa do Tiago fica no esquerdo),
 encostado no corpo: o `HeldItems.MeasureBelt` mede uma vez, por personagem, até onde o corpo vai para

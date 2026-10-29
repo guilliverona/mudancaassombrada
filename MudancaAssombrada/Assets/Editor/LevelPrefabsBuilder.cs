@@ -446,10 +446,13 @@ namespace MudancaAssombrada.Editor
             beam.innerSpotAngle = 45f;
             player.AddComponent<Hotbar>(); // até 3 espaços (teclas 1-2-3): lanterna, pilhas, bengala
             EditorTools.SetReference(player.AddComponent<Flashlight>(), "beam", beam);
-            // O que está na mão, visto no boneco: o modelo da lanterna e a bengala da Cida.
-            EditorTools.SetReference(player.AddComponent<HeldItems>(), "flashlightModel",
+            // O que está na mão, visto no boneco: os modelos da lanterna e da cartela de pilhas, e a bengala da Cida.
+            var held = player.AddComponent<HeldItems>();
+            EditorTools.SetReference(held, "flashlightModel",
                 AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Art/Props/Lanterna/SM_PRP_Lanterna.fbx"));
-            player.AddComponent<FirstPersonArm>(); // o braço da lanterna na SUA tela (preso à câmera)
+            EditorTools.SetReference(held, "batteryModel",
+                AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Art/Props/Pilhas/SM_PRP_Pilhas.fbx"));
+            player.AddComponent<FirstPersonArm>(); // a lanterna e a cartela na SUA tela (presas à câmera)
             player.AddComponent<NavMeshModifier>().ignoreFromBuild = true;
 
             EditorTools.SetReference(movement, "cameraPivot", camGo.transform);

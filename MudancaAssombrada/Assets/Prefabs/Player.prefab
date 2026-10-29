@@ -1313,6 +1313,11 @@ MonoBehaviour:
   beltTilt: 10
   beltGap: 0.036
   lensGlow: {r: 4, g: 3.44, b: 2.72, a: 4}
+  batteryModel: {fileID: 919132149155446097, guid: c35e98ccf2b47f94e8dc3e6e326af12e, type: 3}
+  batteryGrip: {x: 0, y: 0.0015, z: -0.062}
+  batteryCarry: {x: 0.05, y: -0.65, z: 0.5}
+  batteryTilt: -30
+  batteryTurn: -20
   carry: {x: 0.2, y: -0.83, z: 0.27}
   armFollowsLook: 0.5
   steadiness: 0.15
@@ -1330,6 +1335,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: MudancaAssombrada::MudancaAssombrada.FirstPersonArm
   viewOffset: {x: 0.17, y: -0.2, z: 0.25}
+  batteryViewOffset: {x: 0.11, y: -0.15, z: 0.32}
+  batteryViewTilt: -55
+  batteryViewTurn: -15
 --- !u!114 &4339543430742910769
 MonoBehaviour:
   m_ObjectHideFlags: 0

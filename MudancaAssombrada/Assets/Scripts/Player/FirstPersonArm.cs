@@ -13,6 +13,8 @@ namespace MudancaAssombrada
     //     (preso à câmera, ela fica no mesmo lugar da tela e não balança correndo), e a luz sai da lente.
     // Os bonecos têm cabeça grande: os olhos ficam 30-40 cm acima do ombro. Por isso a lanterna da mão
     // de verdade (à frente do ombro) ficaria fora da tela, e a da tela fica presa à câmera.
+    // A CARTELA DE PILHAS faz o mesmo, num lugar mais à vista ("batteryViewOffset"): pequena, ela
+    // aparece inteira no canto de baixo, quase em pé e virada para você ver as duas pilhas.
     //
     // Roda DEPOIS do FirstPersonBody (200), que copia a pose do modelo para a cópia.
     [DefaultExecutionOrder(300)]
@@ -21,6 +23,10 @@ namespace MudancaAssombrada
         [Tooltip("Onde fica o cabo da lanterna, em metros a partir da câmera (direita, cima, frente). " +
                  "Medido em batch: olhando reto, só a ponta (a lente) aparece no canto de baixo, à direita.")]
         [SerializeField] Vector3 viewOffset = new(0.17f, -0.2f, 0.25f);
+        [Tooltip("Onde fica a aba da cartela de pilhas, em metros a partir da câmera (direita, cima, frente).")]
+        [SerializeField] Vector3 batteryViewOffset = new(0.11f, -0.15f, 0.32f);
+        [Tooltip("Graus: negativo = a frente da cartela sobe e as pilhas viram para você; e para dentro.")]
+        [SerializeField] float batteryViewTilt = -55f, batteryViewTurn = -15f;
 
         // Os do dono (um por computador): o espelho pede para a lanterna voltar ao corpo no reflexo.
         static readonly System.Collections.Generic.List<FirstPersonArm> owners = new();
@@ -45,7 +51,7 @@ namespace MudancaAssombrada
         public static void ShowInMirror(bool reflecting)
         {
             foreach (var arm in owners)
-                if (arm != null && arm.held != null) arm.held.ShowLanternOnBody(reflecting);
+                if (arm != null && arm.held != null) arm.held.ShowHeldOnBody(reflecting);
         }
 
         void LateUpdate()
@@ -58,11 +64,19 @@ namespace MudancaAssombrada
             ShowArm(!holding);
             if (!holding) return;
 
-            // A lanterna presa à câmera, apontando para onde você olha. Entrando (a pose ainda subindo),
-            // ela vem da mão de verdade até o lugar da tela.
+            // Presa à câmera. Entrando (a pose ainda subindo), vem da mão de verdade até o lugar da tela.
             Transform eye = flashlight.Beam.parent; // a câmera do jogador
-            Vector3 point = HandPoseRules.HoldPoint(eye.position, eye.rotation, viewOffset);
             float weight = held.Walk != null ? held.Walk.FlashlightWeight : 1f;
+            if (held.BatteryInHand)
+            {
+                // A cartela, quase em pé e virada para você (não aponta: é só para ver o pacote).
+                Vector3 at = HandPoseRules.HoldPoint(eye.position, eye.rotation, batteryViewOffset);
+                Quaternion facing = eye.rotation * Quaternion.Euler(batteryViewTilt, batteryViewTurn, 0f);
+                held.PlaceBatteries(Vector3.Lerp(held.BatteryGrip, at, weight), facing);
+                return;
+            }
+            // A lanterna, apontando para onde você olha.
+            Vector3 point = HandPoseRules.HoldPoint(eye.position, eye.rotation, viewOffset);
             Vector3 grip = Vector3.Lerp(held.LanternGrip, point, weight);
             held.PlaceLantern(grip, eye.rotation, moveBeam: weight > 0.99f);
         }

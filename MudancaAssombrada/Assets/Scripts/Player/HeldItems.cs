@@ -13,6 +13,10 @@ namespace MudancaAssombrada
     //     O ombro é SUAVIZADO: correndo, ele sobe e desce ~10 cm com o clipe; a mão, ~2,5 cm.
     //     Na SUA tela, o FirstPersonArm esconde o braço e deixa só a ponta da lanterna aparecer.
     //   - LANTERNA NO COLETE (carregando um móvel): o modelo vai para o peito; o braço segue a animação.
+    //   - PILHAS NA MÃO: o mesmo braço com IK, mais alto e mais perto do corpo (na altura da barriga,
+    //     como quem olha o pacote); a mão fecha na aba da cartela (a mesma pega da lanterna) e a cartela
+    //     fica deitada, inclinada para o rosto. Com um móvel nos braços, ela fica guardada.
+    //     Na SUA tela, o FirstPersonArm leva a cartela para o canto de baixo.
     //   - BENGALA (Cida): a bengala do modelo (SM_PRP_Bengala, presa na mão esquerda) some quando ela
     //     escolhe outro espaço, e a mão solta a pega (camada "Bengala" do DollWalk).
     // Só visual: quem decide o que está na mão é a Hotbar, e onde a lanterna está é o Flashlight.
@@ -45,6 +49,20 @@ namespace MudancaAssombrada
                  "está com a luz ligada, e a lente pisca junto quando a bateria está fraca.")]
         [SerializeField, ColorUsage(false, true)] Color lensGlow = new Color(1f, 0.86f, 0.68f) * 4f;
 
+        [Header("Pilhas na mão")]
+        [Tooltip("O modelo da cartela de pilhas (FBX). Criado como filho do Player, como a lanterna.")]
+        [SerializeField] GameObject batteryModel;
+        [Tooltip("O ponto da cartela que fica no punho: o meio da aba de pendurar, no espaço do modelo " +
+                 "(build_pilhas: cartão de 3 mm, a aba atrás, de −0,05 a −0,072 em Z; os polos para +Z).")]
+        [SerializeField] Vector3 batteryGrip = new(0f, 0.0015f, -0.062f);
+        [Tooltip("Onde a mão fica em relação ao ombro, em BRAÇOS (direita, cima, frente): mais alta e mais " +
+                 "perto do meio do corpo que a lanterna, na altura da barriga.")]
+        [SerializeField] Vector3 batteryCarry = new(0.05f, -0.65f, 0.5f);
+        [Tooltip("Graus para CIMA (negativo = a frente da cartela sobe): as pilhas viram para o rosto de quem segura.")]
+        [SerializeField] float batteryTilt = -30f;
+        [Tooltip("Graus para dentro (para a esquerda do personagem): a cartela vira para o meio do corpo.")]
+        [SerializeField] float batteryTurn = -20f;
+
         [Header("Braço da lanterna (IK)")]
         [Tooltip("Onde a mão fica em relação ao ombro, em BRAÇOS (direita, cima, frente × o tamanho do braço " +
                  "de cada um): baixa, ao lado do quadril, um pouco à frente e afastada do corpo. Medido em batch: " +
@@ -64,6 +82,7 @@ namespace MudancaAssombrada
         Flashlight flashlight;
         CharacterSwitcher character;
         GameObject lantern;
+        GameObject batteries;
 
         // Achados no modelo atual (refeitos quando o personagem muda).
         DollWalk walk;
@@ -80,6 +99,10 @@ namespace MudancaAssombrada
         public DollWalk Walk => walk;
         // Onde está o cabo da lanterna neste quadro (o FirstPersonArm parte daqui ao levar para a tela).
         public Vector3 LanternGrip { get; private set; }
+        // A cartela de pilhas está na mão neste quadro (o braço erguido é para ela, não para a lanterna)?
+        public bool BatteryInHand { get; private set; }
+        // Onde está a aba da cartela neste quadro (o FirstPersonArm parte daqui ao levar para a tela).
+        public Vector3 BatteryGrip { get; private set; }
 
         void Awake()
         {
@@ -95,6 +118,14 @@ namespace MudancaAssombrada
                 Instantiate(flashlightModel, lantern.transform, false);
                 lantern.SetActive(false);
                 lensMaterial = GlowingLens(lantern);
+            }
+            if (batteryModel != null)
+            {
+                // O mesmo vazio por fora (a rotação da importação fica dentro dele).
+                batteries = new GameObject("Pilhas (na mão)");
+                batteries.transform.SetParent(transform, false);
+                Instantiate(batteryModel, batteries.transform, false);
+                batteries.SetActive(false);
             }
         }
 
@@ -137,6 +168,7 @@ namespace MudancaAssombrada
         void LateUpdate()
         {
             ArmRaised = false;
+            BatteryInHand = false;
             if (hotbar == null || character == null) return;
             if (character.Walk != walk) FindParts(character.Walk);
 
@@ -148,13 +180,17 @@ namespace MudancaAssombrada
 
             if (lantern == null || flashlight == null) return;
             var place = flashlight.Has ? flashlight.Place : FlashlightPlace.Stowed;
-            if (walk != null) walk.HoldsFlashlight = place == FlashlightPlace.Hand;
+            bool batteryChosen = batteries != null && HotbarRules.ShowsBatteryInHand(hotbar.InHand, hotbar.HandsBusy);
+            // A mão fecha (camada "Lanterna") para a lanterna e para a aba da cartela.
+            if (walk != null) walk.HoldsFlashlight = place == FlashlightPlace.Hand || batteryChosen;
 
             float weight = walk != null ? walk.FlashlightWeight : 0f;
+            UpdateBatteries(batteryChosen, weight);
+
             Quaternion aim = flashlight.AimRotation;
             if (place == FlashlightPlace.Hand && weight > 0.01f && arm != null)
             {
-                RaiseArm(aim, weight);
+                RaiseArm(aim, weight, carry, armFollowsLook);
                 ArmRaised = true;
             }
 
@@ -177,34 +213,68 @@ namespace MudancaAssombrada
             else
                 PlaceLantern(ArmRaised ? arm.FistCenter() : socket.position, aim, moveBeam: ArmRaised && weight > 0.99f);
             // Onde ela fica no CORPO: o FirstPersonArm pode levá-la para a sua tela depois, e o espelho
-            // devolve para cá enquanto desenha o reflexo (ShowLanternOnBody).
-            bodyLantern = new Pose(lantern.transform.position, lantern.transform.rotation);
+            // devolve para cá enquanto desenha o reflexo (ShowHeldOnBody).
+            bodyPose = new Pose(lantern.transform.position, lantern.transform.rotation);
+        }
+
+        // A cartela de pilhas: o braço sobe para a barriga e a mão fecha na aba; a cartela fica deitada,
+        // um pouco virada para dentro e inclinada para o rosto (não segue o olhar: quem segura um pacote
+        // olha para ele, não aponta).
+        void UpdateBatteries(bool chosen, float weight)
+        {
+            bool show = chosen && weight > 0.01f && (arm != null || socket != null);
+            if (batteries.activeSelf != show) batteries.SetActive(show);
+            if (!show) return;
+            BatteryInHand = true;
+            Quaternion facing = transform.rotation * Quaternion.Euler(batteryTilt, batteryTurn, 0f);
+            if (arm != null)
+            {
+                RaiseArm(facing, weight, batteryCarry, follow: 0f);
+                ArmRaised = true;
+            }
+            // A aba fica na beira do punho (do lado do indicador), não no meio: a cartela é pequena, e na
+            // luva do Marcelo (26 cm) ela sumia dentro da mão.
+            Vector3 fist = arm != null ? arm.FistCenter() + facing * Vector3.forward * arm.FistHalfWidth() : socket.position;
+            PlaceBatteries(fist, facing);
+            bodyPose = new Pose(batteries.transform.position, batteries.transform.rotation);
+        }
+
+        // Põe a aba da cartela no ponto "fist", com a cartela virada para "rotation".
+        public void PlaceBatteries(Vector3 fist, Quaternion rotation)
+        {
+            BatteryGrip = fist;
+            batteries.transform.SetPositionAndRotation(fist - rotation * batteryGrip, rotation);
         }
 
         // ---------- Espelho ----------
 
-        Pose bodyLantern, viewLantern; // na mão do corpo / no lugar da sua tela (primeira pessoa)
-        bool lanternOnBody;
+        Pose bodyPose, viewPose; // o que está na mão: na mão do corpo / no lugar da sua tela (primeira pessoa)
+        bool shownOnBody;
+
+        // O que está na mão neste quadro (a lanterna erguida/no cinto ou a cartela; nunca os dois).
+        GameObject Shown => BatteryInHand ? batteries : lantern != null && lantern.activeSelf ? lantern : null;
 
         // O espelho mostra o SEU corpo (o que os colegas veem), não a primeira pessoa: enquanto a câmera
-        // do reflexo desenha, a lanterna volta para a mão do corpo; depois, para o lugar da tela.
+        // do reflexo desenha, o que está na mão volta para a mão do corpo; depois, para o lugar da tela.
         // Chamado pelo MirrorReflection (via FirstPersonArm), só no dono.
-        public void ShowLanternOnBody(bool onBody)
+        public void ShowHeldOnBody(bool onBody)
         {
-            if (lantern == null || !lantern.activeSelf || onBody == lanternOnBody) return;
-            var t = lantern.transform;
+            var shown = Shown;
+            if (shown == null || onBody == shownOnBody) return;
+            var t = shown.transform;
             if (onBody)
             {
-                viewLantern = new Pose(t.position, t.rotation);
-                t.SetPositionAndRotation(bodyLantern.position, bodyLantern.rotation);
+                viewPose = new Pose(t.position, t.rotation);
+                t.SetPositionAndRotation(bodyPose.position, bodyPose.rotation);
             }
-            else t.SetPositionAndRotation(viewLantern.position, viewLantern.rotation);
-            lanternOnBody = onBody;
+            else t.SetPositionAndRotation(viewPose.position, viewPose.rotation);
+            shownOnBody = onBody;
         }
 
-        // O braço do modelo: a mão abaixo e à frente do ombro suavizado (carregar natural), o braço
-        // inclinado com parte do olhar; o punho aponta a lanterna para onde o dono olha.
-        void RaiseArm(Quaternion aim, float weight)
+        // O braço do modelo: a mão no ponto "fraction" (em braços) a partir do ombro suavizado, o braço
+        // inclinado com "follow" do olhar; o punho aponta o item para "aim" (a lanterna, para onde o
+        // dono olha; a cartela, para o rosto).
+        void RaiseArm(Quaternion aim, float weight, Vector3 fraction, float follow)
         {
             Vector3 shoulderLocal = transform.InverseTransformPoint(arm.Upper.position);
             steadyShoulder = hasSteadyShoulder
@@ -212,8 +282,8 @@ namespace MudancaAssombrada
             hasSteadyShoulder = true;
             Vector3 shoulder = transform.TransformPoint(steadyShoulder);
             float lookPitch = Vector3.SignedAngle(transform.forward, aim * Vector3.forward, transform.right);
-            Quaternion frame = transform.rotation * Quaternion.Euler(HandPoseRules.ArmPitch(lookPitch, armFollowsLook), 0f, 0f);
-            Vector3 target = HandPoseRules.CarryPoint(shoulder, frame, arm.Reach, carry);
+            Quaternion frame = transform.rotation * Quaternion.Euler(HandPoseRules.ArmPitch(lookPitch, follow), 0f, 0f);
+            Vector3 target = HandPoseRules.CarryPoint(shoulder, frame, arm.Reach, fraction);
             arm.Aim(target, aim * Vector3.forward, transform.TransformDirection(elbowHint), weight);
         }
 
@@ -357,6 +427,11 @@ namespace MudancaAssombrada
                 Lower.rotation = Quaternion.Slerp(Quaternion.identity, twist, w) * Lower.rotation;
                 Hand.rotation = Quaternion.Slerp(Quaternion.identity, swing * twist, w) * hand;
             }
+
+            // Metade da largura da mão (do nó do indicador ao do mindinho): do meio do punho até a beira
+            // por onde sai o que está preso nele.
+            public float FistHalfWidth() =>
+                IndexKnuckle != null && LittleKnuckle != null ? Vector3.Distance(IndexKnuckle.position, LittleKnuckle.position) / 2f : 0f;
 
             // O meio do punho fechado, onde o cabo passa: a média das juntas de cada dedo (nó, meio,
             // ponta do meio) e da ponta estimada (a distal continua mais um tanto na mesma direção).
