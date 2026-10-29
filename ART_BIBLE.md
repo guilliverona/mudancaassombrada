@@ -31,7 +31,8 @@ tools/blender/                         ← scripts (Python do Blender)
 ├── blockout_common.py                 base: primitivas, rig Humanoid, sockets, export
 ├── build_cida_blockout.py             um script por personagem
 ├── build_tiago_blockout.py
-├── build_marcelo_blockout.py
+├── build_marcelo_blockout.py          rig, medidas e o .blend base do Marcelo
+├── build_marcelo_detalhado.py         Marcelo detalhado: grava o FBX do jogo por cima (roda depois)
 ├── build_bibliotecario_blockout.py    fantasmas (um script cada)
 ├── build_imitador_blockout.py
 ├── build_maestrina_blockout.py
@@ -118,7 +119,7 @@ metal ter o que refletir, a casa cria uma Reflection Probe por cômodo ao carreg
 
 | Tipo | Limite | Hoje |
 |---|---|---|
-| Personagem jogável (com props) | 18k | Cida 12,6k · Tiago 10,9k · Marcelo 11,9k (com mãos e dedos) |
+| Personagem jogável (com props) | 18k | Cida 12,6k · Tiago 10,9k · Marcelo 17,9k (versão detalhada, com mãos e dedos) |
 | Fantasma de fase | 20k | Bibliotecário 6,0k · Imitador 6,3k · Maestrina 4,2k |
 | Seu Valdemar | 15k | 4,8k |
 | O Inquilino (forma final) | 45k | — |

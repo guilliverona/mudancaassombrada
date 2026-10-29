@@ -20,6 +20,11 @@ foreach ($c in $scripts) {
         Select-String -Pattern "TRIS|SAVED|Traceback|Error"
 }
 
+# Personagens com versão detalhada: grava o FBX do jogo por cima do blockout (rodar depois dele).
+Write-Host "== marcelo_detalhado"
+& $Blender --background --factory-startup --python (Join-Path $here "build_marcelo_detalhado.py") 2>&1 |
+    Select-String -Pattern "TRIS|SAVED|Traceback|Error"
+
 # Poses de mão feitas sobre o rig de um personagem (clipes em Assets/Art/Animations).
 Write-Host "== pega_lanterna"
 & $Blender --background --factory-startup --python (Join-Path $here "build_pega_lanterna.py") 2>&1 |
