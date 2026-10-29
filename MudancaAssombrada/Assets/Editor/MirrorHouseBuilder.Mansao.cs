@@ -345,11 +345,15 @@ namespace MudancaAssombrada.Editor
         }
 
         // A altura de onde se apoia algo pequeno ali (o chão, ou o palco, uma mesa...).
+        // As tábuas do piso não têm colisão: o raio passa por elas e bate no "Chão", 1 cm abaixo
+        // (ver BuildTerrain). Um acerto até 2 cm abaixo do piso é esse colisor: o que se apoia fica
+        // no piso. Sem isso, a cartela de pilhas (3 mm) sumia embaixo das tábuas.
         static float SurfaceY(float x, float z, float floor)
         {
             Physics.SyncTransforms();
-            return Physics.Raycast(new Vector3(x, floor + 2f, z), Vector3.down, out var hit, 2.5f, ~0, QueryTriggerInteraction.Ignore)
-                ? hit.point.y : floor;
+            if (!Physics.Raycast(new Vector3(x, floor + 2f, z), Vector3.down, out var hit, 2.5f, ~0, QueryTriggerInteraction.Ignore))
+                return floor;
+            return hit.point.y < floor && hit.point.y > floor - 0.02f ? floor : hit.point.y;
         }
 
         // A noite nesta casa é mais escura que o padrão (ambiente e lua mais fracos), para a lanterna

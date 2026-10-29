@@ -74,7 +74,7 @@ namespace MudancaAssombrada
             if (flashlight == null || !player.TryGetComponent(out Hotbar hotbar)) return InteractionPrompt.None;
             if (givesFlashlight && flashlight.Has) return new InteractionPrompt("Já tenho uma lanterna", false);
             string name = givesFlashlight ? "Lanterna" : "Pilhas";
-            return hotbar.HasRoom ? new InteractionPrompt(givesFlashlight ? "Pegar lanterna" : "Guardar pilhas", true)
+            return hotbar.HasRoom ? new InteractionPrompt(givesFlashlight ? "Pegar lanterna" : "Pegar pilhas", true)
                                   : new InteractionPrompt($"{name} (hotbar cheia)", false);
         }
 

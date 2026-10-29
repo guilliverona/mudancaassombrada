@@ -379,14 +379,16 @@ class Part:
         mod.object = armature
         return obj
 
-    def to_static(self, collection, bevel=0.0):
+    def to_static(self, collection, bevel=None):
         """Malha sem rig (móveis, caminhão), com a origem na base, como foi modelada.
 
-        bevel: largura (m) do bisel nas quinas (0 = sem). Quina viva de caixa não pega luz e o
-        móvel parece de massinha; um bisel de 1 a 2 cm faz o fio da quina brilhar. As faces
-        planas continuam planas (harden_normals), e o FBX sai com o bisel aplicado.
+        bevel: largura (m) do bisel nas quinas (None = DEFAULT_BEVEL; 0 = sem, para objetos
+        miúdos como a cartela de pilhas, em que o bisel engoliria os detalhes de papel). Quina
+        viva de caixa não pega luz e o móvel parece de massinha; um bisel de 1 a 2 cm faz o fio
+        da quina brilhar. As faces planas continuam planas (harden_normals), e o FBX sai com o
+        bisel aplicado.
         """
-        bevel = bevel or DEFAULT_BEVEL
+        bevel = DEFAULT_BEVEL if bevel is None else bevel
         obj = bpy.data.objects.new(self.name, self._mesh())
         collection.objects.link(obj)
         if bevel > 0:

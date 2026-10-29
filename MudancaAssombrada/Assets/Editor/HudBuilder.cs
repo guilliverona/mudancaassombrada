@@ -81,7 +81,7 @@ namespace MudancaAssombrada.Editor
             UiBuilder.Place(cues, Vector2.zero, Vector2.zero, new Vector2(Margin, Margin + 24), new Vector2(760, 180));
 
             // --- Embaixo, no meio: a hotbar (caixinhas com fita; aparece ao trocar de item e some sozinha) ---
-            var (group, slots, useHint, _, useAction) = BuildHotbar(canvas);
+            var (group, slots, useHint, useAction, useProgress) = BuildHotbar(canvas);
             var icons = ItemIconBuilder.EnsureAll(); // ícones gerados dos modelos do jogo
 
             // --- Tela de fim de partida (cobre tudo) ---
@@ -112,6 +112,7 @@ namespace MudancaAssombrada.Editor
             EditorTools.SetReferences(hud, "hotbarSlots", slots);
             EditorTools.SetReference(hud, "useHint", useHint);
             EditorTools.SetReference(hud, "useHintAction", useAction);
+            EditorTools.SetReference(hud, "useHintProgress", useProgress.rectTransform);
             EditorTools.SetReference(hud, "flashlightIcon", icons[0]);
             EditorTools.SetReference(hud, "batteryIcon", icons[1]);
             EditorTools.SetReference(hud, "caneIcon", icons[2]);
@@ -124,7 +125,8 @@ namespace MudancaAssombrada.Editor
         // A hotbar no estilo do menu (DESIGN.md: caixinha de mudança com fita, tecla na caixinha com
         // borda como o [E]). Cada espaço é um HotbarSlotView; a Hud centraliza pelo número de espaços.
         //
-        //       (mouse) ESQ Trocar as pilhas   ← dica do Usar (só com as pilhas na mão)
+        //  (mouse) ESQ Segure: trocar as pilhas ← dica do Usar (só com as pilhas na mão)
+        //              ▰▰▰▰▱▱▱▱▱▱              ← enche enquanto segura (3 s)
         //     ▱▱▱      ▱▱▱      ▱▱▱            ← fita torta
         //    ┌────┐   ┌────┐   ┌────┐
         //    │ ic │   │ ic │   │    │          ← ícone
@@ -134,11 +136,11 @@ namespace MudancaAssombrada.Editor
         const float SlotSize = 64f, KeyRow = 26f;
         static readonly float[] TapeTilt = { -3f, 2f, -1.5f };
 
-        static (CanvasGroup, Object[], GameObject, Text, Text) BuildHotbar(Transform canvas)
+        static (CanvasGroup, Object[], GameObject, Text, Image) BuildHotbar(Transform canvas)
         {
             var root = new GameObject("Hotbar", typeof(RectTransform), typeof(CanvasGroup));
             root.transform.SetParent(canvas, false);
-            UiBuilder.Place(root.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0, Margin), new Vector2(240, SlotSize + KeyRow + 48));
+            UiBuilder.Place(root.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0, Margin), new Vector2(240, SlotSize + KeyRow + 58));
             var group = root.GetComponent<CanvasGroup>();
             group.alpha = 0f;
             group.interactable = false;
@@ -207,7 +209,7 @@ namespace MudancaAssombrada.Editor
             // "ESQ" e a ação. Pequena: é um lembrete, não um aviso.
             var hint = new GameObject("Dica do Usar", typeof(RectTransform));
             hint.transform.SetParent(root.transform, false);
-            UiBuilder.Place(hint.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0, KeyRow + SlotSize + 14), new Vector2(220, 26));
+            UiBuilder.Place(hint.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0, KeyRow + SlotSize + 24), new Vector2(220, 26)); // 24: a barrinha de segurar não encosta na fita
             var mouse = UiBuilder.CreateImage("Mouse", hint.transform, Color.white);
             mouse.sprite = MouseIconBuilder.Ensure();
             mouse.preserveAspect = true;
@@ -218,14 +220,23 @@ namespace MudancaAssombrada.Editor
             hintKey.alignment = TextAnchor.MiddleLeft;
             hintKey.verticalOverflow = VerticalWrapMode.Overflow;
             UiBuilder.Place(hintKey, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(22, 0), new Vector2(30, 24));
-            var hintAction = UiBuilder.CreateText("Ação", hint.transform, "Trocar as pilhas", NoteSize);
+            var hintAction = UiBuilder.CreateText("Ação", hint.transform, "Segure: trocar as pilhas", NoteSize);
             hintAction.alignment = TextAnchor.MiddleLeft;
             hintAction.color = HighlightColor;
             hintAction.verticalOverflow = VerticalWrapMode.Overflow;
+            hintAction.horizontalOverflow = HorizontalWrapMode.Overflow;
             UiBuilder.Place(hintAction, new Vector2(0, 0.5f), new Vector2(0, 0.5f), new Vector2(52, 0), new Vector2(168, 24));
+            // Embaixo do texto, a barrinha que enche enquanto o botão é segurado (3 s), no formato da
+            // de bateria: fundo escuro com contorno, carga em ectoplasma (o mesmo aceso do mouse).
+            var progress = UiBuilder.CreateImage("Progresso", hint.transform, ShadowColor);
+            progress.gameObject.AddComponent<Outline>().effectColor = BorderColor;
+            UiBuilder.Place(progress, new Vector2(0, 0f), new Vector2(0, 0.5f), new Vector2(52, -3), new Vector2(150, 4));
+            var progressFill = UiBuilder.CreateImage("Carga", progress.transform, HighlightColor);
+            UiBuilder.Stretch(progressFill); // a Hud muda onde ela termina (anchorMax.x)
+            progressFill.rectTransform.anchorMax = new Vector2(0f, 1f);
             hint.SetActive(false);
 
-            return (group, slots, hint, hintKey, hintAction);
+            return (group, slots, hint, hintAction, progressFill);
         }
     }
 }

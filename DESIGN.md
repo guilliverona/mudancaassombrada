@@ -126,7 +126,9 @@ Nada de `OnGUI`: ele não segue o `Theme`.
   fica vermelha e aparece **FRACA** ao lado da tecla (perigo sempre com palavra). A tecla fica embaixo,
   no formato da dica de tecla. Com as pilhas na mão, a dica de Usar aparece logo acima da barra,
   pequena: o **ícone do mouse** com o botão esquerdo aceso em ectoplasma (desenhado por código:
-  `MouseIconRules` + `MouseIconBuilder`), **ESQ** e **Trocar as pilhas**. Ela aparece por 3 s depois de cada troca, subindo 12 px enquanto aparece (`FadeSlow`),
+  `MouseIconRules` + `MouseIconBuilder`), **ESQ** e **Segure: trocar as pilhas**; embaixo, uma barrinha
+  no formato da de bateria enche em ectoplasma enquanto o botão é segurado (3 s) e o texto vira
+  **Trocando as pilhas...**. A barra aparece por 3 s depois de cada troca, subindo 12 px enquanto aparece (`FadeSlow`),
   e some sozinha; item novo faz a caixinha acender em ectoplasma por um instante. Nada balança.
 - A informação importante fica **no mundo, não na tela**: ondas de eco,
   vibrações no chão, a sombra do fantasma.

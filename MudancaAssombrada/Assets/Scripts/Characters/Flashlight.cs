@@ -17,7 +17,7 @@ namespace MudancaAssombrada
     //
     // A BATERIA acaba: ligada, gasta (400 s de luz com a carga cheia); abaixo de 5% a luz começa
     // a falhar, cada vez mais; em 0 apaga sozinha. Pilhas espalhadas pela casa vão para a HOTBAR
-    // (ocupam um espaço!); com o pacote na mão, "Usar item" recarrega um pedaço. Gerir a luz (ligar
+    // (ocupam um espaço!); com o pacote na mão, SEGURAR "Usar item" por 3 s recarrega um pedaço. Gerir a luz (ligar
     // só quando precisa, guardar pilha ou levar outra coisa) é parte do jogo.
     // O modelo da lanterna na mão/no cinto é do HeldItems.
     //
@@ -33,6 +33,8 @@ namespace MudancaAssombrada
         [SerializeField, Range(0f, 1f)] float flickerBelow = 0.05f;
         [Tooltip("Quanto um pacote de pilhas recarrega (0,4 = 40% da bateria).")]
         [SerializeField, Range(0f, 1f)] float batteryCharge = 0.4f;
+        [Tooltip("Segundos segurando \"Usar item\" para trocar as pilhas (soltar antes não troca).")]
+        [SerializeField] float reloadHoldSeconds = 3f;
 
         [Header("No cinto (carregando um móvel)")]
         [Tooltip("Fração da força da luz presa no cinto.")]
@@ -57,6 +59,7 @@ namespace MudancaAssombrada
         float baseIntensity;
         Vector3 handPosition; // onde o spot fica na câmera (na mão)
         Hotbar hotbar;
+        HoldAction reloadHold; // só no dono: quanto já segurou o "Usar item" com as pilhas na mão
 
         public bool Has => hotbar != null && hotbar.Contains(HotbarItem.Flashlight);
         public bool IsOn => on.Value;
@@ -77,10 +80,13 @@ namespace MudancaAssombrada
         // Pilhas na mão e dá para trocar agora? (a HUD mostra a dica do botão Usar)
         public bool CanReload => hotbar != null && hotbar.InHand == HotbarItem.Battery
                                  && HotbarRules.CanReload(Has, Charge01, hotbar.HandsBusy);
+        // Quanto da troca já foi (0 a 1, segurando "Usar item"): a HUD enche a barrinha da dica.
+        public float ReloadProgress01 => reloadHold != null ? reloadHold.Progress01 : 0f;
 
         void Awake()
         {
             hotbar = GetComponent<Hotbar>();
+            reloadHold = new HoldAction(reloadHoldSeconds);
             baseIntensity = beam.intensity;
             handPosition = beam.transform.localPosition;
             beam.enabled = false;
@@ -128,8 +134,10 @@ namespace MudancaAssombrada
                 }
             }
 
-            // Pilhas na mão + Usar: troca as pilhas (o host confere e tira o pacote da hotbar).
-            if (!PauseMenu.IsOpen && GameInput.UseItem.WasPressedThisFrame() && CanReload)
+            // Pilhas na mão + SEGURAR Usar (3 s): troca as pilhas (o host confere e tira o pacote da
+            // hotbar). Soltar, pausar ou pegar um móvel no meio perde o que já foi (HoldAction).
+            bool holdingUse = !PauseMenu.IsOpen && GameInput.UseItem.IsPressed();
+            if (reloadHold.Tick(holdingUse, CanReload, Time.deltaTime))
                 ReloadRpc(hotbar.Selected);
 
             if (on.Value)
