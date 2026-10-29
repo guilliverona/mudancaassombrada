@@ -15,7 +15,7 @@ namespace MudancaAssombrada
     // A tecla L liga/desliga; com a lanterna guardada, tira do cinto e já acende (carregando um
     // móvel, vai direto para o cinto, como pela tecla do número).
     //
-    // A BATERIA acaba: ligada, gasta (100 s de luz com a carga cheia); abaixo de 20% a luz começa
+    // A BATERIA acaba: ligada, gasta (400 s de luz com a carga cheia); abaixo de 5% a luz começa
     // a falhar, cada vez mais; em 0 apaga sozinha. Pilhas espalhadas pela casa vão para a HOTBAR
     // (ocupam um espaço!); com o pacote na mão, "Usar item" recarrega um pedaço. Gerir a luz (ligar
     // só quando precisa, guardar pilha ou levar outra coisa) é parte do jogo.
@@ -28,9 +28,9 @@ namespace MudancaAssombrada
         [Tooltip("O spot de luz, preso na câmera (a lanterna aponta para onde o jogador olha).")]
         [SerializeField] Light beam;
         [Tooltip("Segundos de luz com a bateria cheia.")]
-        [SerializeField] float batterySeconds = 100f;
+        [SerializeField] float batterySeconds = 400f;
         [Tooltip("Abaixo desta carga a luz começa a falhar.")]
-        [SerializeField, Range(0f, 1f)] float flickerBelow = 0.2f;
+        [SerializeField, Range(0f, 1f)] float flickerBelow = 0.05f;
         [Tooltip("Quanto um pacote de pilhas recarrega (0,4 = 40% da bateria).")]
         [SerializeField, Range(0f, 1f)] float batteryCharge = 0.4f;
 

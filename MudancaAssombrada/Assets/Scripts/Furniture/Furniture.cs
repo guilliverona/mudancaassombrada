@@ -68,10 +68,21 @@ namespace MudancaAssombrada
         Quaternion startRotation;
         Vector3 lastNoisePosition;
         float nextDragNoise;
+        Collider[] solids;       // os colliders que bloqueiam (os que já eram trigger ficam de fora)
+        bool ghostly;            // levantado: os colliders viram trigger e o móvel atravessa tudo
+
+        // LEVANTADO (na mão, não arrastando): o móvel não bate em nada (portas, paredes, jogadores).
+        // Assim ninguém fica preso no batente carregando. Continua sendo trigger (não desligado)
+        // para a mira achar ele ("Segurar a outra ponta") e o caminhão saber que ele está dentro.
+        public bool IsLifted => isHeld.Value && CanLift;
 
         void Awake()
         {
             Body = GetComponent<Rigidbody>();
+            var list = new List<Collider>();
+            foreach (var c in GetComponentsInChildren<Collider>())
+                if (!c.isTrigger) list.Add(c);
+            solids = list.ToArray();
             startPosition = transform.position; // guarda onde o móvel começa, para o reinício
             startRotation = transform.rotation;
         }
@@ -172,8 +183,17 @@ namespace MudancaAssombrada
         void Update()
         {
             if (!IsSpawned) return;
+            // Roda em TODOS os computadores: em cada um o móvel levantado deixa os jogadores passarem.
+            SetGhostly(IsLifted);
             if (IsServer) ServerCheckHelper();
             if (IsOwner) DragNoise();
+        }
+
+        void SetGhostly(bool on)
+        {
+            if (on == ghostly) return;
+            ghostly = on;
+            foreach (var c in solids) c.isTrigger = on;
         }
 
         // O ajudante caiu, foi puxado, saiu da partida ou se afastou: a ponta fica livre.
