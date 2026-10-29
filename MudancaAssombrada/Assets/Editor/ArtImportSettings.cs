@@ -155,6 +155,10 @@ namespace MudancaAssombrada.Editor
             (new[] { "Ferro", "Latao", "Dourado", "Aco", "Ferrugem" }, "Metal", 2f, 0.4f),
             (new[] { "Reboco", "Tijolo", "Barro" }, "Reboco", 1f, 0.8f),
             (new[] { "Xadrez" }, "Piso", 0.5f, 0.3f),
+            // o cenário de fora (tools/blender/build_exterior_blockout.py)
+            (new[] { "Pedra" }, "Pedra", 1f, 0.8f),
+            (new[] { "Grama", "Terra" }, "Grama", 1f, 0.6f),
+            (new[] { "Folhagem" }, "Folhagem", 1.5f, 0.7f),
         };
 
         void ApplyDetail(Material material)

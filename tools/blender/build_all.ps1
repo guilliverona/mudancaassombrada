@@ -1,4 +1,4 @@
-# Gera todos os blockouts: personagens, fantasmas, o chefe, props, mobília e o kit de cenário
+﻿# Gera todos os blockouts: personagens, fantasmas, o chefe, props, mobília e o kit de cenário
 # (fecha o Blender ao terminar cada um).
 # Uso: .\tools\blender\build_all.ps1            (ou passe outro caminho: -Blender "C:\...\blender.exe")
 param([string]$Blender = "C:\Program Files\Blender Foundation\Blender 5.2\blender.exe")
@@ -8,7 +8,8 @@ $scripts = "cida", "tiago", "marcelo",                    # jogáveis
            "bibliotecario", "imitador", "maestrina",       # fantasmas
            "valdemar",                                     # o chefe
            "props", "story_props", "furniture", "epoca",   # objetos, mobília e os objetos de 1927 (Mansão)
-           "env_kit"                                       # paredes, portas, pisos, molduras
+           "env_kit",                                      # paredes, portas, pisos, molduras
+           "exterior"                                      # o lado de fora da Mansão (muro, portão, fonte, floresta)
 # As texturas de detalhe primeiro (os modelos dependem delas no Unity).
 Write-Host "== texturas de detalhe"
 & $Blender --background --factory-startup --python (Join-Path $here "build_detail_textures.py") 2>&1 |

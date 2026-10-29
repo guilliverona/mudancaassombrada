@@ -130,7 +130,38 @@ def cardboard():
     return h, color, 1.0
 
 
+def stone():
+    """Pedra úmida (muro, fonte, lajes): grão fino, poros e manchas de umidade grandes."""
+    grain = noise(0.9, 21)
+    pores = np.clip((noise(0.6, 22) - 0.62) * 4, 0, 1)  # furinhos escuros
+    damp = noise(2.6, 23)                               # manchas de umidade (sem relevo)
+    h = noise(1.6, 24) * 0.6 + grain * 0.4 - pores * 0.3
+    color = 0.5 + (grain - 0.5) * 0.25 - pores * 0.25 - (damp - 0.5) * 0.35
+    return h, color, 2.2
+
+
+def grass():
+    """Grama rala e terra (o chão de fora): fios curtos em todas as direções e falhas de terra."""
+    blades = noise(0.5, 25, stretch=(0.25, 1.0)) * 0.5 + noise(0.5, 26, stretch=(1.0, 0.25)) * 0.5
+    bare = np.clip((noise(2.4, 27) - 0.55) * 3, 0, 1)   # falhas onde aparece a terra
+    h = blades * (1 - bare * 0.6) + noise(1.2, 28) * 0.3
+    color = 0.5 + (blades - 0.5) * 0.3 - bare * 0.15 + (noise(2.8, 29) - 0.5) * 0.3
+    return h, color, 1.6
+
+
+def foliage():
+    """Folhagem (copas, arbustos): folhinhas sobrepostas, luz e sombra entre elas."""
+    leaves = noise(0.8, 30)
+    clumps = noise(2.0, 31)
+    h = np.clip((leaves - 0.4) * 2, 0, 1) * 0.7 + clumps * 0.3
+    color = 0.5 + (h - h.mean()) * 0.45 + (clumps - 0.5) * 0.2
+    return h, color, 1.8
+
+
 FAMILIES = {
+    "Pedra": stone,
+    "Grama": grass,
+    "Folhagem": foliage,
     "Madeira": wood,
     "Tecido": fabric,
     "PapelParede": wallpaper,
@@ -153,9 +184,20 @@ def normal_map(h, strength):
     return n * 0.5 + 0.5
 
 
-def save(name, rgb):
-    img = bpy.data.images.new(name, SIZE, SIZE, alpha=False)
-    rgba = np.dstack((rgb, np.ones((SIZE, SIZE))))
+def mist():
+    """A NÉVOA RASTEIRA (T_Nevoa.png, não é detalhe): branco com a transparência no alfa. Fiapos de
+    ruído grande que somem perto da borda (redondo), para a placa de 12 m não mostrar a quina."""
+    u, v = grid()
+    r = np.sqrt((u - 0.5) ** 2 + (v - 0.5) ** 2) * 2
+    edge = np.clip(1 - r, 0, 1) ** 1.5
+    wisps = noise(2.4, 40) * 0.7 + noise(1.6, 41) * 0.3
+    alpha = np.clip((wisps - 0.3) * 1.8, 0, 1) * edge
+    return alpha
+
+
+def save(name, rgb, alpha=None):
+    img = bpy.data.images.new(name, SIZE, SIZE, alpha=alpha is not None)
+    rgba = np.dstack((rgb, np.ones((SIZE, SIZE)) if alpha is None else alpha))
     img.pixels.foreach_set(rgba.astype(np.float32).ravel())
     img.filepath_raw = str(OUT / f"{name}.png")
     img.file_format = "PNG"
@@ -171,6 +213,9 @@ def main():
         save(f"T_Detail_{name}", np.dstack((gray, gray, gray)))
         save(f"T_Detail_{name}_N", normal_map(h, strength))
         print("SAVED", name, "media da cor", round(float(gray.mean()), 3))
+    a = mist()
+    save("T_Nevoa", np.ones((SIZE, SIZE, 3)), a)
+    print("SAVED Nevoa", "alfa medio", round(float(a.mean()), 3))
 
 
 if __name__ == "__main__":
