@@ -128,6 +128,8 @@ tudo passa pelos serviços da Unity (Lobby + Relay), então precisa de internet.
 - **Frente dos modelos:** o −Y do Blender chega como −Z no Unity. O `export_fbx` do
   `tools/blender/blockout_common.py` gira as raízes 180° só durante a exportação para os
   modelos olharem para +Z (a frente do Player). Mexer no export = medir de novo no Unity.
+- **Metal dos materiais:** o FBX do Blender manda o Metallic no `ReflectionFactor`, que o URP ignora
+  (latão e espelho chegavam com metal 0). O `ArtImportSettings` corrige em toda importação; a rugosidade já chega certa.
 - **Importação pela pasta:** `Assets/Editor/ArtImportSettings.cs` define o rig pela pasta de
   `Assets/Art` (Humanoid ou sem rig) e só age na **primeira** importação. FBX já importado com
   configuração errada → corrigir o `.meta` (ou reimportar apagando o `.meta`).

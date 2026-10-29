@@ -113,5 +113,86 @@ namespace MudancaAssombrada.Editor
             }
             importer.clipAnimations = clips;
         }
+
+        // --- Materiais ---
+        //
+        // O FBX do Blender leva o "Metallic" do material no campo ReflectionFactor, e o importador
+        // do URP ignora esse campo: latão, dourado, ferro e espelho chegavam com metal 0 (pareciam
+        // de plástico). A rugosidade chega certa (vira o Smoothness). Este passo roda DEPOIS do
+        // importador do URP (ordem alta) e só corrige o metal. Vale a cada importação, não só na 1ª.
+        public override int GetPostprocessOrder() => 100;
+        public override uint GetVersion() => 4; // mudou a regra: os FBX de Assets/Art reimportam sozinhos
+
+        void OnPreprocessMaterialDescription(UnityEditor.AssetImporters.MaterialDescription description,
+            Material material, AnimationClip[] clips)
+        {
+            if (!assetPath.StartsWith(ArtFolder) || !material.HasProperty("_Metallic")) return;
+            if (description.TryGetProperty("ReflectionFactor", out float metal))
+                material.SetFloat("_Metallic", Mathf.Clamp01(metal));
+            ApplyDetail(material);
+        }
+
+        // --- Textura de detalhe (o grão por cima da cor lisa) ---
+        //
+        // As texturas vêm de tools/blender/build_detail_textures.py. Cada material do Blender cai
+        // numa família pelo NOME (MAT_PRP_Mogno -> Madeira). A cor continua a do Art Bible: o
+        // "Detail" do URP Lit multiplica por 2x a textura cinza, que tem média 128 (não muda nada).
+        // O UV dos móveis está em METROS (blockout_common.metric_uvs): "por metro" abaixo é literal.
+        // Os personagens não têm UV em metros: ficam de fora (o primeiro nome que bate vence).
+        const string DetailFolder = ArtFolder + "Textures/Detail/";
+
+        // Força geral do detalhe (cor e relevo), por cima dos valores de cada família.
+        // 1 ficou agressivo no Play; 0,6 mantém o grão sem virar estampa.
+        const float DetailStrength = 0.6f;
+
+        static readonly (string[] keys, string family, float perMeter, float normal)[] DetailFamilies =
+        {
+            (new[] { "Papelao" }, "Papelao", 3f, 0.6f),
+            (new[] { "PapelVinho", "PapelVelho" }, "PapelParede", 1f, 0.2f), // relevo baixo: papel, não plástico
+            (new[] { "Papel" }, "Papel", 3f, 0.3f),
+            (new[] { "Mogno", "Madeira", "Tabua", "Rodape", "Palhinha" }, "Madeira", 1.5f, 0.4f),
+            (new[] { "Veludo", "Tecido", "Lencol" }, "Tecido", 2f, 0.5f),
+            (new[] { "Ferro", "Latao", "Dourado", "Aco", "Ferrugem" }, "Metal", 2f, 0.4f),
+            (new[] { "Reboco", "Tijolo", "Barro" }, "Reboco", 1f, 0.8f),
+            (new[] { "Xadrez" }, "Piso", 0.5f, 0.3f),
+        };
+
+        void ApplyDetail(Material material)
+        {
+            if (!(assetPath.StartsWith(ArtFolder + "Props/") || assetPath.StartsWith(ArtFolder + "Environment/"))) return;
+            if (!material.HasProperty("_DetailAlbedoMap")) return;
+            foreach (var (keys, family, perMeter, normal) in DetailFamilies)
+            {
+                if (!keys.Any(k => material.name.Contains(k))) continue;
+                string albedoPath = $"{DetailFolder}T_Detail_{family}.png";
+                string normalPath = $"{DetailFolder}T_Detail_{family}_N.png";
+                // Diz ao Unity que este modelo depende das texturas: importa elas antes, e
+                // reimporta o modelo se uma textura for gerada de novo.
+                context.DependsOnArtifact(albedoPath);
+                context.DependsOnArtifact(normalPath);
+                var albedo = AssetDatabase.LoadAssetAtPath<Texture2D>(albedoPath);
+                var bump = AssetDatabase.LoadAssetAtPath<Texture2D>(normalPath);
+                if (albedo == null || bump == null) return; // ainda não geradas: fica a cor lisa
+                material.SetTexture("_DetailAlbedoMap", albedo);
+                material.SetTexture("_DetailNormalMap", bump);
+                material.SetTextureScale("_DetailAlbedoMap", Vector2.one * perMeter);
+                material.SetFloat("_DetailAlbedoMapScale", DetailStrength);
+                material.SetFloat("_DetailNormalMapScale", normal * DetailStrength);
+                material.EnableKeyword("_DETAIL_MULX2");
+                return;
+            }
+        }
+
+        // As texturas de detalhe: repetem (Repeat), e as _N são mapas de normal.
+        void OnPreprocessTexture()
+        {
+            if (!assetPath.StartsWith(DetailFolder)) return;
+            var importer = (TextureImporter)assetImporter;
+            importer.wrapMode = TextureWrapMode.Repeat;
+            importer.mipmapEnabled = true;
+            importer.anisoLevel = 4; // o chão e as paredes são vistos de lado: sem isso o grão borra
+            importer.textureType = assetPath.EndsWith("_N.png") ? TextureImporterType.NormalMap : TextureImporterType.Default;
+            importer.sRGBTexture = !assetPath.EndsWith("_N.png");
+        }
     }
 }

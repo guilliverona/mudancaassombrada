@@ -61,6 +61,7 @@ namespace MudancaAssombrada
             // O filtro da tela e as lâmpadas que falham com o fantasma vêm junto com a noite.
             if (!TryGetComponent(out ScreenLook _)) gameObject.AddComponent<ScreenLook>();
             if (!TryGetComponent(out HauntedLights _)) gameObject.AddComponent<HauntedLights>();
+            if (!TryGetComponent(out RoomProbes _)) gameObject.AddComponent<RoomProbes>();
         }
 
         // O quanto já amanheceu (0 = noite, 1 = dia), já com a curva aplicada. O ScreenLook lê daqui.

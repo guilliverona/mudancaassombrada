@@ -18,6 +18,8 @@ namespace MudancaAssombrada
         [Tooltip("Tamanho da caixa (largura, altura, profundidade), centrada no objeto.")]
         [SerializeField] Vector3 size = new(4f, 3f, 4f);
 
+        public Vector3 Size => size;
+
         public string DisplayName => string.IsNullOrEmpty(displayName) ? name : displayName;
 
         void OnEnable() => all.Add(this);
