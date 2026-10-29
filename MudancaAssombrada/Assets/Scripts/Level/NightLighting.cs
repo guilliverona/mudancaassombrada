@@ -57,7 +57,14 @@ namespace MudancaAssombrada
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
             Apply(0f);
+
+            // O filtro da tela e as lâmpadas que falham com o fantasma vêm junto com a noite.
+            if (!TryGetComponent(out ScreenLook _)) gameObject.AddComponent<ScreenLook>();
+            if (!TryGetComponent(out HauntedLights _)) gameObject.AddComponent<HauntedLights>();
         }
+
+        // O quanto já amanheceu (0 = noite, 1 = dia), já com a curva aplicada. O ScreenLook lê daqui.
+        public float Dawn { get; private set; }
 
         void Update()
         {
@@ -66,7 +73,8 @@ namespace MudancaAssombrada
             float night = game != null && game.IsSpawned ? game.NightProgress : 0f;
             // Só clareia no fim da noite: antes do "dawnStart" fica 0, depois vai até 1.
             float dawn = Mathf.InverseLerp(dawnStart, 1f, night);
-            Apply(dawn * dawn); // ao quadrado: começa devagarinho e acelera no final
+            Dawn = dawn * dawn; // ao quadrado: começa devagarinho e acelera no final
+            Apply(Dawn);
         }
 
         void Apply(float t)

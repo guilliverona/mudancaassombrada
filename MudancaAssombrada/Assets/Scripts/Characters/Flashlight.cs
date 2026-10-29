@@ -173,7 +173,9 @@ namespace MudancaAssombrada
                 flicker = noise < weak * 0.55f ? 0.05f : Mathf.Lerp(1f, 0.5f, weak);
             }
             LightLevel = flicker;
-            beam.intensity = baseIntensity * flicker * (place.Value == FlashlightPlace.Chest ? chestIntensity : 1f);
+            // Fantasma perto: a lanterna falha também (só o facho; a "força" de jogo fica a da bateria).
+            float haunted = HauntedLights.Multiplier(transform.position, NetworkObjectId * 0.37f);
+            beam.intensity = baseIntensity * flicker * haunted *(place.Value == FlashlightPlace.Chest ? chestIntensity : 1f);
         }
 
         // A força da luz neste quadro (0 = apagada; abaixo de 1 = falhando com a bateria fraca).

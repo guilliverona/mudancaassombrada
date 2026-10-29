@@ -161,6 +161,10 @@ namespace MudancaAssombrada.Editor
             if (ground == null) return;
             ground.transform.position = new Vector3((minX + maxX) / 2, -0.01f, (minZ + maxZ) / 2);
             ground.transform.localScale = new Vector3((maxX - minX) / 10f, 1f, (maxZ - minZ) / 10f); // o Plane tem 10 m
+            // Ele fica 1 cm abaixo das tábuas: se fizesse sombra, ela "vazava" por cima delas em
+            // triângulos que piscavam com a lanterna perto. É o chão mais baixo: não precisa de sombra.
+            if (ground.TryGetComponent(out MeshRenderer groundRenderer))
+                groundRenderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
 
         // ---------- Escadas ----------
