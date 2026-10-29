@@ -30,6 +30,7 @@ namespace MudancaAssombrada
                 asset.shadowDistance = quality.shadowDistance;
                 asset.shadowCascadeCount = quality.cascades;
                 asset.mainLightShadowmapResolution = quality.shadowResolution;
+                asset.additionalLightsShadowmapResolution = quality.lampShadowResolution;
             }
 
             cameraAa = ToUrp(resolved.cameraAa);

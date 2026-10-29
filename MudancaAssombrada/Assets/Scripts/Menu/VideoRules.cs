@@ -18,16 +18,18 @@ namespace MudancaAssombrada
             public float shadowDistance;  // até onde (m) a luz principal faz sombra
             public int shadowResolution;  // tamanho do mapa de sombra (mais = sombra mais nítida)
             public int cascades;          // fatias da sombra (mais = sombra boa perto E longe)
+            public int lampShadowResolution; // mapa das sombras das lanternas e lâmpadas (o que mais aparece na casa)
+            public bool effects;          // grão, aberração cromática e bloom do filtro da tela (ScreenLook)
         }
 
-        // "Alta" é o que o PC_RPAsset já usava antes deste painel existir.
+        // "Alta" é o que o PC_RPAsset já usava antes deste painel existir (com as lâmpadas em 4096).
         public static QualityPreset Quality(int index)
         {
             switch (ClampIndex(index, QualityNames.Length, DefaultQuality))
             {
-                case 0: return new QualityPreset { shadowDistance = 20f, shadowResolution = 1024, cascades = 1 };
-                case 1: return new QualityPreset { shadowDistance = 35f, shadowResolution = 2048, cascades = 2 };
-                default: return new QualityPreset { shadowDistance = 50f, shadowResolution = 2048, cascades = 4 };
+                case 0: return new QualityPreset { shadowDistance = 20f, shadowResolution = 1024, cascades = 1, lampShadowResolution = 1024, effects = false };
+                case 1: return new QualityPreset { shadowDistance = 35f, shadowResolution = 2048, cascades = 2, lampShadowResolution = 2048, effects = true };
+                default: return new QualityPreset { shadowDistance = 50f, shadowResolution = 2048, cascades = 4, lampShadowResolution = 4096, effects = true };
             }
         }
 

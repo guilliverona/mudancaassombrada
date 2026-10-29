@@ -28,6 +28,7 @@ Como os designs do Art Bible viram jogo, em fases. Cada fase diz **o que entra**
 | — | Lanterna: facho com o aro do refletor (cookie gerado por código), lente que acende e pisca com a bateria, modelo novo (aro, anéis de pega, fita isolante, botão de borracha, adesivo da empresa, cordinha; 516 tris) | arte + código | **feita** em 28/10/2026 (fotos em batch; não testada com Play). Ideia: uma cor de fita por lanterna para saber de quem é |
 | — | Hotbar com cara do jogo: caixinhas com fita, ícones gerados dos modelos, barrinha de bateria (FRACA), dica de Usar junto da barra, entrada suave, brilho de item novo, centralizada para o Marcelo | interface | **feita** em 28/10/2026 (fotos em batch; não testada com Play) |
 | — | Opções em abas (Geral, Tela, Gráficos): resolução, brilho, VSync, limite de FPS, qualidade, antialiasing, resolução 3D com STP (`VideoRules`/`VideoSettings`) | código + interface | **feita** em 27/10/2026 (não testada com Play) |
+| — | Gráficos da noite: filtro da tela por código (`ScreenLook`: ACES, sombras frias e luz quente, grão, bloom, vinheta e aberração que apertam com o fantasma perto, cinza com borda vermelha ao cair, amanhecer esquenta; a Cida sem tingir o eco, o Tiago com o dobro de aberração), lâmpadas e lanterna que falham perto do fantasma (`HauntedLights`; o Imitador disfarçado ou no espelho não entrega), SSAO mais forte, sombra das lâmpadas por qualidade (Baixa sem efeitos caros) | código | **feita** em 29/10/2026 (testes passam; não testada com Play: valores a ajustar olhando) |
 
 Ordem pensada para que cada fase use o que a anterior deixou pronto: a Fase 2 prepara
 o terreno para os três fantasmas, e o Inquilino (Fase 6) junta os três.
@@ -43,7 +44,7 @@ Antes de escrever código novo, vale lembrar o que já está pronto:
 | `Interactable` com `onlyFor` | instrumentos que só o Tiago desliga |
 | Objetivos por etapa (`Objective.Stage`) | as 3 etapas do chefe final |
 | Marcadores no save (`SaveSystem.SetFlag`) | pistas do Valdemar e final alternativo |
-| `NightLighting` | o relógio da noite (a luz conta o tempo) |
+| `NightLighting` (+ `ScreenLook`, `HauntedLights`) | o relógio da noite (a luz conta o tempo), o filtro da tela e as luzes que falham |
 | Fichas de capítulo (bilhete e avaliação do Valdemar) | o texto do chefe em cada fase |
 | Pipeline Blender → Unity (`tools/blender`, `ArtImportSettings`, troca de bloco por modelo) | todos os modelos novos |
 
