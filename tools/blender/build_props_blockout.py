@@ -19,6 +19,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import blockout_common as bc  # noqa: E402
 
+# Quinas com bisel de 6 mm em todo móvel (pegam um fio de luz; sem isso parecem de massinha).
+bc.DEFAULT_BEVEL = 0.006
+
 MATS = bc.Materials("MAT_PRP", {
     "Mogno": ("#5A2E22", 0.0, 0.7, 0.0),
     "MognoClaro": ("#6E3A2A", 0.0, 0.7, 0.0),

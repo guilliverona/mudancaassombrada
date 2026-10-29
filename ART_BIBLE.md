@@ -88,6 +88,20 @@ gerar de novo no Blender atualiza os prefabs sozinho, porque o `Modelo` fica lig
 | Ossos | nomes do Unity Humanoid: `Hips`, `Spine`, `Chest`, `UpperChest`, `Neck`, `Head`, `LeftUpperArm`... (o Unity mapeia sozinho) |
 | Altura | a altura escrita na ficha do Art Bible manda; o script escala o desenho até ela |
 
+### Acabamento (contra a cara de "massinha")
+
+Cor lisa sob a lanterna parece massinha. Quatro coisas do pipeline cuidam disso, todas por script:
+
+| O quê | Onde | Como |
+|---|---|---|
+| Bisel nas quinas | `blockout_common.apply_bevel` | todo `to_static` de móvel/objeto tem 6 mm (`bc.DEFAULT_BEVEL`); o kit de paredes e pisos não (a emenda viraria sulco) |
+| Pano | `Part.cloth_box` + `Part.wrinkle` | caixa em grade de quinas redondas, amassada por ruído; `stretch_z` faz pregas caindo |
+| UV em metros | `blockout_common.metric_uvs` | projeção de caixa, 1 UV = 1 m, U no lado mais comprido da face (o veio segue a tábua). Espelho, vidro, lente e lâmpada guardam o UV próprio |
+| Textura de detalhe | `tools/blender/build_detail_textures.py` → `Assets/Art/Textures/Detail` | cinza com média 128 + normal, por família (madeira, tecido, papel de parede...). O `ArtImportSettings` liga o Detail do URP Lit pelo nome do material |
+
+O metal (`Metallic` do Blender) chega pelo `ReflectionFactor` do FBX, que o `ArtImportSettings` lê. Para o
+metal ter o que refletir, a casa cria uma Reflection Probe por cômodo ao carregar (`RoomProbes`).
+
 ### Nomes
 
 | Prefixo | Exemplo | O que é |
@@ -108,7 +122,7 @@ gerar de novo no Blender atualiza os prefabs sozinho, porque o `Modelo` fica lig
 | Fantasma de fase | 20k | Bibliotecário 6,0k · Imitador 6,3k · Maestrina 4,2k |
 | Seu Valdemar | 15k | 4,8k |
 | O Inquilino (forma final) | 45k | — |
-| Móvel carregável grande | 3–6k | 0,4k a 2,6k (penteadeira) |
+| Móvel carregável grande | 3–6k | 0,4k a 5,6k (poltrona coberta; o bisel subiu tudo) |
 | Prop de história | 2–4k | 0,1k a 1,3k (partitura) |
 | Módulo de cenário | 0,5–1,5k | 0,2k a 0,8k (piso xadrez) |
 

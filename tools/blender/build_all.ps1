@@ -9,6 +9,11 @@ $scripts = "cida", "tiago", "marcelo",                    # jogáveis
            "valdemar",                                     # o chefe
            "props", "story_props", "furniture", "epoca",   # objetos, mobília e os objetos de 1927 (Mansão)
            "env_kit"                                       # paredes, portas, pisos, molduras
+# As texturas de detalhe primeiro (os modelos dependem delas no Unity).
+Write-Host "== texturas de detalhe"
+& $Blender --background --factory-startup --python (Join-Path $here "build_detail_textures.py") 2>&1 |
+    Select-String -Pattern "SAVED|Traceback|Error"
+
 foreach ($c in $scripts) {
     Write-Host "== $c"
     & $Blender --background --factory-startup --python (Join-Path $here "build_${c}_blockout.py") 2>&1 |

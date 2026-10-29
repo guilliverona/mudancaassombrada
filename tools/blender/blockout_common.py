@@ -307,6 +307,58 @@ class Part:
         kill = [f for f in faces if f.is_valid and f.calc_center_median().z < z * K]
         bmesh.ops.delete(self.bm, geom=kill, context="FACES")
 
+    def cloth_box(self, center, size, mat, bone="root", cuts=8, radius=0.05):
+        """Caixa de PANO: cortada em grade (cuts por aresta), para o wrinkle ter vértices onde
+        dobrar, e com as quinas arredondadas (radius, em metros). Pano esticado sobre uma quina
+        nunca faz canto vivo. Base dos lençóis sobre poltrona, cômoda...
+
+        O arredondamento é feito na própria malha (e não com o modificador de bisel, que corta a
+        largura pelo tamanho da célula da grade): as linhas da grade são puxadas para perto das
+        bordas, e cada vértice é empurrado para a "caixa de cantos redondos"."""
+        before = set(self.bm.faces)
+        self.box(center, size, mat, bone)
+        new = [f for f in self.bm.faces if f not in before]
+        edges = list({e for f in new for e in f.edges})
+        bmesh.ops.subdivide_edges(self.bm, edges=edges, cuts=cuts, use_grid_fill=True)
+        faces = {f for f in self.bm.faces if f not in before}
+        c = Vector(center) * K
+        half = Vector(size) * (K / 2)
+        r = min(radius * K, min(half) * 0.9)
+        inner = half - Vector((r, r, r))
+        for v in {v for f in faces for v in f.verts}:
+            p = v.co - c
+            # grade mais densa perto das bordas (é onde a curva precisa de vértices)
+            p = Vector([math.copysign(abs(p[i] / half[i]) ** 0.55, p[i]) * half[i] for i in range(3)])
+            q = Vector([max(-inner[i], min(inner[i], p[i])) for i in range(3)])
+            d = p - q
+            if d.length > 1e-9:
+                p = q + d.normalized() * r
+            v.co = c + p
+        for f in faces:
+            f.smooth = True
+        return faces
+
+    def wrinkle(self, faces, amount, scale=0.12, seed=0.0, stretch_z=1.0):
+        """Dobras de pano: empurra cada vértice destas faces para fora ou para dentro, com um
+        ruído suave (dobras de ~scale metros). Tira a cara de "massinha" dos lençóis e estofados.
+        Só funciona em peças com muitos vértices (elipsoides, tubos), não em caixas.
+        stretch_z > 1 estica as dobras na altura: pregas de pano caindo (barra de lençol, cortina).
+        Os vértices repetidos (peças empilhadas) são soldados antes, para a dobra não abrir degrau."""
+        from mathutils import noise
+        verts = list({v for f in faces if f.is_valid for v in f.verts})
+        bmesh.ops.remove_doubles(self.bm, verts=verts, dist=0.0005 * K)
+        self.bm.normal_update()
+        verts = {v for f in faces if f.is_valid for v in f.verts}
+        moves = {}
+        for v in verts:
+            c = v.co / (scale * K)
+            p = Vector((c.x, c.y, c.z / stretch_z)) + Vector((seed, seed * 1.7, seed * 2.3))
+            # ruído "turbulento": vincos (vales finos) e não só ondas redondas
+            n = noise.turbulence(p, 3, True, noise_basis="PERLIN_ORIGINAL") - 0.45
+            moves[v] = v.normal * (n * amount * K)
+        for v, d in moves.items():
+            v.co += d
+
     def _mesh(self):
         mesh = bpy.data.meshes.new(self.name)
         self.bm.normal_update()
@@ -327,10 +379,19 @@ class Part:
         mod.object = armature
         return obj
 
-    def to_static(self, collection):
-        """Malha sem rig (móveis, caminhão), com a origem na base, como foi modelada."""
+    def to_static(self, collection, bevel=0.0):
+        """Malha sem rig (móveis, caminhão), com a origem na base, como foi modelada.
+
+        bevel: largura (m) do bisel nas quinas (0 = sem). Quina viva de caixa não pega luz e o
+        móvel parece de massinha; um bisel de 1 a 2 cm faz o fio da quina brilhar. As faces
+        planas continuam planas (harden_normals), e o FBX sai com o bisel aplicado.
+        """
+        bevel = bevel or DEFAULT_BEVEL
         obj = bpy.data.objects.new(self.name, self._mesh())
         collection.objects.link(obj)
+        if bevel > 0:
+            apply_bevel(obj, bevel)
+        metric_uvs(obj)
         return obj
 
     def to_prop(self, collection, socket, grip):
@@ -343,6 +404,66 @@ class Part:
         obj.matrix_parent_inverse = Matrix.Identity(4)
         obj.location = (0, 0, 0)
         return obj
+
+
+# Bisel que todo to_static usa quando o script não pede outro (0 = sem). Os scripts de móveis e
+# objetos ligam (ex.: bc.DEFAULT_BEVEL = 0.006); o kit de paredes e pisos NÃO: peça modular com
+# a quina arredondada deixa um sulco escuro em cada emenda.
+DEFAULT_BEVEL = 0.0
+
+# Materiais que guardam UV próprio e não podem ganhar o UV em metros: o espelho (o shader do
+# reflexo usa o UV 0..1), vidros, lentes e o que brilha (sem textura de detalhe mesmo).
+KEEP_UV = ("Espelho", "Vidro", "Lente", "Lampada", "Chama", "Farol")
+
+
+def metric_uvs(obj):
+    """UV em METROS, projetado de cada face pelo eixo mais perto da normal (caixa / triplanar).
+    Assim a textura de detalhe do Unity (madeira, tecido...) tem o mesmo tamanho em qualquer peça:
+    uma tábua de 2 m e um botão de 2 cm não esticam o veio igual. Feito depois do bisel."""
+    mesh = obj.data
+    if not mesh.uv_layers:
+        mesh.uv_layers.new(name="UVMap")
+    uv = mesh.uv_layers.active.data
+    keep = {i for i, m in enumerate(mesh.materials) if m and any(k in m.name for k in KEEP_UV)}
+    for poly in mesh.polygons:
+        if poly.material_index in keep:
+            continue
+        n = poly.normal
+        ax = max(range(3), key=lambda i: abs(n[i]))
+        coords = []
+        for li in poly.loop_indices:
+            co = mesh.vertices[mesh.loops[li].vertex_index].co
+            if ax == 0:
+                u, v = co.y * math.copysign(1, n.x), co.z
+            elif ax == 1:
+                u, v = -co.x * math.copysign(1, n.y), co.z
+            else:
+                u, v = co.x, co.y * math.copysign(1, n.z)
+            coords.append((li, u, v))
+        # O veio da madeira corre em U: U vai no lado MAIS COMPRIDO da face (ao longo da tábua,
+        # de pé na perna da mesa). Sem isso, o veio do assoalho atravessava as tábuas.
+        span_u = max(c[1] for c in coords) - min(c[1] for c in coords)
+        span_v = max(c[2] for c in coords) - min(c[2] for c in coords)
+        swap = span_v > span_u * 1.05
+        for li, u, v in coords:
+            uv[li].uv = (v, u) if swap else (u, v)
+
+
+def apply_bevel(obj, width, segments=2, angle=35.0):
+    """Bisel só nas quinas mais fechadas que `angle` (as curvas das esferas ficam como estão).
+    Aplicado de vez na malha: o .blend e o FBX ficam iguais, sem modificador para esquecer."""
+    for poly in obj.data.polygons:
+        poly.use_smooth = True   # o harden_normals precisa; ele mesmo deixa as faces planas retas
+    mod = obj.modifiers.new("Bisel", "BEVEL")
+    mod.width = width * K
+    mod.segments = segments
+    mod.limit_method = "ANGLE"
+    mod.angle_limit = math.radians(angle)
+    mod.harden_normals = True
+    mod.miter_outer = "MITER_ARC"
+    mod.use_clamp_overlap = True
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.modifier_apply(modifier=mod.name)
 
 
 # ---------------------------------------------------------------- rig e sockets

@@ -20,6 +20,9 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import blockout_common as bc  # noqa: E402
 
+# Quinas com bisel de 6 mm em todo móvel (pegam um fio de luz; sem isso parecem de massinha).
+bc.DEFAULT_BEVEL = 0.006
+
 MATS = bc.Materials("MAT_PRP", {
     "Mogno": ("#5A2E22", 0.0, 0.7, 0.0),
     "MognoClaro": ("#6E3A2A", 0.0, 0.7, 0.0),
@@ -111,7 +114,7 @@ def build_penteadeira(col):
     # um pote e um pincel em cima
     p.tube((-0.25, -0.05, 0.765), (-0.25, -0.05, 0.83), 0.04, 0.035, "Marfim", "root", seg=12)
     p.tube((0.2, -0.08, 0.77), (0.32, -0.12, 0.78), 0.008, 0.008, "Preto", "root", seg=6)
-    return p.to_static(col)
+    return p.to_static(col, bevel=0.008)
 
 
 def build_piano_armario(col):
@@ -192,7 +195,7 @@ def build_sofa(col):
         p.ellipsoid((x, d / 2 - 0.25, 0.68), (0.27, 0.08, 0.2), "Tecido", "root", seg=14, rings=8)  # encosto
     feet(p, w - 0.1, d - 0.1, 0.12, "Mogno", size=0.07)
     p.box((0.55, -d / 2 + 0.06, 0.32), (0.18, 0.01, 0.12), "Veludo", "root")  # remendo
-    return p.to_static(col)
+    return p.to_static(col, bevel=0.03)  # estofado: bisel largo, as quinas ficam "cheias"
 
 
 def build_caixa(name, size, col):
@@ -455,18 +458,38 @@ def build_movel_coberto(name, kind, col):
     (1,1 × 0,55 × 1,5). Formas moles por baixo do pano e a barra caindo até o chão."""
     p = bc.Part(f"SM_PRP_{name}", MATS)
     if kind == "A":
-        p.ellipsoid((0, 0.05, 0.42), (0.46, 0.42, 0.3), "Lencol", "root", seg=18, rings=10)     # assento
-        p.ellipsoid((0, 0.3, 0.75), (0.44, 0.16, 0.32), "Lencol", "root", seg=16, rings=10)     # encosto
-        for x in (-0.38, 0.38):
-            p.ellipsoid((x, 0.05, 0.6), (0.11, 0.38, 0.14), "LencolSombra", "root", seg=12, rings=8)  # braços
-        p.tube((0, 0.05, 0.36), (0, 0.05, 0.0), 0.46, 0.5, "Lencol", "root", seg=20, caps=False)  # barra
+        # Uma poltrona de verdade POR BAIXO do pano: assento, encosto alto e braços retos, com os
+        # pés de madeira aparecendo embaixo da barra. O pano é feito de caixas em grade
+        # (cloth_box), de quinas redondas, amassadas pelo wrinkle.
+        w, d = 0.9, 0.85
+        top = set()
+        top |= p.cloth_box((0, -0.02, 0.44), (0.62, 0.72, 0.14), "Lencol", cuts=5)      # almofada do assento
+        top |= p.cloth_box((0, d / 2 - 0.12, 0.74), (0.7, 0.2, 0.62), "Lencol", cuts=6)  # encosto
+        for x in (-w / 2 + 0.1, w / 2 - 0.1):
+            # os braços descem até a barra (sem vão): o pano é um só
+            top |= p.cloth_box((x, 0.0, 0.53), (0.18, d - 0.02, 0.28), "LencolSombra", cuts=4)
+        p.wrinkle(top, 0.026, scale=0.08, seed=3.1)
+        # a barra: o pano cai reto dos lados até 10 cm do chão, em pregas compridas
+        skirt = p.cloth_box((0, 0.0, 0.25), (w, d, 0.3), "Lencol", cuts=7)
+        p.wrinkle(skirt, 0.03, scale=0.05, seed=7.3, stretch_z=6.0)
+        # os pés torneados, à mostra embaixo da barra
+        for x in (-w / 2 + 0.07, w / 2 - 0.07):
+            for y in (-d / 2 + 0.07, d / 2 - 0.07):
+                p.tube((x, y, 0.13), (x, y, 0.0), 0.028, 0.018, "Mogno", "root", seg=10)
+        return p.to_static(col)  # as quinas redondas já vêm do cloth_box
     else:
-        p.box((0, 0, 0.72), (1.06, 0.52, 1.44), "Lencol", "root")
-        p.ellipsoid((0, 0, 1.44), (0.56, 0.3, 0.06), "Lencol", "root", seg=16, rings=6)          # tampo mole
-        for x in (-0.3, 0.12, 0.42):
-            p.box((x, -0.27, 0.6), (0.06, 0.02, 1.15), "LencolSombra", "root", rot_y=4 if x > 0 else -3)  # dobras
-        p.box((0.2, -0.3, 0.06), (0.5, 0.12, 0.04), "Lencol", "root", rot_y=0)                    # ponta no chão
-    return p.to_static(col)
+        # Uma cômoda alta por baixo: o pano assenta no tampo (quinas marcadas), cai pela frente
+        # com pregas compridas e para a 8 cm do chão, mostrando os pés. Em cima, um volume
+        # escondido (um espelho de mesa? uma caixa?) estica o pano: a silhueta deixa de ser um tijolo.
+        w, d = 1.06, 0.52
+        body = p.cloth_box((0, 0, 0.79), (w, d, 1.42), "Lencol", cuts=9)
+        p.wrinkle(body, 0.028, scale=0.06, seed=5.2, stretch_z=7.0)
+        lump = p.cloth_box((0.22, 0.04, 1.57), (0.34, 0.24, 0.22), "LencolSombra", cuts=4)
+        p.wrinkle(lump, 0.02, scale=0.07, seed=1.4)
+        for x in (-w / 2 + 0.06, w / 2 - 0.06):
+            for y in (-d / 2 + 0.06, d / 2 - 0.06):
+                p.tube((x, y, 0.09), (x, y, 0.0), 0.03, 0.022, "Mogno", "root", seg=10)
+        return p.to_static(col)  # as quinas redondas já vêm do cloth_box
 
 
 def build_teia(col):
@@ -593,7 +616,7 @@ PROPS = [
     ("Lanterna", build_lanterna, 0.12, 0.35, 0.0),
     ("Pilhas", build_pilhas, 0.06, 0.2, 0.0),
     ("MovelCobertoA", lambda c: build_movel_coberto("MovelCobertoA", "A", c), 1.07, 1.2, 0.0),
-    ("MovelCobertoB", lambda c: build_movel_coberto("MovelCobertoB", "B", c), 1.5, 1.7, 0.0),
+    ("MovelCobertoB", lambda c: build_movel_coberto("MovelCobertoB", "B", c), 1.68, 1.9, 0.0),
     ("Teia", build_teia, 0.6, 0.8, 0.0),
     ("Entulho", build_entulho, 0.45, 1.3, 0.0),
     ("JanelaTabuada", build_janela_tabuada, 1.4, 1.6, 0.0),
