@@ -120,13 +120,17 @@ metal ter o que refletir, a casa cria uma Reflection Probe por cômodo ao carreg
 
 | Tipo | Limite | Hoje |
 |---|---|---|
-| Personagem jogável (com props) | 18k | Cida 12,6k · Tiago 10,9k · Marcelo 17,9k (versão detalhada, com mãos e dedos) |
+| Personagem jogável (com props) | 18k (Tiago: 25k) | Cida 12,6k · Tiago 23,6k · Marcelo 17,9k (versão detalhada, com mãos e dedos) |
 | Fantasma de fase | 20k | Bibliotecário 6,0k · Imitador 6,3k · Maestrina 4,2k |
 | Seu Valdemar | 15k | 4,8k |
 | O Inquilino (forma final) | 45k | — |
 | Móvel carregável grande | 3–6k | 0,4k a 5,6k (poltrona coberta; o bisel subiu tudo) |
 | Prop de história | 2–4k | 0,1k a 1,3k (partitura) |
 | Módulo de cenário | 0,5–1,5k | 0,2k a 0,8k (piso xadrez) |
+
+O limite do **Tiago subiu para 25k** em 31/10/2026 (decisão do guilliverona, para a bolsa nova e
+outros detalhes). A Cida e o Marcelo continuam em 18k até o time decidir; com no máximo 3 jogadores
+na tela, a diferença não pesa no jogo.
 
 Os blockouts ficam abaixo do orçamento de propósito: são formas e cores, sem o detalhe da arte final.
 
@@ -144,7 +148,7 @@ Personagem novo com modelo = ficha nova, sem mexer em código.
 | Forma | círculo | triângulo | quadrado |
 | Cor (ficha) | roxo | amarelo | verde |
 | Malhas separadas | cabelo, óculos, bengala | cabelo, boné, bloquinho, lápis | barba, gorro, luvas, quadro branco |
-| Sockets | `SOC_Hand_L` (bengala), `SOC_Hand_R`, `SOC_Bun`, `SOC_CaneTip` | `SOC_Hand_L/R`, `SOC_Neck` (bloquinho), `SOC_Ear_L` (lápis), `SOC_Hip_L` (bolsa) | `SOC_Hand_L/R`, `SOC_Carry_A/B`, `SOC_Chest` (quadro), `SOC_Mouth` (apito) |
+| Sockets | `SOC_Hand_L` (bengala), `SOC_Hand_R`, `SOC_Bun`, `SOC_CaneTip` | `SOC_Hand_L/R`, `SOC_Neck` (bloquinho, no bolso do peito), `SOC_Ear_L` (lápis), `SOC_Hip_L` (bolsa) | `SOC_Hand_L/R`, `SOC_Carry_A/B`, `SOC_Chest` (quadro), `SOC_Mouth` (apito) |
 | Ossos extras | `bun_jiggle`, `skirt_F/B/L/R` | `hood_01`, `notebook_lanyard`, `bag` | `beard_01`, `board_hinge`, `whistle_cord`, `tape_roll`, `belly_jiggle` |
 | Mão (ficha "cabeça e mãos") | 15 cm, palma 8,5 cm, nós marcados, aliança | 20 cm, médio = 54%, dedos longos | 26 cm, médio = 44%; luva = casca de 1,5 cm (palma 14 cm) |
 
@@ -160,6 +164,51 @@ pose**, passando pelo meio do punho até o chão, e a pose sai como clipe em
 `Assets/Art/Animations/PegaBengala.fbx`. No Animator ela é a camada **"Bengala"** (máscara
 `MascaraBengala`: só braço e dedos esquerdos), que o `DollWalk` liga para quem tem bengala na ficha
 e solta ao cair (`HandPoseRules`). As prévias da Cida já mostram a pega.
+
+**Detalhes do Tiago** (`build_tiago_blockout.py`, tudo em malha e cor chapada; só o moletom tem grão):
+- Rosto: sobrancelhas assimétricas (a esquerda arqueada, cara de "hein?"; em Libras a sobrancelha
+  faz parte da frase), curativo em X no nariz, sorriso de canto. **Aparelho auditivo** retroauricular
+  na orelha direita, verde-água como o adesivo da bolsa (parte do estilo dele, não para esconder).
+- Lápis de seis faces com a ponta para fora do boné.
+- **Boné** (`build_cap`, virado para trás, na cor do colete; a ficha era laranja): copa com a frente alta e firme (fica nas costas da cabeça)
+  e os 6 gomos com vinco nas costuras; abertura em arco na testa com a tira de snapback; aba curvada
+  com espessura, pesponto em 4 linhas, verde por baixo e beirada desbotada; botão no topo, ilhoses e o
+  caminhãozinho da transportadora bordado na frente.
+- Bloquinho **guardado em pé no bolso do peito esquerdo**: aparece a espiral e o fantasma espiando
+  por cima do bolso. O osso `notebook_lanyard` e o `SOC_Neck` ficaram (sem cordão) porque o clipe
+  `PegaLanterna` precisa da mesma hierarquia; mudou o Tiago → gerar o `build_pega_lanterna.py` de novo.
+- Roupa (da prévia de detalhes do time): pesponto na abertura do colete, bolso de baixo com aba e
+  botão, fivela na alça, barra canelada do moletom, gola média com a borda dobrada, joelheiras
+  com casca e duas tiras com fivela, barra dobrada na perna direita e tênis branco de quadra (cano baixo,
+  solado reto com friso, biqueira furadinha, costuras e cadarço branco; sem logo de marca).
+- **Colete moldado no corpo** (`build_vest`): segue o moletom a 1,2 cm, com cava em volta do braço,
+  decote em V e alça sobre o ombro (a frente e as costas se emendam em cima). A faixa refletiva e o
+  logo das costas são faces do próprio colete; vivo escuro em todas as bordas e zíper (aberto) na
+  frente. Casca simples: o vivo é que dá a espessura (tubo contínuo, `sweep`, sem gomos nas emendas).
+- **Capuz abaixado** (`build_hood`): pano caído por cima do colete nas costas, largo em cima e afinando
+  até uma ponta redonda, com volume (pano grosso, até 6 cm de estufado, mais cheio embaixo), duas dobras na diagonal e costura no meio; forro
+  escuro em meia-lua, afundado logo abaixo da borda. A borda é um rolo (mais gordo atrás) que
+  contorna a gola por trás, apoiada nos ombros, até a frente, de onde saem os cordões. Pano no osso
+  `hood_01`, borda no `UpperChest`.
+- **Calça** (`build_pants`, sem joelheiras): cada perna é uma malha de anéis com forma de calça (coxa
+  larga afinando até o tornozelo, joelho marcado, dobras atrás do joelho e em cima do tênis), as pernas
+  se encontram no gancho; costura branca do lado de fora, bolso cargo (puxado para a frente, com prega e
+  aba inclinada com botão) na coxa, bolsos
+  de trás com ponta em V e rebites e um remendo desbotado no joelho esquerdo (tombo de bicicleta, costura
+  caseira tortinha). Peças costuradas (`leg_patch`): beirada encostada, meio estufado, pesponto duplo
+  seguindo a curva da perna. Preta (a da ficha era
+  azul-marinho), com o remendo em preto desbotado. Grão de sarja (textura
+  `Sarja`) na calça, na barra e no remendo.
+- **Bolsa transversal** (`build_bag`, estilo bolsinha de ombro de náilon escuro): 16 x 6 x 20 cm, em pé
+  no quadril esquerdo, entre a frente e o lado (a ~1,5 cm da mão esquerda na pose); corpo macio (`cloth_box`), bolso com zíper na metade de cima,
+  zíper principal por cima, vivo nas costuras, passadores com argola. Alça de fita larga e reta
+  (`ribbon`), por cima do colete e do capuz. Detalhes: puxadores com fitinha laranja, adesivo
+  verde-água, adesivo de fantasminha, etiqueta laranja no lado e chaveiro. Sem marca. A cor saiu do
+  ferrugem da ficha para o náilon escuro da referência.
+- **Grão do moletom:** textura de detalhe `Malha` (pontos em V, `build_detail_textures.py`) com UV em
+  metros no Tiago (`metric_uvs(..., long_side_u=False)`); no Unity, a tabela `CharacterDetailFamilies`
+  do `ArtImportSettings` liga pelo nome completo do material (a Cida e o Marcelo ainda não têm esse UV).
+  De muito perto ainda aparecem pontinhos escuros no relevo.
 
 **Lados:** nos desenhos do Art Bible, a bengala da Cida, o lápis e a bolsa do Tiago
 ficam do lado **esquerdo** do personagem; o texto de algumas fichas diz "direito".

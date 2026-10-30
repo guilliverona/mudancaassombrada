@@ -138,7 +138,7 @@ namespace MudancaAssombrada.Editor
         // numa família pelo NOME (MAT_PRP_Mogno -> Madeira). A cor continua a do Art Bible: o
         // "Detail" do URP Lit multiplica por 2x a textura cinza, que tem média 128 (não muda nada).
         // O UV dos móveis está em METROS (blockout_common.metric_uvs): "por metro" abaixo é literal.
-        // Os personagens não têm UV em metros: ficam de fora (o primeiro nome que bate vence).
+        // Personagens só entram com UV em metros, numa tabela à parte (o primeiro nome que bate vence).
         const string DetailFolder = ArtFolder + "Textures/Detail/";
 
         // Força geral do detalhe (cor e relevo), por cima dos valores de cada família.
@@ -161,11 +161,21 @@ namespace MudancaAssombrada.Editor
             (new[] { "Folhagem" }, "Folhagem", 1.5f, 0.7f),
         };
 
+        // Personagens: só quem já tem UV em metros (o script do personagem chama metric_uvs) e pelo
+        // nome COMPLETO do material, para não pegar a Cida e o Marcelo, que ainda não têm esse UV.
+        static readonly (string[] keys, string family, float perMeter, float normal)[] CharacterDetailFamilies =
+        {
+            (new[] { "MAT_CHR_Tiago_Moletom" }, "Malha", 3f, 0.35f), // também pega o MoletomEscuro
+            (new[] { "MAT_CHR_Tiago_Calca", "MAT_CHR_Tiago_Remendo" }, "Sarja", 3f, 0.35f), // e a CalcaBarra
+        };
+
         void ApplyDetail(Material material)
         {
-            if (!(assetPath.StartsWith(ArtFolder + "Props/") || assetPath.StartsWith(ArtFolder + "Environment/"))) return;
-            if (!material.HasProperty("_DetailAlbedoMap")) return;
-            foreach (var (keys, family, perMeter, normal) in DetailFamilies)
+            var families = assetPath.StartsWith(ArtFolder + "Characters/") ? CharacterDetailFamilies
+                : assetPath.StartsWith(ArtFolder + "Props/") || assetPath.StartsWith(ArtFolder + "Environment/") ? DetailFamilies
+                : null;
+            if (families == null || !material.HasProperty("_DetailAlbedoMap")) return;
+            foreach (var (keys, family, perMeter, normal) in families)
             {
                 if (!keys.Any(k => material.name.Contains(k))) continue;
                 string albedoPath = $"{DetailFolder}T_Detail_{family}.png";
