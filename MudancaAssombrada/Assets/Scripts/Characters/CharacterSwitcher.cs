@@ -195,8 +195,13 @@ namespace MudancaAssombrada
             movement.CharacterSpeed = c.speed;
             movement.SetEyeHeight(c.eyeHeight); // a câmera fica na altura dos olhos de cada um
 
-            // Surdo: zera o volume de TODO o jogo. Fica em GameSettings.Muted para mexer
-            // no volume pela pausa não "curar" a surdez.
+            // Surdo: o jogo todo vira só sub-grave abafado (MEC-T8, ver DeafMixRules), ou silêncio
+            // total se ele escolheu nas Opções. Fica em GameSettings.Muted para mexer no volume pela
+            // pausa não "curar" a surdez. O filtro mora nos ouvidos (AudioListener) da minha câmera.
+            var ears = GetComponentInChildren<AudioListener>(true);
+            if (ears != null)
+                GameSettings.DeafFilter = ears.TryGetComponent(out AudioLowPassFilter filter)
+                    ? filter : ears.gameObject.AddComponent<AudioLowPassFilter>();
             GameSettings.Muted = c.deaf;
             GameSettings.Apply();
         }

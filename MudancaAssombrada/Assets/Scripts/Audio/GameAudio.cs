@@ -12,7 +12,7 @@ namespace MudancaAssombrada
     // outros jogadores em cada computador, cada um ouve todo mundo sem nenhuma rede a mais.
     //
     // Nasce sozinho ao abrir o jogo e vive entre as cenas (como um serviço): ninguém precisa
-    // colocar nada na cena. O Tiago (surdo) não ouve nada porque o GameSettings zera o AudioListener.
+    // colocar nada na cena. O Tiago (surdo) só sente o sub-grave: o GameSettings abafa o AudioListener (DeafMixRules).
     //
     // A MIXAGEM (para os sons não se atropelarem), com os números de cada som no Sons.asset:
     //   - intervalo mínimo: o mesmo som não repete antes de 'minGap' segundos;

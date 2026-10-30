@@ -234,6 +234,10 @@ segurado até o fim, a condição volta a `Normal` e o fantasma percebe que a v�
   forte (vermelho, até 20 m); colegas, bengala, móvel arrastado e música da casa = fraco (amarelo, até
   12 m); os próprios sons, voz e respiração = nada; outro andar (mais de 2,5 m de altura) = nada. No
   máximo 6 marcas, e uma fraca nunca tira uma forte. O `VibrationRing` continua só para a chamada da bengala.
+- **O que o Tiago ouve (MEC-T8):** só o sub-grave. Ao escolher um personagem surdo, o `CharacterSwitcher`
+  põe um `AudioLowPassFilter` (80 Hz) nos ouvidos da câmera, e o `GameSettings.Apply` baixa o volume para
+  −18 dB (`DeafMixRules`, testado em `DeafMixRulesTests`). A opção **"Silêncio total"** (Opções › Geral)
+  volta ao mudo de antes. Não há AudioMixer: o filtro no `AudioListener` pega todos os sons de uma vez.
 
 ### Hotbar
 O `Hotbar` no Player guarda até 3 itens pequenos (`HotbarItem`: lanterna, pilhas, bengala),

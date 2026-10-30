@@ -12,6 +12,7 @@ namespace MudancaAssombrada
         [SerializeField] Slider sensitivitySlider;
         [SerializeField] Slider volumeSlider;
         [SerializeField] Toggle fullscreenToggle;
+        [SerializeField] Toggle silenceToggle; // o surdo sem nem o sub-grave (MEC-T8)
         [SerializeField] Text sensitivityValueText;
         [SerializeField] Text volumeValueText;
         [SerializeField] Button backButton;
@@ -48,6 +49,7 @@ namespace MudancaAssombrada
             sensitivitySlider.onValueChanged.AddListener(v => { GameSettings.MouseSensitivity = v; RefreshLabels(); });
             volumeSlider.onValueChanged.AddListener(v => { GameSettings.Volume = v; GameSettings.Apply(); RefreshLabels(); });
             fullscreenToggle.onValueChanged.AddListener(v => { GameSettings.Fullscreen = v; GameSettings.Apply(); });
+            silenceToggle.onValueChanged.AddListener(v => { GameSettings.TotalSilence = v; GameSettings.Apply(); });
             backButton.onClick.AddListener(() => { GameSettings.Save(); Closed?.Invoke(); });
 
             qualityButton.onClick.AddListener(() => ChangeVideo(() =>
@@ -90,6 +92,7 @@ namespace MudancaAssombrada
             sensitivitySlider.SetValueWithoutNotify(GameSettings.MouseSensitivity);
             volumeSlider.SetValueWithoutNotify(GameSettings.Volume);
             fullscreenToggle.SetIsOnWithoutNotify(GameSettings.Fullscreen);
+            silenceToggle.SetIsOnWithoutNotify(GameSettings.TotalSilence);
             renderScaleSlider.SetValueWithoutNotify(Mathf.Round(GameSettings.RenderScale * 20f));
             vsyncToggle.SetIsOnWithoutNotify(GameSettings.VSync);
             brightnessSlider.SetValueWithoutNotify(Mathf.Round(GameSettings.Brightness * 10f));

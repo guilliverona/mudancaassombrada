@@ -411,6 +411,7 @@ namespace MudancaAssombrada.Editor
             var sensitivitySlider = CreateSlider(general, 0.2f, 3f);
             var volumeText = CreateText("Volume (texto)", general, "", BodySize);
             var volumeSlider = CreateSlider(general, 0f, 1f);
+            var silenceToggle = CreateToggle(general, "Silêncio total (personagem surdo)");
 
             // Tela e Gráficos: os rótulos dos botões são reescritos pelo OptionsPanel ("Qualidade: Alta"...).
             var screen = CreatePage("Página Tela", panel);
@@ -434,6 +435,7 @@ namespace MudancaAssombrada.Editor
             so.FindProperty("sensitivitySlider").objectReferenceValue = sensitivitySlider;
             so.FindProperty("volumeSlider").objectReferenceValue = volumeSlider;
             so.FindProperty("fullscreenToggle").objectReferenceValue = fullscreenToggle;
+            so.FindProperty("silenceToggle").objectReferenceValue = silenceToggle;
             so.FindProperty("sensitivityValueText").objectReferenceValue = sensitivityText;
             so.FindProperty("volumeValueText").objectReferenceValue = volumeText;
             so.FindProperty("backButton").objectReferenceValue = backButton;

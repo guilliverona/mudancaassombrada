@@ -101,14 +101,30 @@ namespace MudancaAssombrada
         // Grava no disco agora (senão a Unity só grava ao fechar o jogo, e um travamento perderia tudo).
         public static void Save() => PlayerPrefs.Save();
 
-        // Mudo enquanto o personagem local é surdo. Não é salvo: vale só nesta partida.
+        // Surdo enquanto o personagem local é surdo. Não é salvo: vale só nesta partida.
         public static bool Muted { get; set; }
+
+        // Acessibilidade: o surdo não ouve NEM o sub-grave (o mudo de antes). Ver DeafMixRules.
+        const string TotalSilenceKey = "silencioTotal";
+        public static bool TotalSilence
+        {
+            get => PlayerPrefs.GetInt(TotalSilenceKey, 0) == 1;
+            set => PlayerPrefs.SetInt(TotalSilenceKey, value ? 1 : 0);
+        }
+
+        // O passa-baixa nos ouvidos do jogador local (o CharacterSwitcher põe ao escolher o personagem).
+        public static AudioLowPassFilter DeafFilter { get; set; }
 
         // Aplica o que dá para aplicar na hora.
         public static void Apply()
         {
             VideoSettings.ApplyScreen();
-            AudioListener.volume = Muted ? 0f : Volume;
+            AudioListener.volume = DeafMixRules.ListenerVolume(Muted, TotalSilence, Volume);
+            if (DeafFilter != null) // some com o Player ao sair da partida
+            {
+                DeafFilter.cutoffFrequency = DeafMixRules.CutoffHz;
+                DeafFilter.enabled = DeafMixRules.UsesLowPass(Muted, TotalSilence);
+            }
             VideoSettings.Apply();
         }
     }
