@@ -419,10 +419,12 @@ DEFAULT_BEVEL = 0.0
 KEEP_UV = ("Espelho", "Vidro", "Lente", "Lampada", "Chama", "Farol")
 
 
-def metric_uvs(obj):
+def metric_uvs(obj, long_side_u=True):
     """UV em METROS, projetado de cada face pelo eixo mais perto da normal (caixa / triplanar).
     Assim a textura de detalhe do Unity (madeira, tecido...) tem o mesmo tamanho em qualquer peça:
-    uma tábua de 2 m e um botão de 2 cm não esticam o veio igual. Feito depois do bisel."""
+    uma tábua de 2 m e um botão de 2 cm não esticam o veio igual. Feito depois do bisel.
+    long_side_u=False (personagens): V fica sempre na vertical, sem girar face a face; a malha
+    do moletom tem colunas e elas não podem virar de lado de uma face para a outra."""
     mesh = obj.data
     if not mesh.uv_layers:
         mesh.uv_layers.new(name="UVMap")
@@ -447,7 +449,7 @@ def metric_uvs(obj):
         # de pé na perna da mesa). Sem isso, o veio do assoalho atravessava as tábuas.
         span_u = max(c[1] for c in coords) - min(c[1] for c in coords)
         span_v = max(c[2] for c in coords) - min(c[2] for c in coords)
-        swap = span_v > span_u * 1.05
+        swap = long_side_u and span_v > span_u * 1.05
         for li, u, v in coords:
             uv[li].uv = (v, u) if swap else (u, v)
 

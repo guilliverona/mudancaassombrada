@@ -11,8 +11,10 @@ Cada família gera duas imagens em Assets/Art/Textures/Detail/:
     T_Detail_<Nome>_N.png   mapa de normal (relevo)
 
 Uso: blender --background --factory-startup --python tools/blender/build_detail_textures.py
+     (só algumas famílias: ... build_detail_textures.py -- Malha)
 """
 
+import sys
 from pathlib import Path
 
 import bpy
@@ -158,6 +160,34 @@ def foliage():
     return h, color, 1.8
 
 
+def knit():
+    """Malha de moletom (personagens): colunas de pontos em V, como o avesso de uma camiseta,
+    e uma felpa fina por cima. As colunas correm em V (o UV dos personagens não gira por face)."""
+    u, v = grid()
+    cols, rows = 48, 64  # pontos por volta (inteiros: a textura emenda)
+    x, y = (u * cols) % 1, (v * rows) % 1
+    side = np.where(x < 0.5, x, 1 - x)        # 0 na beira da coluna, 0,5 no meio
+    d = np.abs(side - 0.5 * (1 - y)) * 0.9    # distância até as duas pernas do V
+    loops = np.exp(-(d / 0.18) ** 2)       # pernas largas: finas, o relevo fazia pontinhos pretos
+    fuzz = noise(1.0, 32)
+    h = loops * 0.75 + fuzz * 0.25
+    pilling = noise(2.4, 33)                  # bolinhas e desbotado de uso, sem relevo
+    # suave: forte, o V virava cota de malha (foto no Unity); o desenho fica no relevo, de leve
+    color = 0.5 + (h - h.mean()) * 0.07 + (pilling - 0.5) * 0.12
+    return h, color, 0.6
+
+
+def twill():
+    """Sarja (calça de trabalho / jeans): fios em diagonal bem juntinhos, relevo baixo, e manchas
+    claras de desbotado de uso, sem relevo."""
+    u, v = grid()
+    lines = 0.5 + 0.5 * np.sin(2 * np.pi * (u + v) * 96)  # inteiro: a diagonal emenda nas bordas
+    h = lines ** 1.5 * 0.6 + noise(1.0, 44) * 0.4
+    fade = noise(2.5, 45)
+    color = 0.5 + (lines - 0.5) * 0.06 + (fade - 0.5) * 0.18 + (noise(0.8, 46) - 0.5) * 0.06
+    return h, color, 0.6
+
+
 FAMILIES = {
     "Pedra": stone,
     "Grama": grass,
@@ -170,6 +200,8 @@ FAMILIES = {
     "Piso": tile,
     "Papel": paper,
     "Papelao": cardboard,
+    "Malha": knit,
+    "Sarja": twill,
 }
 
 
@@ -205,14 +237,20 @@ def save(name, rgb, alpha=None):
 
 
 def main():
+    # depois de "--", só as famílias pedidas (ex.: -- Malha), sem regravar as outras nem a névoa
+    only = sys.argv[sys.argv.index("--") + 1:] if "--" in sys.argv else []
     OUT.mkdir(parents=True, exist_ok=True)
     for name, build in FAMILIES.items():
+        if only and name not in only:
+            continue
         h, color, strength = build()
         # média em 0,5 exato: em média a textura não clareia nem escurece a cor do Art Bible
         gray = np.clip(color - color.mean() + 0.5, 0, 1)
         save(f"T_Detail_{name}", np.dstack((gray, gray, gray)))
         save(f"T_Detail_{name}_N", normal_map(h, strength))
         print("SAVED", name, "media da cor", round(float(gray.mean()), 3))
+    if only:
+        return
     a = mist()
     save("T_Nevoa", np.ones((SIZE, SIZE, 3)), a)
     print("SAVED Nevoa", "alfa medio", round(float(a.mean()), 3))
