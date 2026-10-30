@@ -433,9 +433,14 @@ def build_pants(p):
                      flip=s > 0, closed=True)
         surface_grid(p, [[leg_point(s, z, a) for a in angs] for z in upper], "Calca", f"{side}UpperLeg",
                      flip=s > 0, closed=True)
-        # costura do lado de fora, de cima a baixo (some embaixo do bolso cargo, que é costurado por cima)
-        for part in ([z for z in zs_ if z < 0.385] + [0.385], [0.497] + [z for z in zs_ if z > 0.497]):
-            sweep(p, [leg_point(s, z, 0, 0.0012) for z in part], 0.0016, "CalcaCostura", f"{side}UpperLeg", seg=4)
+        # costura do lado de fora, de cima a baixo (some embaixo do bolso cargo, que é costurado por cima).
+        # Dividida no joelho, onde a calça também se divide: o trecho da canela vai com a canela. Inteira
+        # na coxa, ao agachar ou correr ela ficava reta para a frente, fora da calça.
+        knee = lower[-1]
+        for part, bone in (([z for z in zs_ if z <= knee], f"{side}LowerLeg"),
+                           ([z for z in zs_ if knee <= z < 0.385] + [0.385], f"{side}UpperLeg"),
+                           ([0.497] + [z for z in zs_ if z > 0.497], f"{side}UpperLeg")):
+            sweep(p, [leg_point(s, z, 0, 0.0012) for z in part], 0.0016, "CalcaCostura", bone, seg=4)
         # bolso cargo na coxa, puxado um pouco para a frente (aparece de frente), com prega no meio,
         # aba de ponta inclinada por cima e botão de pressão
         a0, a1 = -25, 70
@@ -447,7 +452,8 @@ def build_pants(p):
     # pesponto da barra da perna direita (logo acima da barra dobrada)
     sweep(p, [leg_point(-1, 0.112, a, 0.0012) for a in angs + [0]], 0.0013, "CalcaCostura", "RightLowerLeg", seg=4)
     # remendo no joelho esquerdo: costura caseira em volta, pontos grossos e tortinhos
-    leg_patch(p, 1, 60, 120, 0.325, 0.395, "Remendo", "LeftLowerLeg", puff=0.0015, double=False, wobble=0.012)
+    # (todo abaixo da divisão do joelho, em 0,37: se passasse dela, a ponta de cima sairia da calça ao dobrar)
+    leg_patch(p, 1, 60, 120, 0.298, 0.366, "Remendo", "LeftLowerLeg", puff=0.0015, double=False, wobble=0.012)
     # bolsos de trás no assento: ponta em V embaixo, pesponto duplo e rebite nos cantos de cima
     for s, side in ((1, "Left"), (-1, "Right")):
         a0, a1 = 232, 302
