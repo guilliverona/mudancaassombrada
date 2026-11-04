@@ -164,6 +164,7 @@ tudo passa pelos serviços da Unity (Lobby + Relay), então precisa de internet.
   `NavMeshObstacle` ligado no bake grava o buraco para sempre: o `LevelSceneTools` desliga os obstáculos
   só durante o bake. Num script temporário, eles recortam o NavMesh também no editor (desligar e
   `RemoveData`/`AddData` para medir o mapa salvo). Fora do Play, `GhostHideout.All` fica vazio.
+- **Foto de animação em batch:** a malha com ossos pode sair na pose de descanso ou atrasada. Usar `updateWhenOffscreen` e renderizar uma vez antes da foto; conferir a altura do quadril no log antes de confiar na imagem.
 - **Fotos de cena em batch:** sem `-nographics`, dá para renderizar a cena num RenderTexture. Desligar a
   névoa da noite, senão a câmera de longe pinta tudo de bege. A pasta `Temp` é apagada ao sair (gravar em `Logs`).
   A 1ª foto sai cinza, sem materiais: renderizar um quadro de aquecimento antes.
