@@ -22,6 +22,9 @@ foreach ($c in $scripts) {
 }
 
 # Personagens com versão detalhada: grava o FBX do jogo por cima do blockout (rodar depois dele).
+Write-Host "== cida_detalhado"
+& $Blender --background --factory-startup --python (Join-Path $here "build_cida_detalhado.py") 2>&1 |
+    Select-String -Pattern "TRIS|SAVED|Traceback|Error"
 Write-Host "== marcelo_detalhado"
 & $Blender --background --factory-startup --python (Join-Path $here "build_marcelo_detalhado.py") 2>&1 |
     Select-String -Pattern "TRIS|SAVED|Traceback|Error"
