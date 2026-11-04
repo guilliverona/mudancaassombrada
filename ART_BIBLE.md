@@ -120,7 +120,7 @@ metal ter o que refletir, a casa cria uma Reflection Probe por cômodo ao carreg
 
 | Tipo | Limite | Hoje |
 |---|---|---|
-| Personagem jogável (com props) | 18k (Tiago: 25k) | Cida 12,6k · Tiago 23,6k · Marcelo 17,9k (versão detalhada, com mãos e dedos) |
+| Personagem jogável (com props) | 18k (Cida e Tiago: 25k) | Cida 23,5k · Tiago 23,6k · Marcelo 17,9k (versão detalhada, com mãos e dedos) |
 | Fantasma de fase | 20k | Bibliotecário 6,0k · Imitador 6,3k · Maestrina 4,2k |
 | Seu Valdemar | 15k | 4,8k |
 | O Inquilino (forma final) | 45k | — |
@@ -129,8 +129,8 @@ metal ter o que refletir, a casa cria uma Reflection Probe por cômodo ao carreg
 | Módulo de cenário | 0,5–1,5k | 0,2k a 0,8k (piso xadrez) |
 
 O limite do **Tiago subiu para 25k** em 31/10/2026 (decisão do guilliverona, para a bolsa nova e
-outros detalhes). A Cida e o Marcelo continuam em 18k até o time decidir; com no máximo 3 jogadores
-na tela, a diferença não pesa no jogo.
+outros detalhes), e o da **Cida para 25k** em 04/11/2026 (decisão do guilliverona, para ficar semelhante ao Tiago).
+O Marcelo continua em 18k até o time decidir; com no máximo 3 jogadores na tela, a diferença não pesa no jogo.
 
 Os blockouts ficam abaixo do orçamento de propósito: são formas e cores, sem o detalhe da arte final.
 
@@ -207,8 +207,37 @@ e solta ao cair (`HandPoseRules`). As prévias da Cida já mostram a pega.
   ferrugem da ficha para o náilon escuro da referência.
 - **Grão do moletom:** textura de detalhe `Malha` (pontos em V, `build_detail_textures.py`) com UV em
   metros no Tiago (`metric_uvs(..., long_side_u=False)`); no Unity, a tabela `CharacterDetailFamilies`
-  do `ArtImportSettings` liga pelo nome completo do material (a Cida e o Marcelo ainda não têm esse UV).
+  do `ArtImportSettings` liga pelo nome completo do material (o Marcelo ainda não tem esse UV).
   De muito perto ainda aparecem pontinhos escuros no relevo.
+
+**Cida detalhada:** `tools/blender/build_cida_detalhado.py` grava o `SK_CHR_Cida.fbx` por
+cima do blockout (o `build_all.ps1` roda depois dele), com o mesmo rig, as mesmas mãos e a mesma pega da
+bengala. A boca continua a do blockout (batom e blush foram testados e descartados, decisão do guilliverona).
+
+- **Cabelo** (7,7k): tufos redondos com a mecha enrolada em relevo por cima; a silhueta é a da
+  ficha. Coque enrolado e diapasão mais grosso. Orelhas e brincos à mostra dos dois lados.
+- **Colete** (`build_vest`, mesmo método do Tiago): segue o cardigã a 0,8 cm, com cava, alça, vivo e zíper
+  aberto; faixa refletiva e retângulo das costas são faces da malha; bolsos com aba e pesponto claro.
+- **Crachá** (`build_badge`): suporte, presilha, "CIDA" à caneta e o nome em braile. O texto é geometria
+  (`flat_stroke`: tiras chatas, 2 triângulos por trecho), não textura.
+- **Cardigã:** carcela com cinco botões (um trocado), barra e punhos canelados (`ribbed_band`), golinha
+  creme da blusa e remendo com pontos à mão no cotovelo esquerdo. **Chave de afinar** presa no peito.
+- **Saia** (`build_skirt`): 14 pregas de faca que abrem até a barra escura, com forro escuro por dentro da barra. Da cintura
+  para baixo, o peso passa do quadril para a coxa e, abaixo do joelho, para a canela (só a frente vai inteira): agachada, o pano cai do joelho; ela abre e
+  fecha com o passo, sem script. Na animação, a ponta da bengala entra no chão (até 13 cm agachada): falta IK.
+- **Sapatilha** (`build_shoe`, referência do guilliverona): tricô preto, sola baixa de borracha, forro
+  vinho na boca e tira elástica sobre o peito do pé, bordada de losangos. Substitui o sapato marrom da ficha.
+- **Pochete** (`build_pouch`): couro velho curvado na barriga, cinto na cintura, aba com costura e fivela,
+  bolsinho com chapinha laranja e feltro de afinador escapando.
+- **Bengala** (`build_cane`, mesma pega e mesma ponta): dobrável, com punho de borracha, juntas de metal,
+  conserto de fita isolante, faixa laranja, ponteira gasta e cordinha vermelha de pulso. Mudou a bengala →
+  gerar os ícones da hotbar de novo.
+- **Rosto** (`build_glasses`, `build_face_marks`): óculos de aro dourado com lente abaulada e reflexo
+  desenhado, ponte em arco, plaquetas e haste por cima da orelha; cordinha de pérolas saindo das hastes e
+  caindo atrás do pescoço; brinco de pérola em gota; sobrancelhas teimosas (a esquerda bem mais alta) e
+  ruguinhas de riso. Ela segue sem olhos à mostra: nada de rosto esculpido.
+- **Grão:** cardigã `Malha` (4 repetições por metro, relevo 0,2), colete `Sarja`, saia `Tecido`, sapatilha
+  `Malha` (10 repetições por metro).
 
 **Lados:** nos desenhos do Art Bible, a bengala da Cida, o lápis e a bolsa do Tiago
 ficam do lado **esquerdo** do personagem; o texto de algumas fichas diz "direito".

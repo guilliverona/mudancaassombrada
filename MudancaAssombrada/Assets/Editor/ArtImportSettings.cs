@@ -162,11 +162,15 @@ namespace MudancaAssombrada.Editor
         };
 
         // Personagens: só quem já tem UV em metros (o script do personagem chama metric_uvs) e pelo
-        // nome COMPLETO do material, para não pegar a Cida e o Marcelo, que ainda não têm esse UV.
+        // nome COMPLETO do material, para não pegar quem ainda não tem esse UV (o Marcelo).
         static readonly (string[] keys, string family, float perMeter, float normal)[] CharacterDetailFamilies =
         {
             (new[] { "MAT_CHR_Tiago_Moletom" }, "Malha", 3f, 0.35f), // também pega o MoletomEscuro
             (new[] { "MAT_CHR_Tiago_Calca", "MAT_CHR_Tiago_Remendo" }, "Sarja", 3f, 0.35f), // e a CalcaBarra
+            (new[] { "MAT_CHR_Cida_Cardiga" }, "Malha", 4f, 0.2f), // também pega o CardigaEscuro
+            (new[] { "MAT_CHR_Cida_Saia" }, "Tecido", 3f, 0.3f), // e a SaiaBarra
+            (new[] { "MAT_CHR_Cida_Colete" }, "Sarja", 3f, 0.35f), // lona; também pega o ColeteEscuro
+            (new[] { "MAT_CHR_Cida_SapatoMalha" }, "Malha", 10f, 0.5f), // tricô bem miúdo
         };
 
         void ApplyDetail(Material material)
